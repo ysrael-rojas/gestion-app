@@ -1,6 +1,6 @@
 # SPEC 01 — Registro y listado de clientes
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** —
 > **Date:** 2026-09-27
 > **Objective:** Construir en `/clientes/listado` un data table de clientes en memoria con un modal que permite registrar y editar clientes validando sus datos.
@@ -82,19 +82,19 @@ Convenciones:
 
 ## Acceptance criteria
 
-- [ ] `/clientes/listado` renderiza sin errores en consola.
-- [ ] El botón **Registrar cliente** abre el modal con el formulario vacío.
-- [ ] El tipo de documento inicia en **Sin documento** y el número queda deshabilitado sin validación.
-- [ ] Al elegir RUC/DNI/Carnet cambian label, placeholder y validación (11 dígitos / 8 dígitos / 9-12 alfanumérico).
-- [ ] Enviar sin nombre o con correo de facturación inválido muestra errores y no envía.
-- [ ] Un envío válido muestra toast de éxito, cierra el modal, limpia el formulario y agrega una fila.
-- [ ] El data table muestra las columnas Nombre, Documento, Teléfono y Correo de facturación.
-- [ ] La búsqueda global filtra filas, el orden por columna funciona y la paginación funciona.
-- [ ] **Editar** abre el modal con título "Editar cliente" y campos precargados; guardar actualiza la fila sin duplicarla.
-- [ ] **Eliminar** abre un `AlertDialog`; confirmar quita la fila y cancelar la conserva.
-- [ ] Sin clientes se muestra "No hay clientes registrados".
-- [ ] Recargar la página borra las filas (solo memoria).
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] `/clientes/listado` renderiza sin errores en consola.
+- [x] El botón **Registrar cliente** abre el modal con el formulario vacío.
+- [x] El tipo de documento inicia en **Sin documento** y el número queda deshabilitado sin validación.
+- [x] Al elegir RUC/DNI/Carnet cambian label, placeholder y validación (11 dígitos / 8 dígitos / 9-12 alfanumérico).
+- [x] Enviar sin nombre o con correo de facturación inválido muestra errores y no envía.
+- [x] Un envío válido muestra toast de éxito, cierra el modal, limpia el formulario y agrega una fila.
+- [x] El data table muestra las columnas Nombre, Documento, Teléfono y Correo de facturación.
+- [x] La búsqueda global filtra filas, el orden por columna funciona y la paginación funciona.
+- [x] **Editar** abre el modal con título "Editar cliente" y campos precargados; guardar actualiza la fila sin duplicarla.
+- [x] **Eliminar** abre un `AlertDialog`; confirmar quita la fila y cancelar la conserva.
+- [x] Sin clientes se muestra "No hay clientes registrados".
+- [x] Recargar la página borra las filas (solo memoria).
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
