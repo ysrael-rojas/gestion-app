@@ -73,20 +73,20 @@ export function ClientForm({
       : `Número de ${documentTypeOption.label}`;
 
   useEffect(() => {
-    if (!client) {
-      return;
-    }
-
-    form.reset({
-      documentType: client.documentType,
-      documentNumber: client.documentNumber,
-      name: client.name,
-      address: client.address,
-      phone: client.phone,
-      contactName: client.contactName,
-      billingEmail: client.billingEmail,
-      managementEmail: client.managementEmail,
-    });
+    form.reset(
+      client
+        ? {
+            documentType: client.documentType,
+            documentNumber: client.documentNumber,
+            name: client.name,
+            address: client.address,
+            phone: client.phone,
+            contactName: client.contactName,
+            billingEmail: client.billingEmail,
+            managementEmail: client.managementEmail,
+          }
+        : defaultValues
+    );
   }, [client, form]);
 
   const errors = form.formState.errors;

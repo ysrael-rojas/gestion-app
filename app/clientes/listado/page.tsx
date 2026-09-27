@@ -3,14 +3,27 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { ClientModal } from "@/components/clientes/client-modal";
+import { ClientsDataTable } from "@/components/clientes/clients-data-table";
 import type { Client } from "@/components/clientes/types";
 import type { ClientFormValues } from "@/lib/schemas/client";
-import { Button } from "@/components/ui/button";
 
 export default function ClientesListadoPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
   function openCreate() {
     setEditingClient(null);
@@ -63,17 +76,56 @@ export default function ClientesListadoPage() {
         <Button onClick={openCreate}>Registrar cliente</Button>
       </div>
 
-      {clients.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No hay clientes registrados
-        </p>
-      ) : (
-        <ul>
-          {clients.map((client) => (
-            <li key={client.id}>{client.name}</li>
-          ))}
-        </ul>
-      )}
+      <ClientsDataTable
+        clients={clients}
+        onEdit={openEdit}
+        onDelete={(client) => setClientToDelete(client)}
+      />
+
+      <ClientModal
+        open={modalOpen}
+        onOpenChange={(open) => {
+          setModalOpen(open);
+          if (!open) {
+            setEditingClient(null);
+          }
+        }}
+        client={editingClient}
+        onSave={handleSave}
+      />
+
+      <AlertDialog
+        open={clientToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setClientToDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar cliente</AlertDialogTitle>
+            <AlertDialogDescription>
+              ¿Seguro que quieres eliminar este cliente? Esta acción no se puede
+              deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (clientToDelete) {
+                  handleDelete(clientToDelete);
+                }
+                setClientToDelete(null);
+              }}
+            >
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }
