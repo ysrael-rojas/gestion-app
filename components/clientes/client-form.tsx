@@ -39,6 +39,11 @@ const defaultValues: ClientFormValues = {
   managementEmail: "",
 };
 
+const documentTypeItems = DOCUMENT_TYPES.map((option) => ({
+  value: option.value,
+  label: option.label,
+}));
+
 function FieldError({ message }: { message?: string }) {
   if (!message) {
     return null;
@@ -104,6 +109,7 @@ export function ClientForm({
             <Label htmlFor="documentType">Tipo de documento</Label>
             <Select
               value={field.value}
+              items={documentTypeItems}
               onValueChange={(value) => {
                 if (value === null) {
                   return;
