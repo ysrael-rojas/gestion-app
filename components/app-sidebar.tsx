@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, ChevronRight, Database, Users } from "lucide-react";
+import {
+  Building2,
+  ChevronRight,
+  Database,
+  Receipt,
+  Users,
+} from "lucide-react";
 
 import {
   Collapsible,
@@ -67,6 +73,16 @@ export function AppSidebar() {
                 </SidebarMenuSub>
               </CollapsibleContent>
             </Collapsible>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link href="/ventas/listado" />}
+                isActive={pathname === "/ventas/listado"}
+                tooltip="VENTAS"
+              >
+                <Receipt />
+                <span>VENTAS</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
