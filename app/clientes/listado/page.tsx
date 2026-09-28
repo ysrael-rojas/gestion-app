@@ -28,7 +28,8 @@ function getErrorMessage(error: unknown): string {
 }
 
 export default function ClientesListadoPage() {
-  const { clients, addClient, updateClient, removeClient } = useClientes();
+  const { clients, isLoading, addClient, updateClient, removeClient } =
+    useClientes();
   const [modalOpen, setModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -93,6 +94,7 @@ export default function ClientesListadoPage() {
 
       <ClientsDataTable
         clients={clients}
+        isLoading={isLoading}
         onView={openView}
         onEdit={openEdit}
         onDelete={(client) => setClientToDelete(client)}
