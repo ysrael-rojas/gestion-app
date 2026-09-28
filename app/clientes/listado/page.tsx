@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useClientes } from "@/components/clientes/clientes-provider";
 import { ClientDetailModal } from "@/components/clientes/client-detail-modal";
 import { ClientModal } from "@/components/clientes/client-modal";
 import { ClientsDataTable } from "@/components/clientes/clients-data-table";
@@ -21,7 +22,7 @@ import type { Client } from "@/components/clientes/types";
 import type { ClientFormValues } from "@/lib/schemas/client";
 
 export default function ClientesListadoPage() {
-  const [clients, setClients] = useState<Client[]>([]);
+  const { clients, addClient, updateClient, removeClient } = useClientes();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
@@ -42,23 +43,11 @@ export default function ClientesListadoPage() {
   }
 
   function handleSave(values: ClientFormValues) {
-    const documentNumber =
-      values.documentType === "SIN_DOCUMENTO" ? "" : values.documentNumber;
-
     if (editingClient) {
-      setClients((prev) =>
-        prev.map((client) =>
-          client.id === editingClient.id
-            ? { ...client, ...values, documentNumber }
-            : client
-        )
-      );
+      updateClient(editingClient.id, values);
       toast.success("Cliente actualizado");
     } else {
-      setClients((prev) => [
-        ...prev,
-        { id: crypto.randomUUID(), ...values, documentNumber },
-      ]);
+      addClient(values);
       toast.success("Cliente registrado");
     }
 
@@ -67,7 +56,7 @@ export default function ClientesListadoPage() {
   }
 
   function handleDelete(client: Client) {
-    setClients((prev) => prev.filter((item) => item.id !== client.id));
+    removeClient(client.id);
   }
 
   return (
