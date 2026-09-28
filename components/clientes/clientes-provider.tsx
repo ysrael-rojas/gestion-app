@@ -43,14 +43,6 @@ export function ClientesProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const isMounted = useRef(true);
 
-  useEffect(() => {
-    isMounted.current = true;
-
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
   const refresh = useCallback(async () => {
     try {
       const data = await listClients();
@@ -75,7 +67,15 @@ export function ClientesProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refresh();
+    isMounted.current = true;
+
+    void (async () => {
+      await refresh();
+    })();
+
+    return () => {
+      isMounted.current = false;
+    };
   }, [refresh]);
 
   const addClient = useCallback(

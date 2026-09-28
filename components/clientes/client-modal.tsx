@@ -24,6 +24,7 @@ interface ClientModalProps {
   onOpenChange: (open: boolean) => void;
   client: Client | null;
   onSave: (values: ClientFormValues) => void;
+  isSaving?: boolean;
 }
 
 export function ClientModal({
@@ -31,6 +32,7 @@ export function ClientModal({
   onOpenChange,
   client,
   onSave,
+  isSaving = false,
 }: ClientModalProps) {
   const isEditing = client !== null;
 
@@ -55,7 +57,7 @@ export function ClientModal({
             <DialogClose render={<Button variant="outline" />}>
               Cancelar
             </DialogClose>
-            <Button type="submit" form={CLIENT_FORM_ID}>
+            <Button type="submit" form={CLIENT_FORM_ID} disabled={isSaving}>
               {isEditing ? "Guardar cambios" : "Registrar"}
             </Button>
           </CardFooter>
