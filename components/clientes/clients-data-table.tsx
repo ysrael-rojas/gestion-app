@@ -5,6 +5,7 @@ import { useTable, type SortingState } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -21,13 +22,17 @@ import {
 
 interface ClientsDataTableProps {
   clients: Client[];
+  isLoading?: boolean;
   onView: (client: Client) => void;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
 }
 
+const SKELETON_ROWS = 5;
+
 export function ClientsDataTable({
   clients,
+  isLoading = false,
   onView,
   onEdit,
   onDelete,
@@ -83,7 +88,19 @@ export function ClientsDataTable({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.length ? (
+            {isLoading ? (
+              Array.from({ length: SKELETON_ROWS }).map((_, rowIndex) => (
+                <TableRow key={`skeleton-${rowIndex}`}>
+                  {Array.from({ length: columns.length }).map(
+                    (_, cellIndex) => (
+                      <TableCell key={`skeleton-${rowIndex}-${cellIndex}`}>
+                        <Skeleton className="h-5 w-full" />
+                      </TableCell>
+                    )
+                  )}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getAllCells().map((cell) => (

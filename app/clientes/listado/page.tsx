@@ -21,9 +21,17 @@ import { ClientsDataTable } from "@/components/clientes/clients-data-table";
 import type { Client } from "@/components/clientes/types";
 import type { ClientFormValues } from "@/lib/schemas/client";
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "Ocurrió un error inesperado. Intenta nuevamente.";
+}
+
 export default function ClientesListadoPage() {
-  const { clients, addClient, updateClient, removeClient } = useClientes();
+  const { clients, isLoading, addClient, updateClient, removeClient } =
+    useClientes();
   const [modalOpen, setModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
@@ -42,21 +50,34 @@ export default function ClientesListadoPage() {
     setViewingClient(client);
   }
 
-  function handleSave(values: ClientFormValues) {
-    if (editingClient) {
-      updateClient(editingClient.id, values);
-      toast.success("Cliente actualizado");
-    } else {
-      addClient(values);
-      toast.success("Cliente registrado");
-    }
+  async function handleSave(values: ClientFormValues) {
+    setIsSaving(true);
 
-    setModalOpen(false);
-    setEditingClient(null);
+    try {
+      if (editingClient) {
+        await updateClient(editingClient.id, values);
+        toast.success("Cliente actualizado");
+      } else {
+        await addClient(values);
+        toast.success("Cliente registrado");
+      }
+
+      setModalOpen(false);
+      setEditingClient(null);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsSaving(false);
+    }
   }
 
-  function handleDelete(client: Client) {
-    removeClient(client.id);
+  async function handleDelete(client: Client) {
+    try {
+      await removeClient(client.id);
+      toast.success("Cliente eliminado");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    }
   }
 
   return (
@@ -73,6 +94,7 @@ export default function ClientesListadoPage() {
 
       <ClientsDataTable
         clients={clients}
+        isLoading={isLoading}
         onView={openView}
         onEdit={openEdit}
         onDelete={(client) => setClientToDelete(client)}
@@ -88,6 +110,7 @@ export default function ClientesListadoPage() {
         }}
         client={editingClient}
         onSave={handleSave}
+        isSaving={isSaving}
       />
 
       <ClientDetailModal
@@ -122,7 +145,7 @@ export default function ClientesListadoPage() {
               variant="destructive"
               onClick={() => {
                 if (clientToDelete) {
-                  handleDelete(clientToDelete);
+                  void handleDelete(clientToDelete);
                 }
                 setClientToDelete(null);
               }}
