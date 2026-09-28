@@ -1,6 +1,6 @@
 # SPEC 03 — Estructura Card en los modales y grupos de clientes
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 02
 > **Date:** 2026-09-28
 > **Objective:** Reestructurar los modales de alta/edición y de detalle de `/clientes/listado` con el componente `Card` (header, contenido y footer) y agrupar sus campos en dos `Card` de grupo, eliminando las líneas separadoras.
@@ -38,18 +38,18 @@ Esta spec no introduce estructuras de datos nuevas ni estado nuevo. Reutiliza `C
 
 ## Acceptance criteria
 
-- [ ] Existe `components/ui/card.tsx` y `npm run build` pasa.
-- [ ] El modal de alta/edición muestra su contenido dentro de un `Card` con header (título y descripción) y footer (acciones).
-- [ ] El footer del modal contiene "Cancelar" y "Registrar"/"Guardar cambios".
-- [ ] El formulario muestra dos bloques `Card` con los títulos "Datos del documento" y "Datos de contacto".
-- [ ] Ya no se muestra la línea separadora entre grupos.
-- [ ] Tipo y Número de documento siguen en la misma fila; Nombre/Empresa y Dirección en fila propia.
-- [ ] Teléfono y Contacto en la misma fila; cada correo en fila propia.
-- [ ] El modal de detalle usa el mismo `Card` con header/footer y un botón "Cerrar".
-- [ ] El detalle agrupa sus campos en los dos `Card` con el reparto indicado.
-- [ ] Registrar, editar, cancelar, ver y eliminar funcionan sin regresiones.
-- [ ] Búsqueda global, orden y paginación siguen funcionando.
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] Existe `components/ui/card.tsx` y `npm run build` pasa.
+- [x] El modal de alta/edición muestra su contenido dentro de un `Card` con header (título y descripción) y footer (acciones).
+- [x] El footer del modal contiene "Cancelar" y "Registrar"/"Guardar cambios".
+- [x] El formulario muestra dos bloques `Card` con los títulos "Datos del documento" y "Datos de contacto".
+- [x] Ya no se muestra la línea separadora entre grupos.
+- [x] Tipo y Número de documento siguen en la misma fila; Nombre/Empresa y Dirección en fila propia.
+- [x] Teléfono y Contacto en la misma fila; cada correo en fila propia.
+- [x] El modal de detalle usa el mismo `Card` con header/footer y un botón "Cerrar".
+- [x] El detalle agrupa sus campos en los dos `Card` con el reparto indicado.
+- [x] Registrar, editar, cancelar, ver y eliminar funcionan sin regresiones.
+- [x] Búsqueda global, orden y paginación siguen funcionando.
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
