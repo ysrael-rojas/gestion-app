@@ -14,15 +14,15 @@ import {
   sortFn_text,
   tableFeatures,
 } from "@tanstack/react-table";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, Eye, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Client } from "@/components/clientes/types";
 import { getDocumentTypeOption } from "@/lib/data/document-types";
 
@@ -43,11 +43,16 @@ export type ClientsTableFeatures = typeof clientsTableFeatures;
 const columnHelper = createColumnHelper<ClientsTableFeatures, Client>();
 
 interface ClientsColumnsActions {
+  onView: (client: Client) => void;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
 }
 
-export function getClientsColumns({ onEdit, onDelete }: ClientsColumnsActions) {
+export function getClientsColumns({
+  onView,
+  onEdit,
+  onDelete,
+}: ClientsColumnsActions) {
   return columnHelper.columns([
     columnHelper.accessor("name", {
       header: ({ column }) => (
@@ -117,25 +122,55 @@ export function getClientsColumns({ onEdit, onDelete }: ClientsColumnsActions) {
         const client = row.original;
 
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={<Button variant="ghost" size="icon-sm" />}
-            >
-              <MoreHorizontal />
-              <span className="sr-only">Acciones</span>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(client)}>
-                Editar
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => onDelete(client)}
-              >
-                Eliminar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <TooltipProvider>
+            <div className="flex items-center justify-end gap-1">
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => onView(client)}
+                    />
+                  }
+                >
+                  <Eye />
+                  <span className="sr-only">Ver</span>
+                </TooltipTrigger>
+                <TooltipContent>Ver</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => onEdit(client)}
+                    />
+                  }
+                >
+                  <Pencil />
+                  <span className="sr-only">Editar</span>
+                </TooltipTrigger>
+                <TooltipContent>Editar</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => onDelete(client)}
+                    />
+                  }
+                >
+                  <Trash2 />
+                  <span className="sr-only">Eliminar</span>
+                </TooltipTrigger>
+                <TooltipContent>Eliminar</TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
         );
       },
     }),
