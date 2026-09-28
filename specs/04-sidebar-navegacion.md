@@ -1,6 +1,6 @@
 # SPEC 04 — Sidebar de navegación global
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 01
 > **Date:** 2026-09-28
 > **Objective:** Añadir un sidebar de navegación global con el título GESTION COMERCIAL y el ítem colapsable MAESTRO → Clientes/Proveedores que enlaza a `/clientes/listado`.
@@ -49,19 +49,19 @@ const menu = {
 
 ## Acceptance criteria
 
-- [ ] Existe `components/ui/sidebar.tsx` y `npm run build` pasa.
-- [ ] Todas las rutas, incluido `/` y `/clientes/listado`, muestran el sidebar en desktop.
-- [ ] La cabecera del sidebar muestra un ícono y el texto "GESTION COMERCIAL".
-- [ ] Existe el ítem "MAESTRO" con chevron que expande y colapsa el submenú.
-- [ ] El submenú muestra el ítem "Clientes/Proveedores".
-- [ ] Clic en "Clientes/Proveedores" navega a `/clientes/listado` con `Link` de Next (sin recarga completa).
-- [ ] Estando en `/clientes/listado`, el ítem aparece como activo.
-- [ ] `SidebarTrigger` colapsa y expande el sidebar; en colapsado se ven los íconos.
-- [ ] El atajo Ctrl/Cmd+B colapsa y expande el sidebar.
-- [ ] En viewport móvil el sidebar es off-canvas (Sheet) y se abre desde el trigger.
-- [ ] El home `/` conserva su contenido original.
-- [ ] La tabla, modales, búsqueda y toasts de `/clientes/listado` siguen funcionando sin regresiones.
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] Existe `components/ui/sidebar.tsx` y `npm run build` pasa.
+- [x] Todas las rutas, incluido `/` y `/clientes/listado`, muestran el sidebar en desktop.
+- [x] La cabecera del sidebar muestra un ícono y el texto "GESTION COMERCIAL".
+- [x] Existe el ítem "MAESTRO" con chevron que expande y colapsa el submenú.
+- [x] El submenú muestra el ítem "Clientes/Proveedores".
+- [x] Clic en "Clientes/Proveedores" navega a `/clientes/listado` con `Link` de Next (sin recarga completa).
+- [x] Estando en `/clientes/listado`, el ítem aparece como activo.
+- [x] `SidebarTrigger` colapsa y expande el sidebar; en colapsado se ven los íconos.
+- [x] El atajo Ctrl/Cmd+B colapsa y expande el sidebar.
+- [x] En viewport móvil el sidebar es off-canvas (Sheet) y se abre desde el trigger.
+- [x] El home `/` conserva su contenido original.
+- [x] La tabla, modales, búsqueda y toasts de `/clientes/listado` siguen funcionando sin regresiones.
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
