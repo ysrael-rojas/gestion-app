@@ -21,12 +21,14 @@ import {
 
 interface ClientsDataTableProps {
   clients: Client[];
+  onView: (client: Client) => void;
   onEdit: (client: Client) => void;
   onDelete: (client: Client) => void;
 }
 
 export function ClientsDataTable({
   clients,
+  onView,
   onEdit,
   onDelete,
 }: ClientsDataTableProps) {
@@ -34,8 +36,8 @@ export function ClientsDataTable({
   const [globalFilter, setGlobalFilter] = useState("");
 
   const columns = useMemo(
-    () => getClientsColumns({ onEdit, onDelete }),
-    [onEdit, onDelete]
+    () => getClientsColumns({ onView, onEdit, onDelete }),
+    [onView, onEdit, onDelete]
   );
 
   const table = useTable({
