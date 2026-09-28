@@ -29,6 +29,16 @@ No hay runner de tests ni scripts `test`/`typecheck`. Para validar cambios: `npm
 - Next 16.3.6 / React 19.2.
 - Tailwind CSS v4: configurado por CSS en `app/globals.css` (`@import "tailwindcss"` + `@theme inline`). No hay `tailwind.config.*`.
 - shadcn/ui 4.x (MCP configurado en `opencode.json`).
+- Supabase (base de datos Postgres + Auth) vía MCP de Supabase.
+
+## Supabase
+
+- Proyecto: `hurattoyvarlfdydvugd` (`https://hurattoyvarlfdydvugd.supabase.co`).
+- MCP `supabase` disponible: inspeccionar tablas, ejecutar SQL, aplicar migraciones, advisors, logs y Edge Functions. La DB aún no tiene tablas.
+- Migraciones/DDL siempre con `apply_migration` (snake_case en el nombre); consultas de lectura con `execute_sql`. Nunca leer archivos del servidor ni ejecutar comandos del SO vía SQL.
+- Tras cambios de esquema, revisar advisors de seguridad y rendimiento.
+- Env: `SUPABASE_DB_PASSWORD` en `.env` (ignorado por git). No hardcodear credenciales; usar variables de entorno y `.env.template` para lo que deba versionarse.
+- Antes de escribir o cambiar algo en Postgres (tablas, columnas, RLS, índices, migraciones), cargar el skill `supabase-postgres-best-practices`.
 
 ## UI
 
@@ -56,9 +66,16 @@ No hay runner de tests ni scripts `test`/`typecheck`. Para validar cambios: `npm
 
 - Context7: para traer documentación actualizada del framework.
 - Playwright: capturas y artefactos en `.playwright-mcp/` (ya ignorado en `.gitignore`).
+- Supabase: inspección de tablas, migraciones, advisors y logs (ver sección Supabase).
+
+## Skills instalados (`.agents/skills/`)
+
+- `spec` — diseñar una spec antes de escribir código.
+- `spec-impl` — implementar una spec aprobada (crea rama y avanza por pasos).
+- `supabase` — tareas de Supabase (Database, Auth, Edge Functions, Realtime, Storage, SSR, RLS, CLI/MCP).
+- `supabase-postgres-best-practices` — cargar antes de crear/alterar tablas, RLS, índices o migraciones en Postgres.
 
 ## Flujo de trabajo (specs)
 
-- Skills instalados en `.agents/skills/`: `spec` (diseñar spec) y `spec-impl` (implementar spec aprobada).
 - Los specs se guardan en `specs/` (se crea al primer uso).
 - Nunca hacer commit sin que el usuario lo pida explícitamente.
