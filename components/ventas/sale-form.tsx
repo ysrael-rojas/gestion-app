@@ -105,7 +105,7 @@ function FormGroup({
 }
 
 export function SaleForm({ sale, onSubmit }: SaleFormProps) {
-  const { clients } = useClientes();
+  const { clients, isLoading } = useClientes();
 
   const form = useForm<SaleFormInput, unknown, SaleFormValues>({
     resolver: zodResolver(saleSchema),
@@ -225,7 +225,11 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
                 <SelectTrigger id="clientId" className="w-full">
                   <SelectValue
                     placeholder={
-                      clients.length ? "Selecciona un cliente" : "No hay clientes"
+                      isLoading
+                        ? "Cargando..."
+                        : clients.length
+                          ? "Selecciona un cliente"
+                          : "No hay clientes"
                     }
                   />
                 </SelectTrigger>
