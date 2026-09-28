@@ -55,9 +55,9 @@ interface SalesColumnsActions {
   onEdit: (sale: Sale) => void;
 }
 
-function getClientName(clients: Client[], clientId: string): string {
+function getClientName(clients: Client[], entityId: string): string {
   return (
-    clients.find((client) => client.id === clientId)?.name ??
+    clients.find((client) => client.id === entityId)?.name ??
     "Cliente no encontrado"
   );
 }
@@ -104,7 +104,7 @@ export function getSalesColumns({ clients, onView, onEdit }: SalesColumnsActions
       ),
       cell: ({ getValue }) => getValue(),
     }),
-    columnHelper.accessor((sale) => getClientName(clients, sale.clientId), {
+    columnHelper.accessor((sale) => getClientName(clients, sale.entityId), {
       id: "client",
       header: ({ column }) => (
         <Button
@@ -145,6 +145,35 @@ export function getSalesColumns({ clients, onView, onEdit }: SalesColumnsActions
         cell: ({ getValue }) => getValue(),
       }
     ),
+    columnHelper.accessor((sale) => sale.creditDays, {
+      id: "creditDays",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Días de crédito
+          <ArrowUpDown />
+        </Button>
+      ),
+      cell: ({ getValue }) => getValue() ?? "—",
+    }),
+    columnHelper.accessor((sale) => sale.dueDate, {
+      id: "dueDate",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Fecha de vencimiento
+          <ArrowUpDown />
+        </Button>
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue();
+        return value ? formatDate(value) : "—";
+      },
+    }),
     columnHelper.accessor(
       (sale) => getOptionLabel(SALE_STATUSES, sale.status),
       {

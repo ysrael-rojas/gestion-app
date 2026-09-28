@@ -20,7 +20,7 @@ function getErrorMessage(error: unknown): string {
 
 export default function VentasListadoPage() {
   const { clients } = useClientes();
-  const { sales, addSale, updateSale } = useVentas();
+  const { sales, isLoading, addSale, updateSale } = useVentas();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [viewingSale, setViewingSale] = useState<Sale | null>(null);
@@ -71,6 +71,7 @@ export default function VentasListadoPage() {
       <SalesDataTable
         sales={sales}
         clients={clients}
+        isLoading={isLoading}
         onView={openView}
         onEdit={openEdit}
       />
