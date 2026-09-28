@@ -10,15 +10,8 @@ import { SaleModal } from "@/components/ventas/sale-modal";
 import { SalesDataTable } from "@/components/ventas/sales-data-table";
 import type { Sale } from "@/components/ventas/types";
 import type { SaleFormValues } from "@/lib/schemas/sale";
+import { getTodayLocalDate } from "@/lib/utils";
 import { calculateAmounts } from "@/lib/ventas/amounts";
-
-function getTodayLocalDate(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 export default function VentasListadoPage() {
   const { clients } = useClientes();

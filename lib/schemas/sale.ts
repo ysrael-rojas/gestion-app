@@ -38,4 +38,5 @@ export const saleSchema = z.object({
   status: saleStatusEnum,
 });
 
-export type SaleFormValues = z.infer<typeof saleSchema>;
+export type SaleFormValues = z.output<typeof saleSchema>;
+export type SaleFormInput = z.input<typeof saleSchema>;
