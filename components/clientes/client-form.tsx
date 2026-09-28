@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -14,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import type { Client, DocumentType } from "@/components/clientes/types";
 import {
   DEFAULT_DOCUMENT_TYPE,
@@ -25,8 +25,9 @@ import { clientSchema, type ClientFormValues } from "@/lib/schemas/client";
 interface ClientFormProps {
   client?: Client | null;
   onSubmit: (values: ClientFormValues) => void;
-  submitLabel?: string;
 }
+
+export const CLIENT_FORM_ID = "client-form";
 
 const defaultValues: ClientFormValues = {
   documentType: DEFAULT_DOCUMENT_TYPE,
@@ -56,11 +57,25 @@ function FieldError({ message }: { message?: string }) {
   );
 }
 
-export function ClientForm({
-  client,
-  onSubmit,
-  submitLabel = "Guardar",
-}: ClientFormProps) {
+function FormGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <h3 className="text-sm font-medium">{title}</h3>
+        <Separator className="flex-1" />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>
+    </section>
+  );
+}
+
+export function ClientForm({ client, onSubmit }: ClientFormProps) {
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
     defaultValues,
@@ -98,124 +113,125 @@ export function ClientForm({
 
   return (
     <form
+      id={CLIENT_FORM_ID}
       onSubmit={form.handleSubmit(onSubmit)}
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-6"
     >
-      <Controller
-        control={form.control}
-        name="documentType"
-        render={({ field }) => (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="documentType">Tipo de documento</Label>
-            <Select
-              value={field.value}
-              items={documentTypeItems}
-              onValueChange={(value) => {
-                if (value === null) {
-                  return;
-                }
+      <FormGroup title="Datos del documento">
+        <Controller
+          control={form.control}
+          name="documentType"
+          render={({ field }) => (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="documentType">Tipo de documento</Label>
+              <Select
+                value={field.value}
+                items={documentTypeItems}
+                onValueChange={(value) => {
+                  if (value === null) {
+                    return;
+                  }
 
-                const next = value as DocumentType;
-                field.onChange(next);
+                  const next = value as DocumentType;
+                  field.onChange(next);
 
-                if (next === "SIN_DOCUMENTO") {
-                  form.setValue("documentNumber", "");
-                }
-              }}
-            >
-              <SelectTrigger id="documentType" className="w-full">
-                <SelectValue placeholder="Selecciona un tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {DOCUMENT_TYPES.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <FieldError message={errors.documentType?.message} />
-          </div>
-        )}
-      />
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="documentNumber">{documentNumberLabel}</Label>
-        <Input
-          id="documentNumber"
-          placeholder={documentTypeOption.placeholder}
-          disabled={isDocumentNumberDisabled}
-          aria-invalid={!!errors.documentNumber}
-          {...form.register("documentNumber")}
+                  if (next === "SIN_DOCUMENTO") {
+                    form.setValue("documentNumber", "");
+                  }
+                }}
+              >
+                <SelectTrigger id="documentType" className="w-full">
+                  <SelectValue placeholder="Selecciona un tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DOCUMENT_TYPES.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldError message={errors.documentType?.message} />
+            </div>
+          )}
         />
-        <FieldError message={errors.documentNumber?.message} />
-      </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="name">Nombre / Empresa</Label>
-        <Input
-          id="name"
-          placeholder="Nombre o razón social"
-          aria-invalid={!!errors.name}
-          {...form.register("name")}
-        />
-        <FieldError message={errors.name?.message} />
-      </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="documentNumber">{documentNumberLabel}</Label>
+          <Input
+            id="documentNumber"
+            placeholder={documentTypeOption.placeholder}
+            disabled={isDocumentNumberDisabled}
+            aria-invalid={!!errors.documentNumber}
+            {...form.register("documentNumber")}
+          />
+          <FieldError message={errors.documentNumber?.message} />
+        </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="address">Dirección</Label>
-        <Input
-          id="address"
-          placeholder="Dirección"
-          {...form.register("address")}
-        />
-      </div>
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label htmlFor="name">Nombre / Empresa</Label>
+          <Input
+            id="name"
+            placeholder="Nombre o razón social"
+            aria-invalid={!!errors.name}
+            {...form.register("name")}
+          />
+          <FieldError message={errors.name?.message} />
+        </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="phone">Teléfono</Label>
-        <Input
-          id="phone"
-          placeholder="Teléfono"
-          {...form.register("phone")}
-        />
-      </div>
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label htmlFor="address">Dirección</Label>
+          <Input
+            id="address"
+            placeholder="Dirección"
+            {...form.register("address")}
+          />
+        </div>
+      </FormGroup>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="contactName">Contacto</Label>
-        <Input
-          id="contactName"
-          placeholder="Nombre del contacto"
-          {...form.register("contactName")}
-        />
-      </div>
+      <FormGroup title="Datos de contacto">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="phone">Teléfono</Label>
+          <Input
+            id="phone"
+            placeholder="Teléfono"
+            {...form.register("phone")}
+          />
+        </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="billingEmail">Correo de facturación</Label>
-        <Input
-          id="billingEmail"
-          type="email"
-          placeholder="correo@empresa.com"
-          aria-invalid={!!errors.billingEmail}
-          {...form.register("billingEmail")}
-        />
-        <FieldError message={errors.billingEmail?.message} />
-      </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="contactName">Contacto</Label>
+          <Input
+            id="contactName"
+            placeholder="Nombre del contacto"
+            {...form.register("contactName")}
+          />
+        </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="managementEmail">Correo de gestión</Label>
-        <Input
-          id="managementEmail"
-          type="email"
-          placeholder="correo@empresa.com"
-          aria-invalid={!!errors.managementEmail}
-          {...form.register("managementEmail")}
-        />
-        <FieldError message={errors.managementEmail?.message} />
-      </div>
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label htmlFor="billingEmail">Correo de facturación</Label>
+          <Input
+            id="billingEmail"
+            type="email"
+            placeholder="correo@empresa.com"
+            aria-invalid={!!errors.billingEmail}
+            {...form.register("billingEmail")}
+          />
+          <FieldError message={errors.billingEmail?.message} />
+        </div>
 
-      <Button type="submit" className="mt-2">
-        {submitLabel}
-      </Button>
+        <div className="flex flex-col gap-1.5 sm:col-span-2">
+          <Label htmlFor="managementEmail">Correo de gestión</Label>
+          <Input
+            id="managementEmail"
+            type="email"
+            placeholder="correo@empresa.com"
+            aria-invalid={!!errors.managementEmail}
+            {...form.register("managementEmail")}
+          />
+          <FieldError message={errors.managementEmail?.message} />
+        </div>
+      </FormGroup>
     </form>
   );
 }

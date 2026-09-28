@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { ClientDetailModal } from "@/components/clientes/client-detail-modal";
 import { ClientModal } from "@/components/clientes/client-modal";
 import { ClientsDataTable } from "@/components/clientes/clients-data-table";
 import type { Client } from "@/components/clientes/types";
@@ -23,6 +24,7 @@ export default function ClientesListadoPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [viewingClient, setViewingClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
   function openCreate() {
@@ -33,6 +35,10 @@ export default function ClientesListadoPage() {
   function openEdit(client: Client) {
     setEditingClient(client);
     setModalOpen(true);
+  }
+
+  function openView(client: Client) {
+    setViewingClient(client);
   }
 
   function handleSave(values: ClientFormValues) {
@@ -78,6 +84,7 @@ export default function ClientesListadoPage() {
 
       <ClientsDataTable
         clients={clients}
+        onView={openView}
         onEdit={openEdit}
         onDelete={(client) => setClientToDelete(client)}
       />
@@ -92,6 +99,16 @@ export default function ClientesListadoPage() {
         }}
         client={editingClient}
         onSave={handleSave}
+      />
+
+      <ClientDetailModal
+        open={viewingClient !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewingClient(null);
+          }
+        }}
+        client={viewingClient}
       />
 
       <AlertDialog
