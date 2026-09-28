@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Building2, ChevronRight, Database, Users } from "lucide-react";
 
 import {
@@ -26,6 +28,8 @@ const menu = {
 };
 
 export function AppSidebar() {
+  const pathname = usePathname();
+
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
@@ -51,7 +55,10 @@ export function AppSidebar() {
                 <SidebarMenuSub>
                   {menu.items.map((item) => (
                     <SidebarMenuSubItem key={item.href}>
-                      <SidebarMenuSubButton>
+                      <SidebarMenuSubButton
+                        render={<Link href={item.href} />}
+                        isActive={pathname === item.href}
+                      >
                         <Users />
                         <span>{item.label}</span>
                       </SidebarMenuSubButton>
