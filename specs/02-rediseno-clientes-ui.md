@@ -1,6 +1,6 @@
 # SPEC 02 — Rediseño de UI del modal y listado de clientes
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 01
 > **Date:** 2026-09-28
 > **Objective:** Reorganizar la interfaz del modal y del listado de `/clientes/listado` con campos agrupados, footer de acciones y botones Ver/Editar/Eliminar con íconos.
@@ -40,23 +40,23 @@ Esta spec no introduce estructuras de datos nuevas. Reutiliza `Client` y `Client
 
 ## Acceptance criteria
 
-- [ ] El modal de alta muestra el header "Registrar cliente" y un footer visible.
-- [ ] En el footer, "Registrar" y "Cancelar" aparecen juntos, a la derecha y sin ocupar todo el ancho.
-- [ ] En alta el botón primario dice "Registrar"; en edición dice "Guardar cambios".
-- [ ] Tipo de documento y Número de documento están en la misma fila.
-- [ ] Nombre/Empresa está en su propia fila y Dirección en su propia fila.
-- [ ] El grupo "Datos del documento" se ve separado del grupo "Datos de contacto".
-- [ ] Teléfono y Contacto están en la misma fila.
-- [ ] Correo de facturación y Correo de gestión ocupan cada uno su propia fila.
-- [ ] El modal usa `sm:max-w-2xl`.
-- [ ] Guardar desde el footer registra (alta) o actualiza (edición) igual que antes.
-- [ ] Cancelar cierra el modal sin guardar ni añadir filas.
-- [ ] El listado muestra tres botones de ícono en horizontal: Ver, Editar, Eliminar.
-- [ ] Cada botón muestra su tooltip.
-- [ ] Ver abre un modal de solo lectura con todos los campos y un botón "Cerrar".
-- [ ] Editar abre el modal precargado y Eliminar abre el `AlertDialog`, sin regresiones.
-- [ ] Búsqueda global, orden y paginación siguen funcionando.
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] El modal de alta muestra el header "Registrar cliente" y un footer visible.
+- [x] En el footer, "Registrar" y "Cancelar" aparecen juntos, a la derecha y sin ocupar todo el ancho.
+- [x] En alta el botón primario dice "Registrar"; en edición dice "Guardar cambios".
+- [x] Tipo de documento y Número de documento están en la misma fila.
+- [x] Nombre/Empresa está en su propia fila y Dirección en su propia fila.
+- [x] El grupo "Datos del documento" se ve separado del grupo "Datos de contacto".
+- [x] Teléfono y Contacto están en la misma fila.
+- [x] Correo de facturación y Correo de gestión ocupan cada uno su propia fila.
+- [x] El modal usa `sm:max-w-2xl`.
+- [x] Guardar desde el footer registra (alta) o actualiza (edición) igual que antes.
+- [x] Cancelar cierra el modal sin guardar ni añadir filas.
+- [x] El listado muestra tres botones de ícono en horizontal: Ver, Editar, Eliminar.
+- [x] Cada botón muestra su tooltip.
+- [x] Ver abre un modal de solo lectura con todos los campos y un botón "Cerrar".
+- [x] Editar abre el modal precargado y Eliminar abre el `AlertDialog`, sin regresiones.
+- [x] Búsqueda global, orden y paginación siguen funcionando.
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
