@@ -1,52 +1,118 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import type { Client } from "@/components/clientes/types";
+import {
+  createClientRecord,
+  listClients,
+  softDeleteClient,
+  updateClientRecord,
+} from "@/lib/clientes/entidades";
 import type { ClientFormValues } from "@/lib/schemas/client";
 
 interface ClientesContextValue {
   clients: Client[];
-  addClient: (values: ClientFormValues) => void;
-  updateClient: (id: string, values: ClientFormValues) => void;
-  removeClient: (id: string) => void;
+  isLoading: boolean;
+  error: string | null;
+  addClient: (values: ClientFormValues) => Promise<void>;
+  updateClient: (id: string, values: ClientFormValues) => Promise<void>;
+  removeClient: (id: string) => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const ClientesContext = createContext<ClientesContextValue | null>(null);
 
-function toClient(values: ClientFormValues): Omit<Client, "id"> {
-  return {
-    ...values,
-    documentNumber:
-      values.documentType === "SIN_DOCUMENTO" ? "" : values.documentNumber,
-  };
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "Ocurrió un error inesperado. Intenta nuevamente.";
 }
 
 export function ClientesProvider({ children }: { children: React.ReactNode }) {
   const [clients, setClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(true);
 
-  const addClient = useCallback((values: ClientFormValues) => {
-    setClients((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), ...toClient(values) },
-    ]);
+  useEffect(() => {
+    isMounted.current = true;
+
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
-  const updateClient = useCallback((id: string, values: ClientFormValues) => {
-    setClients((prev) =>
-      prev.map((client) =>
-        client.id === id ? { ...client, ...toClient(values) } : client
-      )
-    );
+  const refresh = useCallback(async () => {
+    try {
+      const data = await listClients();
+
+      if (!isMounted.current) {
+        return;
+      }
+
+      setClients(data);
+      setError(null);
+    } catch (err) {
+      if (!isMounted.current) {
+        return;
+      }
+
+      setError(getErrorMessage(err));
+    } finally {
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
+    }
   }, []);
 
-  const removeClient = useCallback((id: string) => {
-    setClients((prev) => prev.filter((client) => client.id !== id));
-  }, []);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const addClient = useCallback(
+    async (values: ClientFormValues) => {
+      await createClientRecord(values);
+      await refresh();
+    },
+    [refresh]
+  );
+
+  const updateClient = useCallback(
+    async (id: string, values: ClientFormValues) => {
+      await updateClientRecord(id, values);
+      await refresh();
+    },
+    [refresh]
+  );
+
+  const removeClient = useCallback(
+    async (id: string) => {
+      await softDeleteClient(id);
+      await refresh();
+    },
+    [refresh]
+  );
 
   const value = useMemo(
-    () => ({ clients, addClient, updateClient, removeClient }),
-    [clients, addClient, updateClient, removeClient]
+    () => ({
+      clients,
+      isLoading,
+      error,
+      addClient,
+      updateClient,
+      removeClient,
+      refresh,
+    }),
+    [clients, isLoading, error, addClient, updateClient, removeClient, refresh]
   );
 
   return (
