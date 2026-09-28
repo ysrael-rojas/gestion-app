@@ -2,12 +2,17 @@
 
 import { Button } from "@/components/ui/button";
 import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Dialog,
   DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Client } from "@/components/clientes/types";
@@ -47,34 +52,73 @@ export function ClientDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Detalle del cliente</DialogTitle>
-          <DialogDescription>
-            Información registrada del cliente
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <DetailField label="Tipo de documento" value={getDocumentLabel(client)} />
-          <DetailField
-            label="Número de documento"
-            value={client.documentType === "SIN_DOCUMENTO" ? "" : client.documentNumber}
-          />
-          <DetailField label="Nombre / Empresa" value={client.name} />
-          <DetailField label="Dirección" value={client.address} />
-          <DetailField label="Teléfono" value={client.phone} />
-          <DetailField label="Contacto" value={client.contactName} />
-          <DetailField
-            label="Correo de facturación"
-            value={client.billingEmail}
-          />
-          <DetailField label="Correo de gestión" value={client.managementEmail} />
-        </div>
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>
-            Cerrar
-          </DialogClose>
-        </DialogFooter>
+      <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-2xl">
+        <Card className="ring-0">
+          <CardHeader>
+            <DialogTitle>Detalle del cliente</DialogTitle>
+            <DialogDescription>
+              Información registrada del cliente
+            </DialogDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <Card className="bg-muted/30 ring-0">
+              <CardHeader>
+                <CardTitle>Datos del documento</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <DetailField
+                    label="Tipo de documento"
+                    value={getDocumentLabel(client)}
+                  />
+                  <DetailField
+                    label="Número de documento"
+                    value={
+                      client.documentType === "SIN_DOCUMENTO"
+                        ? ""
+                        : client.documentNumber
+                    }
+                  />
+                  <div className="sm:col-span-2">
+                    <DetailField label="Nombre / Empresa" value={client.name} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <DetailField label="Dirección" value={client.address} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-muted/30 ring-0">
+              <CardHeader>
+                <CardTitle>Datos de contacto</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <DetailField label="Teléfono" value={client.phone} />
+                  <DetailField label="Contacto" value={client.contactName} />
+                  <div className="sm:col-span-2">
+                    <DetailField
+                      label="Correo de facturación"
+                      value={client.billingEmail}
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <DetailField
+                      label="Correo de gestión"
+                      value={client.managementEmail}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </CardContent>
+          <CardFooter className="justify-end">
+            <DialogClose render={<Button variant="outline" />}>
+              Cerrar
+            </DialogClose>
+          </CardFooter>
+        </Card>
       </DialogContent>
     </Dialog>
   );
