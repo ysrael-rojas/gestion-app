@@ -27,6 +27,8 @@ export const SALE_STATUSES: SelectOption<SaleStatus>[] = [
 
 export const DEFAULT_SALE_STATUS: SaleStatus = "PENDIENTE";
 
+export const DEFAULT_CREDIT_DAYS = 30;
+
 export function getOptionLabel<T extends string>(
   options: SelectOption<T>[],
   value: T
