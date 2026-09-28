@@ -1,6 +1,6 @@
 # SPEC 06 — Conexión de clientes a Supabase (tabla `entidad`)
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 01, SPEC 03, SPEC 05
 > **Date:** 2026-09-28
 > **Objective:** Persistir en Supabase (tabla `entidad`) el registro, listado, edición y baja lógica de clientes de `/clientes/listado`, sustituyendo el estado en memoria del `ClientesProvider` por acceso a la base de datos.
@@ -158,20 +158,20 @@ Convenciones:
 
 ## Acceptance criteria
 
-- [ ] Existe la tabla `public.entidad` con las columnas, checks, índices y trigger descritos, y RLS habilitado con las 3 políticas.
-- [ ] El tipo `document_type` contiene `SIN_DOCUMENTO`, `RUC`, `DNI`, `CARNET_EXTRANJERIA` y su default es `SIN_DOCUMENTO`.
-- [ ] `.env.template` documenta `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; `.env` las tiene con valores reales y sigue ignorado por git.
-- [ ] `/clientes/listado` muestra un skeleton mientras carga y luego las filas de la DB.
-- [ ] Registrar un cliente válido lo inserta en `entidad` con `is_client = true`, `is_supplier = false` y `deleted_at = null`; aparece en la tabla y persiste al recargar la página.
-- [ ] Registrar con `SIN_DOCUMENTO` guarda `document_number = ''`; con `RUC`/`DNI`/`CARNET_EXTRANJERIA` exige el formato correcto.
-- [ ] Un `document_number` duplicado para el mismo tipo devuelve error visible (toast) y no inserta.
-- [ ] Editar un cliente actualiza la misma fila en la DB sin duplicarla.
-- [ ] Eliminar setea `deleted_at` (la fila sigue en la DB), desaparece de la lista y no reaparece al recargar.
-- [ ] Si una operación contra Supabase falla, se muestra un `toast.error` en español sin romper la página.
-- [ ] Búsqueda global, orden por columna y paginación siguen funcionando sobre las filas cargadas.
-- [ ] El modal de detalle sigue mostrando los datos del cliente.
-- [ ] El selector de cliente de `/ventas/listado` lista los clientes de la DB.
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] Existe la tabla `public.entidad` con las columnas, checks, índices y trigger descritos, y RLS habilitado con las 3 políticas.
+- [x] El tipo `document_type` contiene `SIN_DOCUMENTO`, `RUC`, `DNI`, `CARNET_EXTRANJERIA` y su default es `SIN_DOCUMENTO`.
+- [x] `.env.template` documenta `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; `.env` las tiene con valores reales y sigue ignorado por git.
+- [x] `/clientes/listado` muestra un skeleton mientras carga y luego las filas de la DB.
+- [x] Registrar un cliente válido lo inserta en `entidad` con `is_client = true`, `is_supplier = false` y `deleted_at = null`; aparece en la tabla y persiste al recargar la página.
+- [x] Registrar con `SIN_DOCUMENTO` guarda `document_number = ''`; con `RUC`/`DNI`/`CARNET_EXTRANJERIA` exige el formato correcto.
+- [x] Un `document_number` duplicado para el mismo tipo devuelve error visible (toast) y no inserta.
+- [x] Editar un cliente actualiza la misma fila en la DB sin duplicarla.
+- [x] Eliminar setea `deleted_at` (la fila sigue en la DB), desaparece de la lista y no reaparece al recargar.
+- [x] Si una operación contra Supabase falla, se muestra un `toast.error` en español sin romper la página.
+- [x] Búsqueda global, orden por columna y paginación siguen funcionando sobre las filas cargadas.
+- [x] El modal de detalle sigue mostrando los datos del cliente.
+- [x] El selector de cliente de `/ventas/listado` lista los clientes de la DB.
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
