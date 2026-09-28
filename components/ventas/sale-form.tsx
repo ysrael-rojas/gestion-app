@@ -26,6 +26,7 @@ import type {
   VoucherType,
 } from "@/components/ventas/types";
 import {
+  DEFAULT_CREDIT_DAYS,
   DEFAULT_SALE_STATUS,
   PAYMENT_TYPES,
   SALE_STATUSES,
@@ -37,7 +38,7 @@ import {
   type SaleFormValues,
 } from "@/lib/schemas/sale";
 import { formatCurrency, getTodayLocalDate } from "@/lib/utils";
-import { calculateAmounts } from "@/lib/ventas/amounts";
+import { calculateAmounts, calculateDueDate } from "@/lib/ventas/amounts";
 
 interface SaleFormProps {
   sale?: Sale | null;
@@ -51,9 +52,10 @@ function createEmptyValues(): SaleFormInput {
     issueDate: getTodayLocalDate(),
     voucherType: "" as VoucherType,
     voucherNumber: "",
-    clientId: "",
+    entityId: "",
     total: "",
     paymentType: "" as PaymentType,
+    creditDays: "",
     status: DEFAULT_SALE_STATUS,
   };
 }
@@ -119,9 +121,10 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
             issueDate: sale.issueDate,
             voucherType: sale.voucherType,
             voucherNumber: sale.voucherNumber,
-            clientId: sale.clientId,
+            entityId: sale.entityId,
             total: sale.total,
             paymentType: sale.paymentType,
+            creditDays: sale.creditDays ?? "",
             status: sale.status,
           }
         : createEmptyValues()
@@ -133,6 +136,17 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
   const { subtotal, igv } = calculateAmounts(
     Number.isFinite(numericTotal) ? numericTotal : 0
   );
+
+  const paymentType = useWatch({ control: form.control, name: "paymentType" });
+  const issueDate = useWatch({ control: form.control, name: "issueDate" });
+  const creditDays = useWatch({ control: form.control, name: "creditDays" });
+
+  const isCredit = paymentType === "CREDITO";
+  const numericCreditDays = Number(creditDays);
+  const dueDate =
+    isCredit && issueDate && Number.isFinite(numericCreditDays) && numericCreditDays >= 1
+      ? calculateDueDate(issueDate, numericCreditDays)
+      : "";
 
   const registrationDate = sale?.registrationDate ?? getTodayLocalDate();
   const clientItems = clients.map((client) => ({
@@ -213,16 +227,16 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
 
         <Controller
           control={form.control}
-          name="clientId"
+          name="entityId"
           render={({ field }) => (
             <div className="flex flex-col gap-1.5 sm:col-span-2">
-              <Label htmlFor="clientId">Cliente</Label>
+              <Label htmlFor="entityId">Cliente</Label>
               <Select
                 value={field.value ? field.value : null}
                 items={clientItems}
                 onValueChange={(value) => field.onChange(value ?? "")}
               >
-                <SelectTrigger id="clientId" className="w-full">
+                <SelectTrigger id="entityId" className="w-full">
                   <SelectValue
                     placeholder={
                       isLoading
@@ -241,7 +255,7 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError message={errors.clientId?.message} />
+              <FieldError message={errors.entityId?.message} />
             </div>
           )}
         />
@@ -288,9 +302,14 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
               <Select
                 value={field.value ? field.value : null}
                 items={paymentTypeItems}
-                onValueChange={(value) =>
-                  field.onChange(value ?? ("" as PaymentType))
-                }
+                onValueChange={(value) => {
+                  const next = value ?? ("" as PaymentType);
+                  field.onChange(next);
+                  form.setValue(
+                    "creditDays",
+                    next === "CREDITO" ? DEFAULT_CREDIT_DAYS : ""
+                  );
+                }}
               >
                 <SelectTrigger id="paymentType" className="w-full">
                   <SelectValue placeholder="Selecciona un tipo" />
@@ -307,6 +326,35 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
             </div>
           )}
         />
+
+        {isCredit ? (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="creditDays">Días de crédito</Label>
+              <Input
+                id="creditDays"
+                type="number"
+                step="1"
+                min="1"
+                placeholder="30"
+                aria-invalid={!!errors.creditDays}
+                {...form.register("creditDays")}
+              />
+              <FieldError message={errors.creditDays?.message} />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="dueDate">Fecha de vencimiento</Label>
+              <Input
+                id="dueDate"
+                type="date"
+                value={dueDate}
+                readOnly
+                disabled
+              />
+            </div>
+          </>
+        ) : null}
 
         <Controller
           control={form.control}
