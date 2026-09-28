@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      comprobante: {
+        Row: {
+          created_at: string
+          credit_days: number | null
+          deleted_at: string | null
+          due_date: string | null
+          entity_id: string
+          id: string
+          igv: number
+          issue_date: string
+          payment_type: Database["public"]["Enums"]["payment_type"]
+          registration_date: string
+          status: Database["public"]["Enums"]["comprobante_status"]
+          subtotal: number
+          total: number
+          updated_at: string
+          voucher_kind: Database["public"]["Enums"]["voucher_kind"]
+          voucher_number: string
+          voucher_type: Database["public"]["Enums"]["voucher_type"]
+        }
+        Insert: {
+          created_at?: string
+          credit_days?: number | null
+          deleted_at?: string | null
+          due_date?: string | null
+          entity_id: string
+          id?: string
+          igv: number
+          issue_date: string
+          payment_type: Database["public"]["Enums"]["payment_type"]
+          registration_date?: string
+          status?: Database["public"]["Enums"]["comprobante_status"]
+          subtotal: number
+          total: number
+          updated_at?: string
+          voucher_kind: Database["public"]["Enums"]["voucher_kind"]
+          voucher_number: string
+          voucher_type: Database["public"]["Enums"]["voucher_type"]
+        }
+        Update: {
+          created_at?: string
+          credit_days?: number | null
+          deleted_at?: string | null
+          due_date?: string | null
+          entity_id?: string
+          id?: string
+          igv?: number
+          issue_date?: string
+          payment_type?: Database["public"]["Enums"]["payment_type"]
+          registration_date?: string
+          status?: Database["public"]["Enums"]["comprobante_status"]
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          voucher_kind?: Database["public"]["Enums"]["voucher_kind"]
+          voucher_number?: string
+          voucher_type?: Database["public"]["Enums"]["voucher_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comprobante_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entidad"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entidad: {
         Row: {
           address: string
@@ -73,7 +141,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      comprobante_status: "PAGADO" | "PENDIENTE"
       document_type: "SIN_DOCUMENTO" | "RUC" | "DNI" | "CARNET_EXTRANJERIA"
+      payment_type: "CONTADO" | "CREDITO"
+      voucher_kind: "COMPRA" | "VENTA"
+      voucher_type: "FACTURA" | "BOLETA" | "NOTA_VENTA"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -201,7 +273,11 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      comprobante_status: ["PAGADO", "PENDIENTE"],
       document_type: ["SIN_DOCUMENTO", "RUC", "DNI", "CARNET_EXTRANJERIA"],
+      payment_type: ["CONTADO", "CREDITO"],
+      voucher_kind: ["COMPRA", "VENTA"],
+      voucher_type: ["FACTURA", "BOLETA", "NOTA_VENTA"],
     },
   },
 } as const
