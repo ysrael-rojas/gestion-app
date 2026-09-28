@@ -8,14 +8,19 @@ import { useClientes } from "@/components/clientes/clientes-provider";
 import { SaleDetailModal } from "@/components/ventas/sale-detail-modal";
 import { SaleModal } from "@/components/ventas/sale-modal";
 import { SalesDataTable } from "@/components/ventas/sales-data-table";
+import { useVentas } from "@/components/ventas/ventas-provider";
 import type { Sale } from "@/components/ventas/types";
 import type { SaleFormValues } from "@/lib/schemas/sale";
-import { getTodayLocalDate } from "@/lib/utils";
-import { calculateAmounts } from "@/lib/ventas/amounts";
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "No se pudo guardar la venta. Intenta nuevamente.";
+}
 
 export default function VentasListadoPage() {
   const { clients } = useClientes();
-  const [sales, setSales] = useState<Sale[]>([]);
+  const { sales, addSale, updateSale } = useVentas();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [viewingSale, setViewingSale] = useState<Sale | null>(null);
@@ -34,38 +39,21 @@ export default function VentasListadoPage() {
     setViewingSale(sale);
   }
 
-  function handleSave(values: SaleFormValues) {
-    const amounts = calculateAmounts(values.total);
+  async function handleSave(values: SaleFormValues) {
+    try {
+      if (editingSale) {
+        await updateSale(editingSale.id, values);
+        toast.success("Venta actualizada");
+      } else {
+        await addSale(values);
+        toast.success("Venta registrada");
+      }
 
-    if (editingSale) {
-      setSales((prev) =>
-        prev.map((sale) =>
-          sale.id === editingSale.id
-            ? {
-                ...sale,
-                ...values,
-                ...amounts,
-                registrationDate: sale.registrationDate,
-              }
-            : sale
-        )
-      );
-      toast.success("Venta actualizada");
-    } else {
-      setSales((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          registrationDate: getTodayLocalDate(),
-          ...values,
-          ...amounts,
-        },
-      ]);
-      toast.success("Venta registrada");
+      setModalOpen(false);
+      setEditingSale(null);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
-
-    setModalOpen(false);
-    setEditingSale(null);
   }
 
   return (
