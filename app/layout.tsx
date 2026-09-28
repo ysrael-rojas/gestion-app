@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "@/components/app-sidebar";
+import { ClientesProvider } from "@/components/clientes/clientes-provider";
 import {
   SidebarInset,
   SidebarProvider,
@@ -37,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
               <SidebarTrigger />
             </header>
-            {children}
+            <ClientesProvider>{children}</ClientesProvider>
           </SidebarInset>
         </SidebarProvider>
         <Toaster />
