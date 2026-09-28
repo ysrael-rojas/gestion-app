@@ -2,12 +2,16 @@
 
 import { Button } from "@/components/ui/button";
 import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+import {
   Dialog,
   DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 
@@ -32,26 +36,30 @@ export function ClientModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Editar cliente" : "Registrar cliente"}
-          </DialogTitle>
-          <DialogDescription>
-            {isEditing
-              ? "Modifica los datos del cliente"
-              : "Completa los datos para registrar un nuevo cliente"}
-          </DialogDescription>
-        </DialogHeader>
-        <ClientForm client={client} onSubmit={onSave} />
-        <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>
-            Cancelar
-          </DialogClose>
-          <Button type="submit" form={CLIENT_FORM_ID}>
-            {isEditing ? "Guardar cambios" : "Registrar"}
-          </Button>
-        </DialogFooter>
+      <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-2xl">
+        <Card className="ring-0">
+          <CardHeader>
+            <DialogTitle>
+              {isEditing ? "Editar cliente" : "Registrar cliente"}
+            </DialogTitle>
+            <DialogDescription>
+              {isEditing
+                ? "Modifica los datos del cliente"
+                : "Completa los datos para registrar un nuevo cliente"}
+            </DialogDescription>
+          </CardHeader>
+          <CardContent>
+            <ClientForm client={client} onSubmit={onSave} />
+          </CardContent>
+          <CardFooter className="justify-end gap-2">
+            <DialogClose render={<Button variant="outline" />}>
+              Cancelar
+            </DialogClose>
+            <Button type="submit" form={CLIENT_FORM_ID}>
+              {isEditing ? "Guardar cambios" : "Registrar"}
+            </Button>
+          </CardFooter>
+        </Card>
       </DialogContent>
     </Dialog>
   );
