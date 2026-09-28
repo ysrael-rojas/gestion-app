@@ -13,7 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import type { Client, DocumentType } from "@/components/clientes/types";
 import {
   DEFAULT_DOCUMENT_TYPE,
@@ -65,13 +70,14 @@ function FormGroup({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <h3 className="text-sm font-medium">{title}</h3>
-        <Separator className="flex-1" />
-      </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>
-    </section>
+    <Card className="bg-muted/30 ring-0">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</div>
+      </CardContent>
+    </Card>
   );
 }
 
