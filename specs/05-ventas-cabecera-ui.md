@@ -1,6 +1,6 @@
 # SPEC 05 — Listado, registro y edición de ventas (cabecera)
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 01, SPEC 03, SPEC 04
 > **Date:** 2026-09-28
 > **Objective:** Construir en `/ventas/listado` un data table en memoria de comprobantes de venta (solo cabecera) con modal de registro/edición, selección de cliente existente, cálculo automático de subtotal e IGV desde el total y el ítem VENTAS en el sidebar.
@@ -96,21 +96,21 @@ Convenciones:
 
 ## Acceptance criteria
 
-- [ ] `ClientesProvider` está montado en `app/layout.tsx` y `app/clientes/listado/page.tsx` consume `useClientes()` sin regresiones.
-- [ ] `/ventas/listado` renderiza sin errores en consola.
-- [ ] El botón **Registrar venta** abre el modal con el formulario vacío; fecha emisión = hoy y fecha registro = hoy (solo lectura).
-- [ ] El select de cliente lista los clientes registrados en `/clientes/listado`.
-- [ ] Al escribir el total, subtotal e IGV se calculan solos (`subtotal = total / 1.18`) con 2 decimales y no son editables.
-- [ ] Enviar sin tipo comprobante, nro, cliente, tipo pago o con total ≤ 0 muestra errores y no envía.
-- [ ] Un envío válido muestra toast de éxito, cierra el modal, limpia el formulario y agrega una fila con estado PENDIENTE.
-- [ ] La tabla muestra las columnas Fecha emisión, Tipo comprobante, Nro comprobante, Cliente, Total, Tipo pago y Estado.
-- [ ] La búsqueda global y la paginación funcionan.
-- [ ] **Ver** abre el detalle con fecha registro, montos y datos del cliente.
-- [ ] **Imprimir** aparece en la fila pero no ejecuta ninguna acción.
-- [ ] **Editar** abre el modal con título "Editar venta" y campos precargados; guardar actualiza la fila sin duplicarla.
-- [ ] El sidebar muestra el ítem **VENTAS** que navega a `/ventas/listado` y se resalta como activo.
-- [ ] Recargar la página borra las ventas (solo memoria).
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] `ClientesProvider` está montado en `app/layout.tsx` y `app/clientes/listado/page.tsx` consume `useClientes()` sin regresiones.
+- [x] `/ventas/listado` renderiza sin errores en consola.
+- [x] El botón **Registrar venta** abre el modal con el formulario vacío; fecha emisión = hoy y fecha registro = hoy (solo lectura).
+- [x] El select de cliente lista los clientes registrados en `/clientes/listado`.
+- [x] Al escribir el total, subtotal e IGV se calculan solos (`subtotal = total / 1.18`) con 2 decimales y no son editables.
+- [x] Enviar sin tipo comprobante, nro, cliente, tipo pago o con total ≤ 0 muestra errores y no envía.
+- [x] Un envío válido muestra toast de éxito, cierra el modal, limpia el formulario y agrega una fila con estado PENDIENTE.
+- [x] La tabla muestra las columnas Fecha emisión, Tipo comprobante, Nro comprobante, Cliente, Total, Tipo pago y Estado.
+- [x] La búsqueda global y la paginación funcionan.
+- [x] **Ver** abre el detalle con fecha registro, montos y datos del cliente.
+- [x] **Imprimir** aparece en la fila pero no ejecuta ninguna acción.
+- [x] **Editar** abre el modal con título "Editar venta" y campos precargados; guardar actualiza la fila sin duplicarla.
+- [x] El sidebar muestra el ítem **VENTAS** que navega a `/ventas/listado` y se resalta como activo.
+- [x] Recargar la página borra las ventas (solo memoria).
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
