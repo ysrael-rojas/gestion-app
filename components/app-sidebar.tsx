@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Database,
   Receipt,
+  ShoppingCart,
   Users,
 } from "lucide-react";
 
@@ -81,6 +82,16 @@ export function AppSidebar() {
               >
                 <Receipt />
                 <span>VENTAS</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link href="/compras/listado" />}
+                isActive={pathname === "/compras/listado"}
+                tooltip="COMPRAS"
+              >
+                <ShoppingCart />
+                <span>COMPRAS</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

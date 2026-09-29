@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ClientesProvider } from "@/components/clientes/clientes-provider";
+import { ComprasProvider } from "@/components/compras/compras-provider";
 import { VentasProvider } from "@/components/ventas/ventas-provider";
 import {
   SidebarInset,
@@ -40,7 +41,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <SidebarTrigger />
             </header>
             <ClientesProvider>
-              <VentasProvider>{children}</VentasProvider>
+              <VentasProvider>
+                <ComprasProvider>{children}</ComprasProvider>
+              </VentasProvider>
             </ClientesProvider>
           </SidebarInset>
         </SidebarProvider>

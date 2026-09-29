@@ -14,4 +14,5 @@ export interface Client {
   contactName: string;
   billingEmail: string;
   managementEmail: string;
+  isSupplier?: boolean;
 }

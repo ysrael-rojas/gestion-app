@@ -15,6 +15,7 @@ type EntityMutation = Pick<
   | "contact_name"
   | "billing_email"
   | "management_email"
+  | "is_supplier"
 >;
 
 function mapFormValues(values: ClientFormValues): EntityMutation {
@@ -28,6 +29,7 @@ function mapFormValues(values: ClientFormValues): EntityMutation {
     contact_name: values.contactName,
     billing_email: values.billingEmail,
     management_email: values.managementEmail,
+    is_supplier: values.isSupplier,
   };
 }
 
@@ -42,6 +44,7 @@ function mapRow(row: EntityRow): Client {
     contactName: row.contact_name,
     billingEmail: row.billing_email,
     managementEmail: row.management_email,
+    isSupplier: row.is_supplier,
   };
 }
 
@@ -72,12 +75,27 @@ export async function listClients(): Promise<Client[]> {
   return (data as EntityRow[]).map(mapRow);
 }
 
+export async function listSuppliers(): Promise<Client[]> {
+  const { data, error } = await supabase
+    .from("entidad")
+    .select("*")
+    .eq("is_supplier", true)
+    .is("deleted_at", null)
+    .order("name", { ascending: true });
+
+  if (error) {
+    throw mapError(error);
+  }
+
+  return (data as EntityRow[]).map(mapRow);
+}
+
 export async function createClientRecord(
   values: ClientFormValues
 ): Promise<Client> {
   const { data, error } = await supabase
     .from("entidad")
-    .insert({ ...mapFormValues(values), is_client: true, is_supplier: false })
+    .insert({ ...mapFormValues(values), is_client: true })
     .select()
     .single();
 
