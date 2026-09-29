@@ -1,0 +1,193 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import type {
+  AllocationInput,
+  PaymentDirection,
+  VoucherBalance,
+} from "@/components/pagos/types";
+import { getOptionLabel, VOUCHER_TYPES } from "@/lib/data/sale-options";
+import { listOpenVouchers } from "@/lib/pagos/pagos";
+import { formatCurrency, formatDate } from "@/lib/utils";
+
+interface AllocationPickerProps {
+  direction: PaymentDirection;
+  entityId: string;
+  amount: number;
+  value: AllocationInput[];
+  onChange: (allocations: AllocationInput[]) => void;
+}
+
+const SKELETON_ROWS = 3;
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+export function AllocationPicker({
+  direction,
+  entityId,
+  amount,
+  value,
+  onChange,
+}: AllocationPickerProps) {
+  const [vouchers, setVouchers] = useState<VoucherBalance[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void (async () => {
+      if (!entityId) {
+        if (isMounted) {
+          setVouchers([]);
+        }
+        return;
+      }
+
+      if (isMounted) {
+        setIsLoading(true);
+      }
+
+      try {
+        const data = await listOpenVouchers(direction, entityId);
+
+        if (isMounted) {
+          setVouchers(data);
+        }
+      } catch {
+        if (isMounted) {
+          setVouchers([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [direction, entityId]);
+
+  const assigned = useMemo(
+    () => value.reduce((sum, item) => sum + item.amount, 0),
+    [value]
+  );
+  const unassigned = Math.max(0, round2(amount - assigned));
+
+  function getSelectedAmount(comprobanteId: string): number {
+    return (
+      value.find((item) => item.comprobanteId === comprobanteId)?.amount ?? 0
+    );
+  }
+
+  function toggle(voucher: VoucherBalance, checked: boolean) {
+    if (checked) {
+      const defaultAmount =
+        unassigned > 0 ? Math.min(voucher.balance, unassigned) : voucher.balance;
+
+      onChange([
+        ...value,
+        { comprobanteId: voucher.comprobanteId, amount: round2(defaultAmount) },
+      ]);
+    } else {
+      onChange(
+        value.filter((item) => item.comprobanteId !== voucher.comprobanteId)
+      );
+    }
+  }
+
+  function updateAmount(voucher: VoucherBalance, raw: string) {
+    const parsed = Number(raw);
+    const next =
+      Number.isFinite(parsed) && parsed > 0
+        ? round2(Math.min(parsed, voucher.balance))
+        : 0;
+
+    onChange(
+      value.map((item) =>
+        item.comprobanteId === voucher.comprobanteId
+          ? { ...item, amount: next }
+          : item
+      )
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <Label>Asignar a comprobantes</Label>
+        <span className="text-sm text-muted-foreground">
+          Saldo sin asignar: {formatCurrency(unassigned)}
+        </span>
+      </div>
+
+      {!entityId ? (
+        <p className="text-sm text-muted-foreground">
+          Selecciona una entidad para ver sus comprobantes con saldo.
+        </p>
+      ) : isLoading ? (
+        <div className="flex flex-col gap-2">
+          {Array.from({ length: SKELETON_ROWS }).map((_, index) => (
+            <Skeleton key={index} className="h-12 w-full" />
+          ))}
+        </div>
+      ) : vouchers.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Sin facturas con saldo. El pago se registrará como anticipo.
+        </p>
+      ) : (
+        <div className="flex flex-col divide-y rounded-md border">
+          {vouchers.map((voucher) => {
+            const selected = value.some(
+              (item) => item.comprobanteId === voucher.comprobanteId
+            );
+
+            return (
+              <div
+                key={voucher.comprobanteId}
+                className="flex items-center gap-3 p-3"
+              >
+                <Checkbox
+                  checked={selected}
+                  onCheckedChange={(checked) => toggle(voucher, checked)}
+                />
+                <div className="flex flex-1 flex-col">
+                  <span className="text-sm font-medium">
+                    {getOptionLabel(VOUCHER_TYPES, voucher.voucherType)}{" "}
+                    {voucher.voucherNumber}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Vence:{" "}
+                    {voucher.effectiveDueDate
+                      ? formatDate(voucher.effectiveDueDate)
+                      : "—"}{" "}
+                    · Saldo: {formatCurrency(voucher.balance)}
+                  </span>
+                </div>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={voucher.balance}
+                  disabled={!selected}
+                  value={selected ? getSelectedAmount(voucher.comprobanteId) : ""}
+                  onChange={(event) => updateAmount(voucher, event.target.value)}
+                  className="w-32"
+                  aria-label={`Importe a asignar a ${voucher.voucherNumber}`}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

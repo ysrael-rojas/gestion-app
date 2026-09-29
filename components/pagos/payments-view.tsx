@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTable, type SortingState } from "@tanstack/react-table";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,12 +18,14 @@ import {
 import type { Client } from "@/components/clientes/types";
 import { useClientes } from "@/components/clientes/clientes-provider";
 import { usePagos } from "@/components/pagos/pagos-provider";
+import { PaymentModal } from "@/components/pagos/payment-modal";
 import {
   getPaymentsColumns,
   paymentsTableFeatures,
   type PaymentsRow,
 } from "@/components/pagos/payments-columns";
 import type { PaymentDirection } from "@/components/pagos/types";
+import type { PaymentFormValues } from "@/lib/schemas/payment";
 
 const SKELETON_ROWS = 5;
 
@@ -60,11 +63,26 @@ interface PaymentsViewProps {
 }
 
 export function PaymentsView({ direction }: PaymentsViewProps) {
-  const { payments, isLoading } = usePagos();
+  const { payments, isLoading, addPayment } = usePagos();
   const { clients } = useClientes();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
   const labels = VIEW_LABELS[direction];
+
+  async function handleSave(values: PaymentFormValues) {
+    try {
+      await addPayment(values);
+      toast.success("Pago registrado");
+      setModalOpen(false);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "No se pudo registrar el pago. Intenta nuevamente."
+      );
+    }
+  }
 
   const data = useMemo<PaymentsRow[]>(
     () =>
@@ -105,12 +123,15 @@ export function PaymentsView({ direction }: PaymentsViewProps) {
       </div>
 
       <div className="flex flex-col gap-4">
-        <Input
-          placeholder={labels.search}
-          value={globalFilter}
-          onChange={(event) => setGlobalFilter(event.target.value)}
-          className="max-w-sm"
-        />
+        <div className="flex items-center justify-between gap-4">
+          <Input
+            placeholder={labels.search}
+            value={globalFilter}
+            onChange={(event) => setGlobalFilter(event.target.value)}
+            className="max-w-sm"
+          />
+          <Button onClick={() => setModalOpen(true)}>Registrar pago</Button>
+        </div>
 
         <div className="overflow-hidden rounded-md border">
           <Table>
@@ -183,6 +204,13 @@ export function PaymentsView({ direction }: PaymentsViewProps) {
           </Button>
         </div>
       </div>
+
+      <PaymentModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        direction={direction}
+        onSave={handleSave}
+      />
     </main>
   );
 }
