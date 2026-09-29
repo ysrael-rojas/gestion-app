@@ -56,4 +56,5 @@ export const clientSchema = z
     }
   });
 
-export type ClientFormValues = z.infer<typeof clientSchema>;
+export type ClientFormValues = z.output<typeof clientSchema>;
+export type ClientFormInput = z.input<typeof clientSchema>;

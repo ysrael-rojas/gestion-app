@@ -26,7 +26,11 @@ import {
   DOCUMENT_TYPES,
   getDocumentTypeOption,
 } from "@/lib/data/document-types";
-import { clientSchema, type ClientFormValues } from "@/lib/schemas/client";
+import {
+  clientSchema,
+  type ClientFormInput,
+  type ClientFormValues,
+} from "@/lib/schemas/client";
 
 interface ClientFormProps {
   client?: Client | null;
@@ -84,7 +88,7 @@ function FormGroup({
 }
 
 export function ClientForm({ client, onSubmit }: ClientFormProps) {
-  const form = useForm<ClientFormValues>({
+  const form = useForm<ClientFormInput, unknown, ClientFormValues>({
     resolver: zodResolver(clientSchema),
     defaultValues,
   });
