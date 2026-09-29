@@ -27,6 +27,8 @@ interface PaymentModalProps {
   onOpenChange: (open: boolean) => void;
   direction: PaymentDirection;
   onSave: (values: PaymentFormValues) => void;
+  initialEntityId?: string;
+  initialComprobanteId?: string;
 }
 
 export function PaymentModal({
@@ -34,6 +36,8 @@ export function PaymentModal({
   onOpenChange,
   direction,
   onSave,
+  initialEntityId,
+  initialComprobanteId,
 }: PaymentModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -52,6 +56,8 @@ export function PaymentModal({
               key={open ? "open" : "closed"}
               direction={direction}
               onSubmit={onSave}
+              initialEntityId={initialEntityId}
+              initialComprobanteId={initialComprobanteId}
             />
           </CardContent>
           <CardFooter className="justify-end gap-2">

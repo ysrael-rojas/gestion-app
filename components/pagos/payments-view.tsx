@@ -62,14 +62,20 @@ function getEntityName(clients: Client[], entityId: string): string {
 
 interface PaymentsViewProps {
   direction: PaymentDirection;
+  initialEntityId?: string;
+  initialComprobanteId?: string;
 }
 
-export function PaymentsView({ direction }: PaymentsViewProps) {
+export function PaymentsView({
+  direction,
+  initialEntityId,
+  initialComprobanteId,
+}: PaymentsViewProps) {
   const { payments, isLoading, addPayment } = usePagos();
   const { clients } = useClientes();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(Boolean(initialEntityId));
   const [viewingPaymentId, setViewingPaymentId] = useState<string | null>(null);
   const [printingPaymentId, setPrintingPaymentId] = useState<string | null>(null);
   const labels = VIEW_LABELS[direction];
@@ -226,6 +232,8 @@ export function PaymentsView({ direction }: PaymentsViewProps) {
         onOpenChange={setModalOpen}
         direction={direction}
         onSave={handleSave}
+        initialEntityId={initialEntityId}
+        initialComprobanteId={initialComprobanteId}
       />
 
       <PaymentDetailModal

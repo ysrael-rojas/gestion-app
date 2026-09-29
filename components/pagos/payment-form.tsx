@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -43,6 +43,8 @@ import { getTodayLocalDate } from "@/lib/utils";
 interface PaymentFormProps {
   direction: PaymentDirection;
   onSubmit: (values: PaymentFormValues) => void;
+  initialEntityId?: string;
+  initialComprobanteId?: string;
 }
 
 export const PAYMENT_FORM_ID = "payment-form";
@@ -52,9 +54,12 @@ const methodItems = PAYMENT_METHODS.map((option) => ({
   label: option.label,
 }));
 
-function createEmptyValues(direction: PaymentDirection): PaymentFormInput {
+function createEmptyValues(
+  direction: PaymentDirection,
+  entityId = ""
+): PaymentFormInput {
   return {
-    entityId: "",
+    entityId,
     direction,
     paymentDate: getTodayLocalDate(),
     amount: "",
@@ -105,14 +110,19 @@ function FormGroup({
   );
 }
 
-export function PaymentForm({ direction, onSubmit }: PaymentFormProps) {
+export function PaymentForm({
+  direction,
+  onSubmit,
+  initialEntityId,
+  initialComprobanteId,
+}: PaymentFormProps) {
   const { clients, isLoading: isClientsLoading } = useClientes();
   const [suppliers, setSuppliers] = useState<Client[]>([]);
   const [isSuppliersLoading, setIsSuppliersLoading] = useState(true);
 
   const form = useForm<PaymentFormInput, unknown, PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
-    defaultValues: createEmptyValues(direction),
+    defaultValues: createEmptyValues(direction, initialEntityId),
   });
 
   useEffect(() => {
@@ -165,6 +175,17 @@ export function PaymentForm({ direction, onSubmit }: PaymentFormProps) {
     value: entity.id,
     label: entity.name,
   }));
+
+  const handleSuggestAmount = useCallback(
+    (value: number) => {
+      const current = Number(form.getValues("amount"));
+
+      if (!current) {
+        form.setValue("amount", String(value));
+      }
+    },
+    [form]
+  );
 
   const errors = form.formState.errors;
 
@@ -299,6 +320,8 @@ export function PaymentForm({ direction, onSubmit }: PaymentFormProps) {
                 amount={amount}
                 value={toAllocationInputs(field.value)}
                 onChange={field.onChange}
+                initialComprobanteId={initialComprobanteId}
+                onSuggestAmount={handleSuggestAmount}
               />
             )}
           />

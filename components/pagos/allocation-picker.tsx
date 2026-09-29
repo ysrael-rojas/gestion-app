@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,8 @@ interface AllocationPickerProps {
   amount: number;
   value: AllocationInput[];
   onChange: (allocations: AllocationInput[]) => void;
+  initialComprobanteId?: string;
+  onSuggestAmount?: (amount: number) => void;
 }
 
 const SKELETON_ROWS = 3;
@@ -35,9 +37,12 @@ export function AllocationPicker({
   amount,
   value,
   onChange,
+  initialComprobanteId,
+  onSuggestAmount,
 }: AllocationPickerProps) {
   const [vouchers, setVouchers] = useState<VoucherBalance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const preselectedRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -75,6 +80,24 @@ export function AllocationPicker({
       isMounted = false;
     };
   }, [direction, entityId]);
+
+  useEffect(() => {
+    if (preselectedRef.current || !initialComprobanteId || !entityId) {
+      return;
+    }
+
+    const match = vouchers.find(
+      (voucher) => voucher.comprobanteId === initialComprobanteId
+    );
+
+    if (!match) {
+      return;
+    }
+
+    preselectedRef.current = true;
+    onChange([{ comprobanteId: match.comprobanteId, amount: match.balance }]);
+    onSuggestAmount?.(match.balance);
+  }, [vouchers, entityId, initialComprobanteId, onChange, onSuggestAmount]);
 
   const assigned = useMemo(
     () => value.reduce((sum, item) => sum + item.amount, 0),
