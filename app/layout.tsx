@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ClientesProvider } from "@/components/clientes/clientes-provider";
+import { VentasProvider } from "@/components/ventas/ventas-provider";
 import {
   SidebarInset,
   SidebarProvider,
@@ -38,7 +39,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
               <SidebarTrigger />
             </header>
-            <ClientesProvider>{children}</ClientesProvider>
+            <ClientesProvider>
+              <VentasProvider>{children}</VentasProvider>
+            </ClientesProvider>
           </SidebarInset>
         </SidebarProvider>
         <Toaster />

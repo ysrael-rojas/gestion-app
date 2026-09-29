@@ -23,7 +23,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Client } from "@/components/clientes/types";
 import type { Sale } from "@/components/ventas/types";
 import {
   getOptionLabel,
@@ -47,22 +46,23 @@ export const salesTableFeatures = tableFeatures({
 
 export type SalesTableFeatures = typeof salesTableFeatures;
 
-const columnHelper = createColumnHelper<SalesTableFeatures, Sale>();
+/**
+ * Fila enriquecida para la tabla: el nombre del cliente se resuelve en los
+ * datos (no en el closure de la columna) para que la tabla reaccione cuando
+ * los clientes cargan de forma asíncrona.
+ */
+export interface SalesRow extends Sale {
+  clientName: string;
+}
+
+const columnHelper = createColumnHelper<SalesTableFeatures, SalesRow>();
 
 interface SalesColumnsActions {
-  clients: Client[];
   onView: (sale: Sale) => void;
   onEdit: (sale: Sale) => void;
 }
 
-function getClientName(clients: Client[], clientId: string): string {
-  return (
-    clients.find((client) => client.id === clientId)?.name ??
-    "Cliente no encontrado"
-  );
-}
-
-export function getSalesColumns({ clients, onView, onEdit }: SalesColumnsActions) {
+export function getSalesColumns({ onView, onEdit }: SalesColumnsActions) {
   return columnHelper.columns([
     columnHelper.accessor("issueDate", {
       header: ({ column }) => (
@@ -104,7 +104,7 @@ export function getSalesColumns({ clients, onView, onEdit }: SalesColumnsActions
       ),
       cell: ({ getValue }) => getValue(),
     }),
-    columnHelper.accessor((sale) => getClientName(clients, sale.clientId), {
+    columnHelper.accessor("clientName", {
       id: "client",
       header: ({ column }) => (
         <Button
@@ -145,6 +145,35 @@ export function getSalesColumns({ clients, onView, onEdit }: SalesColumnsActions
         cell: ({ getValue }) => getValue(),
       }
     ),
+    columnHelper.accessor((sale) => sale.creditDays, {
+      id: "creditDays",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Días de crédito
+          <ArrowUpDown />
+        </Button>
+      ),
+      cell: ({ getValue }) => getValue() ?? "—",
+    }),
+    columnHelper.accessor((sale) => sale.dueDate, {
+      id: "dueDate",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Fecha de vencimiento
+          <ArrowUpDown />
+        </Button>
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue();
+        return value ? formatDate(value) : "—";
+      },
+    }),
     columnHelper.accessor(
       (sale) => getOptionLabel(SALE_STATUSES, sale.status),
       {

@@ -5,6 +5,7 @@ import { useTable, type SortingState } from "@tanstack/react-table";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -18,32 +19,53 @@ import type { Sale } from "@/components/ventas/types";
 import {
   getSalesColumns,
   salesTableFeatures,
+  type SalesRow,
 } from "@/components/ventas/sales-columns";
 
 interface SalesDataTableProps {
   sales: Sale[];
   clients: Client[];
+  isLoading?: boolean;
   onView: (sale: Sale) => void;
   onEdit: (sale: Sale) => void;
+}
+
+const SKELETON_ROWS = 5;
+
+function getClientName(clients: Client[], entityId: string): string {
+  return (
+    clients.find((client) => client.id === entityId)?.name ??
+    "Cliente no encontrado"
+  );
 }
 
 export function SalesDataTable({
   sales,
   clients,
+  isLoading = false,
   onView,
   onEdit,
 }: SalesDataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
+  const data = useMemo<SalesRow[]>(
+    () =>
+      sales.map((sale) => ({
+        ...sale,
+        clientName: getClientName(clients, sale.entityId),
+      })),
+    [sales, clients]
+  );
+
   const columns = useMemo(
-    () => getSalesColumns({ clients, onView, onEdit }),
-    [clients, onView, onEdit]
+    () => getSalesColumns({ onView, onEdit }),
+    [onView, onEdit]
   );
 
   const table = useTable({
     features: salesTableFeatures,
-    data: sales,
+    data,
     columns,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
@@ -84,7 +106,19 @@ export function SalesDataTable({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.length ? (
+            {isLoading ? (
+              Array.from({ length: SKELETON_ROWS }).map((_, rowIndex) => (
+                <TableRow key={`skeleton-${rowIndex}`}>
+                  {Array.from({ length: columns.length }).map(
+                    (_, cellIndex) => (
+                      <TableCell key={`skeleton-${rowIndex}-${cellIndex}`}>
+                        <Skeleton className="h-5 w-full" />
+                      </TableCell>
+                    )
+                  )}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getAllCells().map((cell) => (

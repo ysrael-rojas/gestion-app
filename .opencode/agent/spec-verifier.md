@@ -1,7 +1,7 @@
 ---
 description: Verifica los criterios de aceptación de una spec. Revisa el código, consulta las recomendaciones de Next.js con Context7, prueba las pantallas con Playwright y marca los checks del "Acceptance criteria". Úsalo cuando pidas verificar o validar una spec.
 mode: all
-model: deepseek/deepseek-flash
+model: opencode-go/qwen3.8-flash
 temperature: 0.1
 color: info
 permission:

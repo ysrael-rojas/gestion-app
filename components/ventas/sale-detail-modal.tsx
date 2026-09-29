@@ -41,9 +41,9 @@ function DetailField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function getClientName(clients: Client[], clientId: string): string {
+function getClientName(clients: Client[], entityId: string): string {
   return (
-    clients.find((client) => client.id === clientId)?.name ??
+    clients.find((client) => client.id === entityId)?.name ??
     "Cliente no encontrado"
   );
 }
@@ -94,12 +94,20 @@ export function SaleDetailModal({
                   <div className="sm:col-span-2">
                     <DetailField
                       label="Cliente"
-                      value={getClientName(clients, sale.clientId)}
+                      value={getClientName(clients, sale.entityId)}
                     />
                   </div>
                   <DetailField
                     label="Tipo de pago"
                     value={getOptionLabel(PAYMENT_TYPES, sale.paymentType)}
+                  />
+                  <DetailField
+                    label="Días de crédito"
+                    value={sale.creditDays != null ? String(sale.creditDays) : ""}
+                  />
+                  <DetailField
+                    label="Fecha de vencimiento"
+                    value={sale.dueDate ? formatDate(sale.dueDate) : ""}
                   />
                   <DetailField
                     label="Estado"
