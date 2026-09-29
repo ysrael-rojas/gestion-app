@@ -128,3 +128,21 @@
     @apply font-sans;
   }
 }
+
+.receipt-print-portal {
+  display: none;
+}
+
+@media print {
+  body {
+    overflow: visible !important;
+  }
+
+  body > *:not(.receipt-print-portal) {
+    display: none !important;
+  }
+
+  .receipt-print-portal {
+    display: block !important;
+  }
+}

@@ -44,6 +44,7 @@ interface PaymentDetailModalProps {
   onOpenChange: (open: boolean) => void;
   paymentId: string | null;
   clients: Client[];
+  onPrint: (paymentId: string) => void;
 }
 
 type DetailMode = "view" | "assign" | "annul";
@@ -71,9 +72,11 @@ function getEntityName(clients: Client[], entityId: string): string {
 function PaymentDetailContent({
   paymentId,
   clients,
+  onPrint,
 }: {
   paymentId: string;
   clients: Client[];
+  onPrint: (paymentId: string) => void;
 }) {
   const { assignAllocations, annulPayment } = usePagos();
   const [detail, setDetail] = useState<PaymentDetail | null>(null);
@@ -373,6 +376,9 @@ function PaymentDetailContent({
                 Asignar saldo
               </Button>
             ) : null}
+            <Button variant="outline" onClick={() => onPrint(detail.id)}>
+              Imprimir recibo
+            </Button>
           </div>
           <div className="flex gap-2">
             {isRegistered ? (
@@ -395,6 +401,7 @@ export function PaymentDetailModal({
   onOpenChange,
   paymentId,
   clients,
+  onPrint,
 }: PaymentDetailModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -411,6 +418,7 @@ export function PaymentDetailModal({
               key={paymentId}
               paymentId={paymentId}
               clients={clients}
+              onPrint={onPrint}
             />
           ) : null}
         </Card>

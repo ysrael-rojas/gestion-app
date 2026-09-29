@@ -20,6 +20,7 @@ import { useClientes } from "@/components/clientes/clientes-provider";
 import { usePagos } from "@/components/pagos/pagos-provider";
 import { PaymentModal } from "@/components/pagos/payment-modal";
 import { PaymentDetailModal } from "@/components/pagos/payment-detail-modal";
+import { ReceiptDialog } from "@/components/pagos/receipt-dialog";
 import {
   getPaymentsColumns,
   paymentsTableFeatures,
@@ -70,10 +71,16 @@ export function PaymentsView({ direction }: PaymentsViewProps) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [viewingPaymentId, setViewingPaymentId] = useState<string | null>(null);
+  const [printingPaymentId, setPrintingPaymentId] = useState<string | null>(null);
   const labels = VIEW_LABELS[direction];
 
   const openView = useCallback((payment: Payment) => {
     setViewingPaymentId(payment.id);
+  }, []);
+
+  const openPrint = useCallback((paymentId: string) => {
+    setViewingPaymentId(null);
+    setPrintingPaymentId(paymentId);
   }, []);
 
   async function handleSave(values: PaymentFormValues) {
@@ -229,6 +236,18 @@ export function PaymentsView({ direction }: PaymentsViewProps) {
           }
         }}
         paymentId={viewingPaymentId}
+        clients={clients}
+        onPrint={openPrint}
+      />
+
+      <ReceiptDialog
+        open={printingPaymentId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPrintingPaymentId(null);
+          }
+        }}
+        paymentId={printingPaymentId}
         clients={clients}
       />
     </main>
