@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -43,6 +44,7 @@ const defaultValues: ClientFormValues = {
   contactName: "",
   billingEmail: "",
   managementEmail: "",
+  isSupplier: false,
 };
 
 const documentTypeItems = DOCUMENT_TYPES.map((option) => ({
@@ -110,6 +112,7 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
             contactName: client.contactName,
             billingEmail: client.billingEmail,
             managementEmail: client.managementEmail,
+            isSupplier: client.isSupplier ?? false,
           }
         : defaultValues
     );
@@ -237,6 +240,21 @@ export function ClientForm({ client, onSubmit }: ClientFormProps) {
           />
           <FieldError message={errors.managementEmail?.message} />
         </div>
+
+        <Controller
+          control={form.control}
+          name="isSupplier"
+          render={({ field }) => (
+            <div className="flex items-center gap-2 sm:col-span-2">
+              <Checkbox
+                id="isSupplier"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+              <Label htmlFor="isSupplier">Es proveedor</Label>
+            </div>
+          )}
+        />
       </FormGroup>
     </form>
   );
