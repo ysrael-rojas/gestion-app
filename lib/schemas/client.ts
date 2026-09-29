@@ -38,6 +38,7 @@ export const clientSchema = z
       (value) => value.trim() === "" || isValidEmail(value.trim()),
       { error: "Ingresa un correo de gestión válido" }
     ),
+    isSupplier: z.boolean().default(false),
   })
   .superRefine((data, ctx) => {
     if (data.documentType === "SIN_DOCUMENTO") {
