@@ -19,6 +19,7 @@ import type { Sale } from "@/components/ventas/types";
 import {
   getSalesColumns,
   salesTableFeatures,
+  type SalesRow,
 } from "@/components/ventas/sales-columns";
 
 interface SalesDataTableProps {
@@ -31,6 +32,13 @@ interface SalesDataTableProps {
 
 const SKELETON_ROWS = 5;
 
+function getClientName(clients: Client[], entityId: string): string {
+  return (
+    clients.find((client) => client.id === entityId)?.name ??
+    "Cliente no encontrado"
+  );
+}
+
 export function SalesDataTable({
   sales,
   clients,
@@ -41,14 +49,23 @@ export function SalesDataTable({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
+  const data = useMemo<SalesRow[]>(
+    () =>
+      sales.map((sale) => ({
+        ...sale,
+        clientName: getClientName(clients, sale.entityId),
+      })),
+    [sales, clients]
+  );
+
   const columns = useMemo(
-    () => getSalesColumns({ clients, onView, onEdit }),
-    [clients, onView, onEdit]
+    () => getSalesColumns({ onView, onEdit }),
+    [onView, onEdit]
   );
 
   const table = useTable({
     features: salesTableFeatures,
-    data: sales,
+    data,
     columns,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,

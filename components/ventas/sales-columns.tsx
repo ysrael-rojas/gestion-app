@@ -23,7 +23,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Client } from "@/components/clientes/types";
 import type { Sale } from "@/components/ventas/types";
 import {
   getOptionLabel,
@@ -47,22 +46,23 @@ export const salesTableFeatures = tableFeatures({
 
 export type SalesTableFeatures = typeof salesTableFeatures;
 
-const columnHelper = createColumnHelper<SalesTableFeatures, Sale>();
+/**
+ * Fila enriquecida para la tabla: el nombre del cliente se resuelve en los
+ * datos (no en el closure de la columna) para que la tabla reaccione cuando
+ * los clientes cargan de forma asíncrona.
+ */
+export interface SalesRow extends Sale {
+  clientName: string;
+}
+
+const columnHelper = createColumnHelper<SalesTableFeatures, SalesRow>();
 
 interface SalesColumnsActions {
-  clients: Client[];
   onView: (sale: Sale) => void;
   onEdit: (sale: Sale) => void;
 }
 
-function getClientName(clients: Client[], entityId: string): string {
-  return (
-    clients.find((client) => client.id === entityId)?.name ??
-    "Cliente no encontrado"
-  );
-}
-
-export function getSalesColumns({ clients, onView, onEdit }: SalesColumnsActions) {
+export function getSalesColumns({ onView, onEdit }: SalesColumnsActions) {
   return columnHelper.columns([
     columnHelper.accessor("issueDate", {
       header: ({ column }) => (
@@ -104,7 +104,7 @@ export function getSalesColumns({ clients, onView, onEdit }: SalesColumnsActions
       ),
       cell: ({ getValue }) => getValue(),
     }),
-    columnHelper.accessor((sale) => getClientName(clients, sale.entityId), {
+    columnHelper.accessor("clientName", {
       id: "client",
       header: ({ column }) => (
         <Button

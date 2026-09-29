@@ -1,6 +1,6 @@
 # SPEC 07 — Comprobantes de venta en Supabase (crédito y vencimiento)
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 05, SPEC 06
 > **Date:** 2026-09-28
 > **Objective:** Persistir en Supabase los comprobantes de venta de `/ventas/listado` mediante una tabla única `comprobante` (compra o venta), añadiendo los campos de crédito `credit_days` y la fecha de vencimiento `due_date` calculada.
@@ -177,19 +177,19 @@ Convenciones:
 
 ## Acceptance criteria
 
-- [ ] Existe la tabla `public.comprobante` con columnas, enums, checks, índices, trigger y RLS (3 políticas) descritos.
-- [ ] `credit_days` es obligatorio (`>= 1`) cuando `payment_type = 'CREDITO'` y `null` cuando es `'CONTADO'`.
-- [ ] `due_date` se calcula solo (`issue_date + credit_days`) y es de solo lectura.
-- [ ] `/ventas/listado` muestra un skeleton mientras carga y luego las filas de la DB.
-- [ ] Registrar una venta la inserta con `voucher_kind = 'VENTA'` y `deleted_at = null`; persiste al recargar.
-- [ ] Al elegir **Crédito**, aparece **Días de crédito** (precargado 30) y **Fecha de vencimiento** se actualiza sola; con **Contado** ambos se ocultan y no se guarda crédito.
-- [ ] Enviar a crédito sin días válidos muestra error y no envía.
-- [ ] La tabla y el detalle muestran Días de crédito y Fecha de vencimiento (`—` en Contado).
-- [ ] Editar una venta actualiza la misma fila en la DB sin duplicarla y conserva `registration_date`.
-- [ ] Si una operación contra Supabase falla, se muestra un `toast.error` en español sin romper la página.
-- [ ] El selector de cliente lista los clientes de la DB y el detalle resuelve el nombre por `entityId`.
-- [ ] Búsqueda global, orden por columna y paginación siguen funcionando sobre las filas cargadas.
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] Existe la tabla `public.comprobante` con columnas, enums, checks, índices, trigger y RLS (3 políticas) descritos.
+- [x] `credit_days` es obligatorio (`>= 1`) cuando `payment_type = 'CREDITO'` y `null` cuando es `'CONTADO'`.
+- [x] `due_date` se calcula solo (`issue_date + credit_days`) y es de solo lectura.
+- [x] `/ventas/listado` muestra un skeleton mientras carga y luego las filas de la DB.
+- [x] Registrar una venta la inserta con `voucher_kind = 'VENTA'` y `deleted_at = null`; persiste al recargar.
+- [x] Al elegir **Crédito**, aparece **Días de crédito** (precargado 30) y **Fecha de vencimiento** se actualiza sola; con **Contado** ambos se ocultan y no se guarda crédito.
+- [x] Enviar a crédito sin días válidos muestra error y no envía.
+- [x] La tabla y el detalle muestran Días de crédito y Fecha de vencimiento (`—` en Contado).
+- [x] Editar una venta actualiza la misma fila en la DB sin duplicarla y conserva `registration_date`.
+- [x] Si una operación contra Supabase falla, se muestra un `toast.error` en español sin romper la página.
+- [x] El selector de cliente lista los clientes de la DB y el detalle resuelve el nombre por `entityId`.
+- [x] Búsqueda global, orden por columna y paginación siguen funcionando sobre las filas cargadas.
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 

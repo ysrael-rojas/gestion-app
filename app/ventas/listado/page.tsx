@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -30,14 +30,14 @@ export default function VentasListadoPage() {
     setModalOpen(true);
   }
 
-  function openEdit(sale: Sale) {
+  const openEdit = useCallback((sale: Sale) => {
     setEditingSale(sale);
     setModalOpen(true);
-  }
+  }, []);
 
-  function openView(sale: Sale) {
+  const openView = useCallback((sale: Sale) => {
     setViewingSale(sale);
-  }
+  }, []);
 
   async function handleSave(values: SaleFormValues) {
     try {
