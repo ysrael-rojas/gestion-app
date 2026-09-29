@@ -3,12 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ArrowDownCircle,
+  ArrowUpCircle,
   Building2,
   ChevronRight,
   Database,
   Receipt,
   ShoppingCart,
   Users,
+  Wallet,
 } from "lucide-react";
 
 import {
@@ -94,6 +97,37 @@ export function AppSidebar() {
                 <span>COMPRAS</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            <Collapsible defaultOpen render={<SidebarMenuItem />}>
+              <CollapsibleTrigger
+                render={<SidebarMenuButton tooltip="PAGOS" />}
+              >
+                <Wallet />
+                <span>PAGOS</span>
+                <ChevronRight className="ml-auto transition-transform duration-200 [[data-panel-open]_&]:rotate-90" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton
+                      render={<Link href="/pagos/ingresos" />}
+                      isActive={pathname === "/pagos/ingresos"}
+                    >
+                      <ArrowDownCircle />
+                      <span>INGRESOS</span>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton
+                      render={<Link href="/pagos/egresos" />}
+                      isActive={pathname === "/pagos/egresos"}
+                    >
+                      <ArrowUpCircle />
+                      <span>EGRESOS</span>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </Collapsible>
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
