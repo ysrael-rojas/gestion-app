@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTable, type SortingState } from "@tanstack/react-table";
 import { toast } from "sonner";
 
@@ -19,12 +19,13 @@ import type { Client } from "@/components/clientes/types";
 import { useClientes } from "@/components/clientes/clientes-provider";
 import { usePagos } from "@/components/pagos/pagos-provider";
 import { PaymentModal } from "@/components/pagos/payment-modal";
+import { PaymentDetailModal } from "@/components/pagos/payment-detail-modal";
 import {
   getPaymentsColumns,
   paymentsTableFeatures,
   type PaymentsRow,
 } from "@/components/pagos/payments-columns";
-import type { PaymentDirection } from "@/components/pagos/types";
+import type { Payment, PaymentDirection } from "@/components/pagos/types";
 import type { PaymentFormValues } from "@/lib/schemas/payment";
 
 const SKELETON_ROWS = 5;
@@ -68,7 +69,12 @@ export function PaymentsView({ direction }: PaymentsViewProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [viewingPaymentId, setViewingPaymentId] = useState<string | null>(null);
   const labels = VIEW_LABELS[direction];
+
+  const openView = useCallback((payment: Payment) => {
+    setViewingPaymentId(payment.id);
+  }, []);
 
   async function handleSave(values: PaymentFormValues) {
     try {
@@ -95,7 +101,10 @@ export function PaymentsView({ direction }: PaymentsViewProps) {
     [payments, direction, clients]
   );
 
-  const columns = useMemo(() => getPaymentsColumns(), []);
+  const columns = useMemo(
+    () => getPaymentsColumns({ onView: openView }),
+    [openView]
+  );
 
   const table = useTable({
     features: paymentsTableFeatures,
@@ -210,6 +219,17 @@ export function PaymentsView({ direction }: PaymentsViewProps) {
         onOpenChange={setModalOpen}
         direction={direction}
         onSave={handleSave}
+      />
+
+      <PaymentDetailModal
+        open={viewingPaymentId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setViewingPaymentId(null);
+          }
+        }}
+        paymentId={viewingPaymentId}
+        clients={clients}
       />
     </main>
   );

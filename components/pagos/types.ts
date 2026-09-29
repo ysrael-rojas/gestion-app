@@ -25,6 +25,8 @@ export interface PaymentAllocation {
   paymentId: string;
   comprobanteId: string;
   amount: number;
+  voucherNumber: string; // "F001-000001"
+  voucherType: VoucherType;
 }
 
 export interface PaymentDetail extends Payment {

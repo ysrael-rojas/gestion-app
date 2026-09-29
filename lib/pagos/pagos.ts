@@ -33,12 +33,17 @@ function mapPaymentRow(row: PaymentRow): Payment {
   };
 }
 
-function mapAllocationRow(row: AllocationRow): PaymentAllocation {
+function mapAllocationRow(
+  row: AllocationRow,
+  voucher?: VoucherBalanceRow
+): PaymentAllocation {
   return {
     id: row.id,
     paymentId: row.payment_id,
     comprobanteId: row.comprobante_id,
     amount: row.amount,
+    voucherNumber: voucher?.voucher_number ?? "",
+    voucherType: voucher?.voucher_type ?? "FACTURA",
   };
 }
 
@@ -147,12 +152,35 @@ export async function getPaymentDetail(id: string): Promise<PaymentDetail> {
     throw mapError(allocationsError);
   }
 
+  const allocationRows = allocationsData as AllocationRow[];
+  const comprobanteIds = allocationRows.map((row) => row.comprobante_id);
+  const voucherMap = new Map<string, VoucherBalanceRow>();
+
+  if (comprobanteIds.length > 0) {
+    const { data: voucherData, error: voucherError } = await supabase
+      .from("voucher_balance")
+      .select("*")
+      .in("comprobante_id", comprobanteIds);
+
+    if (voucherError) {
+      throw mapError(voucherError);
+    }
+
+    for (const row of voucherData as VoucherBalanceRow[]) {
+      if (row.comprobante_id) {
+        voucherMap.set(row.comprobante_id, row);
+      }
+    }
+  }
+
   const payment = mapPaymentRow(paymentData as PaymentRow);
   const balance = balanceData as PaymentBalanceRow | null;
 
   return {
     ...payment,
-    allocations: (allocationsData as AllocationRow[]).map(mapAllocationRow),
+    allocations: allocationRows.map((row) =>
+      mapAllocationRow(row, voucherMap.get(row.comprobante_id))
+    ),
     assignedAmount: balance?.assigned_amount ?? 0,
     unassignedAmount: balance?.unassigned_amount ?? payment.amount,
   };

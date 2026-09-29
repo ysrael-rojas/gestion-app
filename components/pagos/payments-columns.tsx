@@ -14,9 +14,15 @@ import {
   sortFn_text,
   tableFeatures,
 } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Eye } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { Payment } from "@/components/pagos/types";
 import {
   PAYMENT_METHODS,
@@ -45,7 +51,11 @@ export interface PaymentsRow extends Payment {
 
 const columnHelper = createColumnHelper<PaymentsTableFeatures, PaymentsRow>();
 
-export function getPaymentsColumns() {
+interface PaymentsColumnsActions {
+  onView: (payment: Payment) => void;
+}
+
+export function getPaymentsColumns({ onView }: PaymentsColumnsActions) {
   return columnHelper.columns([
     columnHelper.accessor("issueDate", {
       header: ({ column }) => (
@@ -140,5 +150,34 @@ export function getPaymentsColumns() {
         cell: ({ getValue }) => getValue(),
       }
     ),
+    columnHelper.display({
+      id: "actions",
+      header: () => <span className="sr-only">Acciones</span>,
+      cell: ({ row }) => {
+        const payment = row.original;
+
+        return (
+          <TooltipProvider>
+            <div className="flex items-center justify-end gap-1">
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => onView(payment)}
+                    />
+                  }
+                >
+                  <Eye />
+                  <span className="sr-only">Ver</span>
+                </TooltipTrigger>
+                <TooltipContent>Ver</TooltipContent>
+              </Tooltip>
+            </div>
+          </TooltipProvider>
+        );
+      },
+    }),
   ]);
 }

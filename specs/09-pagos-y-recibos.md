@@ -356,6 +356,8 @@ export interface PaymentAllocation {
   paymentId: string;
   comprobanteId: string;
   amount: number;
+  voucherNumber: string; // "F001-000001"
+  voucherType: VoucherType;
 }
 
 export interface PaymentDetail extends Payment {
@@ -419,7 +421,7 @@ Capa de datos (firmas, en `lib/pagos/pagos.ts`):
 // addAllocations(paymentId, items): void            → insert allocations sueltas sobre un pago existente
 // voidPayment(id, reason): void                     → update status='ANULADO', void_reason, voided_at
 // listOpenVouchers(direction, entityId): VoucherBalance[] → voucher_balance where balance > 0
-// getPaymentDetail(id): PaymentDetail               → payment + payment_balance + allocations
+// getPaymentDetail(id): PaymentDetail               → payment + payment_balance + allocations (enriquecidas con voucherNumber/voucherType desde voucher_balance)
 // mapPaymentRow / mapAllocationRow / mapVoucherBalanceRow → snake_case ↔ camelCase
 ```
 
