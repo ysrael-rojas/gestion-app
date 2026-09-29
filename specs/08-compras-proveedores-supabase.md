@@ -1,6 +1,6 @@
 # SPEC 08 — Compras: UI y persistencia en Supabase
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 06, SPEC 07
 > **Date:** 2026-09-29
 > **Objective:** Implementar el listado, registro y edición de compras en `/compras/listado` reutilizando la tabla `comprobante` con `voucher_kind = 'COMPRA'`, añadiendo el ítem **COMPRAS** al sidebar y permitiendo marcar una entidad como proveedor en el formulario de clientes.
@@ -95,25 +95,25 @@ Convenciones:
 
 ## Acceptance criteria
 
-- [ ] `lib/schemas/client.ts` incluye `isSupplier` y el formulario muestra el checkbox **"Es proveedor"**.
-- [ ] Crear un cliente marcado como proveedor guarda `is_supplier = true` en `entidad`; editar permite cambiarlo.
-- [ ] `listSuppliers()` devuelve entidades con `is_supplier = true` (incluyendo las que también son clientes).
-- [ ] Existe `components/compras/types.ts` con el tipo `Purchase` y `lib/schemas/purchase.ts` con las validaciones equivalentes a ventas.
-- [ ] Existe `lib/comprobantes/compras.ts` con `listPurchases`, `createPurchaseRecord`, `updatePurchaseRecord` y mapeo a `voucher_kind = 'COMPRA'`.
-- [ ] `ComprasProvider` está montado en `app/layout.tsx`.
-- [ ] `/compras/listado` renderiza sin errores en consola.
-- [ ] El botón **Registrar compra** abre el modal con formulario vacío; fecha emisión y fecha registro = hoy.
-- [ ] El selector de proveedor lista solo entidades con `is_supplier = true`.
-- [ ] Al escribir el total, subtotal e IGV se calculan solos (`subtotal = total / 1.18`) con 2 decimales.
-- [ ] Al elegir **Crédito**, aparece **Días de crédito** (default 30) y **Fecha de vencimiento** se actualiza sola; con **Contado** ambos se ocultan.
-- [ ] Enviar sin tipo comprobante, nro, proveedor, tipo pago o con total ≤ 0 muestra errores y no envía.
-- [ ] Un envío válido inserta en `comprobante` con `voucher_kind = 'COMPRA'`, muestra toast de éxito, cierra el modal y agrega la fila.
-- [ ] La tabla muestra las columnas: Fecha emisión, Tipo comprobante, Nro comprobante, Proveedor, Total, Tipo pago, Estado, Días crédito, Fecha vencimiento.
-- [ ] **Ver** abre el detalle con fecha registro, montos y datos del proveedor.
-- [ ] **Imprimir** aparece pero no ejecuta acción.
-- [ ] **Editar** abre el modal precargado y actualiza la misma fila sin duplicarla.
-- [ ] El sidebar muestra **COMPRAS** como ítem de primer nivel, navega a `/compras/listado` y se resalta como activo.
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] `lib/schemas/client.ts` incluye `isSupplier` y el formulario muestra el checkbox **"Es proveedor"**.
+- [x] Crear un cliente marcado como proveedor guarda `is_supplier = true` en `entidad`; editar permite cambiarlo.
+- [x] `listSuppliers()` devuelve entidades con `is_supplier = true` (incluyendo las que también son clientes).
+- [x] Existe `components/compras/types.ts` con el tipo `Purchase` y `lib/schemas/purchase.ts` con las validaciones equivalentes a ventas.
+- [x] Existe `lib/comprobantes/compras.ts` con `listPurchases`, `createPurchaseRecord`, `updatePurchaseRecord` y mapeo a `voucher_kind = 'COMPRA'`.
+- [x] `ComprasProvider` está montado en `app/layout.tsx`.
+- [x] `/compras/listado` renderiza sin errores en consola.
+- [x] El botón **Registrar compra** abre el modal con formulario vacío; fecha emisión y fecha registro = hoy.
+- [x] El selector de proveedor lista solo entidades con `is_supplier = true`.
+- [x] Al escribir el total, subtotal e IGV se calculan solos (`subtotal = total / 1.18`) con 2 decimales.
+- [x] Al elegir **Crédito**, aparece **Días de crédito** (default 30) y **Fecha de vencimiento** se actualiza sola; con **Contado** ambos se ocultan.
+- [x] Enviar sin tipo comprobante, nro, proveedor, tipo pago o con total ≤ 0 muestra errores y no envía.
+- [x] Un envío válido inserta en `comprobante` con `voucher_kind = 'COMPRA'`, muestra toast de éxito, cierra el modal y agrega la fila.
+- [x] La tabla muestra las columnas: Fecha emisión, Tipo comprobante, Nro comprobante, Proveedor, Total, Tipo pago, Estado, Días crédito, Fecha vencimiento.
+- [x] **Ver** abre el detalle con fecha registro, montos y datos del proveedor.
+- [x] **Imprimir** aparece pero no ejecuta acción.
+- [x] **Editar** abre el modal precargado y actualiza la misma fila sin duplicarla.
+- [x] El sidebar muestra **COMPRAS** como ítem de primer nivel, navega a `/compras/listado` y se resalta como activo.
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
