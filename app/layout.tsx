@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ClientesProvider } from "@/components/clientes/clientes-provider";
 import { ComprasProvider } from "@/components/compras/compras-provider";
+import { PagosProvider } from "@/components/pagos/pagos-provider";
 import { VentasProvider } from "@/components/ventas/ventas-provider";
 import {
   SidebarInset,
@@ -35,17 +36,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <SidebarProvider>
-          <AppSidebar />
-          <SidebarInset>
-            <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-              <SidebarTrigger />
-            </header>
-            <ClientesProvider>
-              <VentasProvider>
-                <ComprasProvider>{children}</ComprasProvider>
-              </VentasProvider>
-            </ClientesProvider>
-          </SidebarInset>
+          <PagosProvider>
+            <AppSidebar />
+            <SidebarInset>
+              <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+                <SidebarTrigger />
+              </header>
+              <ClientesProvider>
+                <VentasProvider>
+                  <ComprasProvider>{children}</ComprasProvider>
+                </VentasProvider>
+              </ClientesProvider>
+            </SidebarInset>
+          </PagosProvider>
         </SidebarProvider>
         <Toaster />
       </body>
