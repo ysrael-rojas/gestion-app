@@ -22,7 +22,8 @@ Hoy `/ventas/listado` y `/compras/listado` muestran el estado de pago como un ba
 - `components/ventas/types.ts` y `components/compras/types.ts` añaden los campos `paidAmount: number` y `balance: number` a `Sale`/`Purchase`.
 - `components/ventas/sales-columns.tsx`: se eliminan las columnas `creditDays` y `dueDate` y se añaden, en ese mismo orden, las columnas `paidAmount` ("Pagado") y `balance` ("Saldo"). Ambas con header y celdas alineados a la derecha, formato `formatCurrency`; la celda de `balance` usa `text-muted-foreground` cuando vale `0` y `font-medium` cuando es `> 0`.
 - `components/compras/purchases-columns.tsx`: mismos cambios en la posición donde hoy están `creditDays` y `dueDate`.
-- `PagosProvider.addPayment`/`assignAllocations` refrescan ventas y compras además de la lista de pagos, para que el data table origen refleje el nuevo saldo sin recargar.
+- `PagosProvider.addPayment`/`assignAllocations`/`annulPayment` refrescan ventas y compras además de la lista de pagos, para que el data table origen refleje el nuevo saldo sin recargar.
+- Reordenar los providers en `app/layout.tsx` (`Clientes → Ventas → Compras → Pagos → children`) para que `PagosProvider` quede dentro de `VentasProvider`/`ComprasProvider` y pueda invocar sus `refresh()`; hoy `PagosProvider` está por encima y los hooks lanzarían.
 
 **Out of scope (for future specs):**
 
@@ -195,9 +196,9 @@ Provider de pagos (cambio mínimo, en `components/pagos/pagos-provider.tsx`):
 interface PagosContextValue {
   // ... actual
 }
-// addPayment() y assignAllocations() ahora refrescan ventas y compras
-// además de la lista de pagos, para que las columnas Pagado/Saldo del
-// data table origen reflejen el cambio sin recargar la página.
+// addPayment(), assignAllocations() y annulPayment() ahora refrescan ventas
+// y compras además de la lista de pagos, para que las columnas Pagado/Saldo
+// del data table origen reflejen el cambio sin recargar la página.
 ```
 
 ## Implementation plan
@@ -209,7 +210,8 @@ interface PagosContextValue {
    - El `PaymentRow` con `receipt_year=0, receipt_serial=0` desaparece del insert: el pago se crea vía la RPC.
    - `mapError` se amplía con los códigos del data model. Verificar `npm run lint`.
 4. `components/pagos/pagos-provider.tsx`:
-   - `addPayment` (y `assignAllocations`) llaman a `useVentas().refresh()` y `useCompras().refresh()` además del propio `refresh()` del provider de pagos, para que las columnas Pagado/Saldo del data table se actualicen tras un pago. Verificar `npm run lint`.
+   - Reordenar los providers en `app/layout.tsx` para que `PagosProvider` quede dentro de `VentasProvider`/`ComprasProvider` (`Clientes → Ventas → Compras → Pagos → children`); sin esto los hooks `useVentas`/`useCompras` lanzarían al llamarse desde `PagosProvider`.
+   - `addPayment`, `assignAllocations` y `annulPayment` llaman a `useVentas().refresh()` y `useCompras().refresh()` además del propio `refresh()` del provider de pagos, para que las columnas Pagado/Saldo del data table se actualicen tras un pago o una anulación. Verificar `npm run lint`.
 5. `components/ventas/types.ts` y `components/compras/types.ts`: añadir `paidAmount: number` y `balance: number` a `Sale`/`Purchase`. Verificar `npm run lint`.
 6. `lib/comprobantes/comprobantes.ts`:
    - `listSales` hace las dos consultas en `Promise.all` y enriquece cada `Sale` con `paidAmount`/`balance` desde el `Map` de `voucher_balance`. Si la segunda falla, log de consola y se devuelven las ventas con `paidAmount=0, balance=total`. Verificar `npm run lint`.
@@ -234,7 +236,7 @@ interface PagosContextValue {
 - [ ] La RPC inserta `payment` + `payment_allocation` dentro de una sola transacción Postgres (verificado forzando un fallo a mitad del flujo y comprobando que no quedan filas en ninguna de las dos tablas).
 - [ ] Si la asignación que completa un comprobante (`paid_amount` final == `total`) falla por cualquier motivo, la operación completa se invalida: no queda el pago, no quedan asignaciones, `comprobante.status` no cambia a PAGADO y el correlativo del recibo queda libre para el siguiente intento.
 - [ ] `createPayment` (en `lib/pagos/pagos.ts`) deja de hacer dos inserciones separadas y pasa a llamar a la RPC; la firma externa `createPayment(values: PaymentFormValues): Promise<PaymentDetail>` se mantiene.
-- [ ] `addPayment` y `assignAllocations` en `PagosProvider` refrescan ventas y compras además de la lista de pagos, de forma que el data table origen muestra el nuevo saldo sin recargar la página.
+- [ ] `addPayment`, `assignAllocations` y `annulPayment` en `PagosProvider` refrescan ventas y compras además de la lista de pagos, de forma que el data table origen muestra el nuevo saldo sin recargar la página.
 - [ ] `Sale` y `Purchase` (en `components/ventas/types.ts` y `components/compras/types.ts`) tienen `paidAmount: number` y `balance: number`.
 - [ ] `listSales`/`listPurchases` enriquecen cada fila con `paidAmount` y `balance` desde la vista `voucher_balance`. Si la vista falla, las filas se devuelven con `paidAmount = 0` y `balance = total` y se conserva el error en consola.
 - [ ] El data table de `/ventas/listado` y `/compras/listado` muestra la columna "Pagado" (alineada a la derecha, con `formatCurrency`) en la posición que ocupaba "Días de crédito".
@@ -256,7 +258,8 @@ interface PagosContextValue {
 - **Sí:** el `for update` sobre `comprobante` se mantiene dentro de la RPC: aunque el validador de la SPEC 09 ya bloquea la fila, hacerlo explícito dentro del bucle de asignaciones da una garantía adicional frente a inserciones concurrentes cuando una misma factura recibe varias asignaciones en la misma llamada.
 - **Sí:** `createPayment` mantiene la firma externa `Promise<PaymentDetail>` para no romper `PagosProvider.addPayment` ni los callers. Por dentro devuelve `getPaymentDetail(id)` tras la RPC.
 - **Sí:** el enrichment de `paidAmount`/`balance` ocurre en la capa de datos (`listSales`/`listPurchases`), no en el provider ni en la tabla: la tabla solo renderiza lo que el tipo `Sale`/`Purchase` ya trae.
-- **Sí:** `PagosProvider` refresca ventas y compras tras `addPayment` y `assignAllocations` para que el data table origen se mantenga sincronizado. La recarga se hace dentro del `try` después del alta, sin bloquear la UI.
+- **Sí:** `PagosProvider` refresca ventas y compras tras `addPayment`, `assignAllocations` y `annulPayment` para que el data table origen se mantenga sincronizado (incluida la reversión al anular un pago). La recarga se hace dentro del `try` después del alta, sin bloquear la UI.
+- **Sí:** reordenar los providers en `app/layout.tsx` para que `PagosProvider` quede anidado dentro de `VentasProvider`/`ComprasProvider`: es la única forma de que `PagosProvider` invoque `useVentas()`/`useCompras()` sin un bus de eventos. Ningún componente consume `usePagos` junto con `useVentas`/`useCompras`, así que el reorden es seguro.
 - **Sí:** los formularios y modales de detalle siguen mostrando "Días de crédito" y "F. vencimiento": son parte de la cabecera del comprobante y no dependen del saldo.
 - **Sí:** la columna "Estado pago" y el filtro del toolbar se mantienen tal cual: son complementarios a "Pagado"/"Saldo" (señal visual rápida) y quitarlos revertiría SPEC 11/12.
 - **No:** cambiar SPEC 09 (tablas, enums, triggers, RLS, vistas, columnas generadas); esta spec solo agrega una función nueva y refactoriza el caller.
