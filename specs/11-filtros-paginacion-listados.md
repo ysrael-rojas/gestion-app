@@ -1,6 +1,6 @@
 # SPEC 11 — Filtros externos, paginación completa y columna Estado Pago en listados de ventas y compras
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 07, SPEC 08, SPEC 10
 > **Date:** 2026-09-29
 > **Objective:** Mejorar los listados de ventas y compras con filtros externos (rango por fecha de emisión y estado de pago) persistidos en `searchParams`, paginación completa, columna `Estado` renombrada a `Estado Pago` con colores rojo/verde, y una fila superior que combina filtros a la izquierda y el botón de registrar a la derecha.
