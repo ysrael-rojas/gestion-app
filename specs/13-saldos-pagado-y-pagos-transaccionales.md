@@ -1,6 +1,6 @@
 # SPEC 13 — Saldos "Pagado"/"Saldo" en data tables y pagos transaccionales
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 07, SPEC 08, SPEC 09, SPEC 12
 > **Date:** 2026-09-30
 > **Objective:** Sustituir las columnas "Días de crédito" y "F. vencimiento" del data table de ventas y compras por las columnas "Pagado" y "Saldo" derivadas de la vista `voucher_balance`, y garantizar que el alta de un pago con asignaciones sea atómica vía RPC para que un fallo a medio camino no deje asignaciones parciales.
@@ -232,23 +232,23 @@ interface PagosContextValue {
 
 ## Acceptance criteria
 
-- [ ] Existe la función `public.create_payment_with_allocations` con la firma del data model, `security definer`, `search_path = ''` y `grant execute` a `anon` y `authenticated`.
-- [ ] La RPC inserta `payment` + `payment_allocation` dentro de una sola transacción Postgres (verificado forzando un fallo a mitad del flujo y comprobando que no quedan filas en ninguna de las dos tablas).
-- [ ] Si la asignación que completa un comprobante (`paid_amount` final == `total`) falla por cualquier motivo, la operación completa se invalida: no queda el pago, no quedan asignaciones, `comprobante.status` no cambia a PAGADO y el correlativo del recibo queda libre para el siguiente intento.
-- [ ] `createPayment` (en `lib/pagos/pagos.ts`) deja de hacer dos inserciones separadas y pasa a llamar a la RPC; la firma externa `createPayment(values: PaymentFormValues): Promise<PaymentDetail>` se mantiene.
-- [ ] `addPayment`, `assignAllocations` y `annulPayment` en `PagosProvider` refrescan ventas y compras además de la lista de pagos, de forma que el data table origen muestra el nuevo saldo sin recargar la página.
-- [ ] `Sale` y `Purchase` (en `components/ventas/types.ts` y `components/compras/types.ts`) tienen `paidAmount: number` y `balance: number`.
-- [ ] `listSales`/`listPurchases` enriquecen cada fila con `paidAmount` y `balance` desde la vista `voucher_balance`. Si la vista falla, las filas se devuelven con `paidAmount = 0` y `balance = total` y se conserva el error en consola.
-- [ ] El data table de `/ventas/listado` y `/compras/listado` muestra la columna "Pagado" (alineada a la derecha, con `formatCurrency`) en la posición que ocupaba "Días de crédito".
-- [ ] El data table muestra la columna "Saldo" (alineada a la derecha, con `formatCurrency`, `text-muted-foreground` cuando vale 0, `font-medium` cuando es > 0) en la posición que ocupaba "F. vencimiento".
-- [ ] Las columnas "Días de crédito" y "F. vencimiento" ya no aparecen en ningún data table de ventas ni compras.
-- [ ] Las columnas "Condición" y "Estado pago" siguen presentes con su contenido actual (badge y valor crudo CONTADO/CREDITO, respectivamente).
-- [ ] Tras registrar un pago parcial, "Pagado" refleja el importe acumulado y "Saldo" refleja el resto, sin recargar la página.
-- [ ] Tras registrar un pago que completa la factura, "Saldo" = 0.00, "Pagado" = "Total" y el badge pasa a PAGADO.
-- [ ] Tras anular un pago con asignaciones, "Pagado" baja y "Saldo" sube lo que corresponde, sin recargar la página.
-- [ ] Los formularios de venta y compra, y los modales de detalle, siguen mostrando "Días de crédito" y "F. vencimiento" como hasta ahora.
-- [ ] El `ListingsToolbar` sigue mostrando el filtro "Estado pago:" (no se toca SPEC 11/12).
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] Existe la función `public.create_payment_with_allocations` con la firma del data model, `security definer`, `search_path = ''` y `grant execute` a `anon` y `authenticated`.
+- [x] La RPC inserta `payment` + `payment_allocation` dentro de una sola transacción Postgres (verificado forzando un fallo a mitad del flujo y comprobando que no quedan filas en ninguna de las dos tablas).
+- [x] Si la asignación que completa un comprobante (`paid_amount` final == `total`) falla por cualquier motivo, la operación completa se invalida: no queda el pago, no quedan asignaciones, `comprobante.status` no cambia a PAGADO y el correlativo del recibo queda libre para el siguiente intento.
+- [x] `createPayment` (en `lib/pagos/pagos.ts`) deja de hacer dos inserciones separadas y pasa a llamar a la RPC; la firma externa `createPayment(values: PaymentFormValues): Promise<PaymentDetail>` se mantiene.
+- [x] `addPayment`, `assignAllocations` y `annulPayment` en `PagosProvider` refrescan ventas y compras además de la lista de pagos, de forma que el data table origen muestra el nuevo saldo sin recargar la página.
+- [x] `Sale` y `Purchase` (en `components/ventas/types.ts` y `components/compras/types.ts`) tienen `paidAmount: number` y `balance: number`.
+- [x] `listSales`/`listPurchases` enriquecen cada fila con `paidAmount` y `balance` desde la vista `voucher_balance`. Si la vista falla, las filas se devuelven con `paidAmount = 0` y `balance = total` y se conserva el error en consola.
+- [x] El data table de `/ventas/listado` y `/compras/listado` muestra la columna "Pagado" (alineada a la derecha, con `formatCurrency`) en la posición que ocupaba "Días de crédito".
+- [x] El data table muestra la columna "Saldo" (alineada a la derecha, con `formatCurrency`, `text-muted-foreground` cuando vale 0, `font-medium` cuando es > 0) en la posición que ocupaba "F. vencimiento".
+- [x] Las columnas "Días de crédito" y "F. vencimiento" ya no aparecen en ningún data table de ventas ni compras.
+- [x] Las columnas "Condición" y "Estado pago" siguen presentes con su contenido actual (badge y valor crudo CONTADO/CREDITO, respectivamente).
+- [x] Tras registrar un pago parcial, "Pagado" refleja el importe acumulado y "Saldo" refleja el resto, sin recargar la página.
+- [x] Tras registrar un pago que completa la factura, "Saldo" = 0.00, "Pagado" = "Total" y el badge pasa a PAGADO.
+- [x] Tras anular un pago con asignaciones, "Pagado" baja y "Saldo" sube lo que corresponde, sin recargar la página.
+- [x] Los formularios de venta y compra, y los modales de detalle, siguen mostrando "Días de crédito" y "F. vencimiento" como hasta ahora.
+- [x] El `ListingsToolbar` sigue mostrando el filtro "Estado pago:" (no se toca SPEC 11/12).
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
