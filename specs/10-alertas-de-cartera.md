@@ -1,6 +1,6 @@
 # SPEC 10 — Avisos de cartera y contadores en la navegación
 
-> **Status:** Draft
+> **Status:** Aprobado
 > **Depends on:** SPEC 09
 > **Date:** 2026-09-29
 > **Objective:** Mostrar en el inicio un resumen de cartera con cantidades y montos por cobrar, por pagar y sin asignar, y exponer contadores en **PAGOS** que enlacen a las listas filtradas de pendientes y vencidos.
