@@ -101,7 +101,7 @@ export function PurchaseDetailModal({
                     />
                   </div>
                   <DetailField
-                    label="Tipo de pago"
+                    label="Condición"
                     value={getOptionLabel(PAYMENT_TYPES, purchase.paymentType)}
                   />
                   <DetailField
