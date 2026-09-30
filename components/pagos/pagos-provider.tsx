@@ -9,12 +9,15 @@ import {
   useRef,
   useState,
 } from "react";
+import { toast } from "sonner";
 
+import type { CarteraResumen } from "@/components/cartera/types";
 import type {
   AllocationInput,
   Payment,
   PaymentDetail,
 } from "@/components/pagos/types";
+import { getCarteraResumen } from "@/lib/pagos/cartera";
 import {
   addAllocations,
   createPayment,
@@ -27,6 +30,8 @@ interface PagosContextValue {
   payments: Payment[];
   isLoading: boolean;
   error: string | null;
+  summary: CarteraResumen | null;
+  isSummaryLoading: boolean;
   addPayment: (values: PaymentFormValues) => Promise<PaymentDetail>;
   assignAllocations: (
     paymentId: string,
@@ -34,6 +39,7 @@ interface PagosContextValue {
   ) => Promise<void>;
   annulPayment: (id: string, reason: string) => Promise<void>;
   refresh: () => Promise<void>;
+  refreshSummary: () => Promise<void>;
 }
 
 const PagosContext = createContext<PagosContextValue | null>(null);
@@ -48,6 +54,8 @@ export function PagosProvider({ children }: { children: React.ReactNode }) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<CarteraResumen | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const isMounted = useRef(true);
 
   const refresh = useCallback(async () => {
@@ -76,41 +84,60 @@ export function PagosProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const refreshSummary = useCallback(async () => {
+    try {
+      const resumen = await getCarteraResumen();
+
+      if (!isMounted.current) {
+        return;
+      }
+
+      setSummary(resumen);
+    } catch (err) {
+      if (isMounted.current) {
+        toast.error(getErrorMessage(err));
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsSummaryLoading(false);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     isMounted.current = true;
 
-    void (async () => {
-      await refresh();
-    })();
+    void refresh();
+    void refreshSummary();
 
     return () => {
       isMounted.current = false;
     };
-  }, [refresh]);
+  }, [refresh, refreshSummary]);
 
   const addPayment = useCallback(
     async (values: PaymentFormValues) => {
       const detail = await createPayment(values);
-      await refresh();
+      await Promise.all([refresh(), refreshSummary()]);
       return detail;
     },
-    [refresh]
+    [refresh, refreshSummary]
   );
 
   const assignAllocations = useCallback(
     async (paymentId: string, items: AllocationInput[]) => {
       await addAllocations(paymentId, items);
-      await refresh();
+      await Promise.all([refresh(), refreshSummary()]);
     },
-    [refresh]
+    [refresh, refreshSummary]
   );
 
   const annulPayment = useCallback(
     async (id: string, reason: string) => {
       await voidPayment(id, reason);
-      await refresh();
+      await Promise.all([refresh(), refreshSummary()]);
     },
-    [refresh]
+    [refresh, refreshSummary]
   );
 
   const value = useMemo(
@@ -118,19 +145,25 @@ export function PagosProvider({ children }: { children: React.ReactNode }) {
       payments,
       isLoading,
       error,
+      summary,
+      isSummaryLoading,
       addPayment,
       assignAllocations,
       annulPayment,
       refresh,
+      refreshSummary,
     }),
     [
       payments,
       isLoading,
       error,
+      summary,
+      isSummaryLoading,
       addPayment,
       assignAllocations,
       annulPayment,
       refresh,
+      refreshSummary,
     ]
   );
 
