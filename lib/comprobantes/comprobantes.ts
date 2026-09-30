@@ -6,6 +6,11 @@ import { calculateAmounts } from "@/lib/ventas/amounts";
 
 type ComprobanteRow = Tables<"comprobante">;
 
+interface VoucherBalance {
+  paidAmount: number;
+  balance: number;
+}
+
 type ComprobanteMutation = Pick<
   ComprobanteRow,
   | "entity_id"
@@ -37,7 +42,12 @@ function mapSaleValues(values: SaleFormValues): ComprobanteMutation {
   };
 }
 
-function mapSaleRow(row: ComprobanteRow): Sale {
+function mapSaleRow(
+  row: ComprobanteRow,
+  balanceMap?: Map<string, VoucherBalance>
+): Sale {
+  const balance = balanceMap?.get(row.id);
+
   return {
     id: row.id,
     issueDate: row.issue_date,
@@ -52,6 +62,8 @@ function mapSaleRow(row: ComprobanteRow): Sale {
     creditDays: row.credit_days,
     dueDate: row.due_date,
     status: row.status,
+    paidAmount: balance?.paidAmount ?? 0,
+    balance: balance?.balance ?? row.total,
   };
 }
 
@@ -70,18 +82,44 @@ function mapError(error: { code?: string; message: string }): Error {
 }
 
 export async function listSales(): Promise<Sale[]> {
-  const { data, error } = await supabase
-    .from("comprobante")
-    .select("*")
-    .eq("voucher_kind", "VENTA")
-    .is("deleted_at", null)
-    .order("issue_date", { ascending: false });
+  const [salesResult, balancesResult] = await Promise.all([
+    supabase
+      .from("comprobante")
+      .select("*")
+      .eq("voucher_kind", "VENTA")
+      .is("deleted_at", null)
+      .order("issue_date", { ascending: false }),
+    supabase
+      .from("voucher_balance")
+      .select("comprobante_id, paid_amount, balance")
+      .eq("voucher_kind", "VENTA"),
+  ]);
 
-  if (error) {
-    throw mapError(error);
+  if (salesResult.error) {
+    throw mapError(salesResult.error);
   }
 
-  return (data as ComprobanteRow[]).map(mapSaleRow);
+  const balanceMap = new Map<string, VoucherBalance>();
+
+  if (balancesResult.error) {
+    console.error(
+      "No se pudo cargar el saldo de las ventas:",
+      balancesResult.error
+    );
+  } else {
+    for (const row of balancesResult.data ?? []) {
+      if (row.comprobante_id) {
+        balanceMap.set(row.comprobante_id, {
+          paidAmount: row.paid_amount ?? 0,
+          balance: row.balance ?? 0,
+        });
+      }
+    }
+  }
+
+  return (salesResult.data as ComprobanteRow[]).map((row) =>
+    mapSaleRow(row, balanceMap)
+  );
 }
 
 export async function createSaleRecord(
