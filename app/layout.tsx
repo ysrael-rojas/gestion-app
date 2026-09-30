@@ -36,19 +36,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <SidebarProvider>
-          <PagosProvider>
-            <AppSidebar />
-            <SidebarInset>
-              <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-                <SidebarTrigger />
-              </header>
-              <ClientesProvider>
-                <VentasProvider>
-                  <ComprasProvider>{children}</ComprasProvider>
-                </VentasProvider>
-              </ClientesProvider>
-            </SidebarInset>
-          </PagosProvider>
+          <ClientesProvider>
+            <VentasProvider>
+              <ComprasProvider>
+                <PagosProvider>
+                  <AppSidebar />
+                  <SidebarInset>
+                    <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+                      <SidebarTrigger />
+                    </header>
+                    {children}
+                  </SidebarInset>
+                </PagosProvider>
+              </ComprasProvider>
+            </VentasProvider>
+          </ClientesProvider>
         </SidebarProvider>
         <Toaster />
       </body>

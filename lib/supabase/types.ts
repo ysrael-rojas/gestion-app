@@ -321,7 +321,19 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      create_payment_with_allocations: {
+        Args: {
+          p_allocations: Json
+          p_amount: number
+          p_direction: Database["public"]["Enums"]["payment_direction"]
+          p_entity_id: string
+          p_method: Database["public"]["Enums"]["payment_method"]
+          p_notes: string
+          p_payment_date: string
+          p_reference: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       comprobante_status: "PAGADO" | "PENDIENTE"

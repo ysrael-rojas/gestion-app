@@ -161,32 +161,32 @@ export function getSalesColumns({ onView, onEdit }: SalesColumnsActions) {
       ),
       cell: ({ getValue }) => <div className="text-center">{getValue()}</div>,
     }),
-    columnHelper.accessor((sale) => sale.creditDays, {
-      id: "creditDays",
+    columnHelper.accessor("paidAmount", {
+      id: "paidAmount",
       header: ({ column }) => (
-        <div className="flex w-full justify-center">
+        <div className="flex w-full justify-end">
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Días de crédito
+            Pagado
             <ArrowUpDown />
           </Button>
         </div>
       ),
       cell: ({ getValue }) => (
-        <div className="text-center">{getValue() ?? "—"}</div>
+        <div className="text-right">{formatCurrency(getValue())}</div>
       ),
     }),
-    columnHelper.accessor((sale) => sale.dueDate, {
-      id: "dueDate",
+    columnHelper.accessor("balance", {
+      id: "balance",
       header: ({ column }) => (
-        <div className="flex w-full justify-center">
+        <div className="flex w-full justify-end">
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            F. vencimiento
+            Saldo
             <ArrowUpDown />
           </Button>
         </div>
@@ -194,7 +194,15 @@ export function getSalesColumns({ onView, onEdit }: SalesColumnsActions) {
       cell: ({ getValue }) => {
         const value = getValue();
         return (
-          <div className="text-center">{value ? formatDate(value) : "—"}</div>
+          <div
+            className={
+              value === 0
+                ? "text-right text-muted-foreground"
+                : "text-right font-medium"
+            }
+          >
+            {formatCurrency(value)}
+          </div>
         );
       },
     }),

@@ -80,6 +80,14 @@ function mapError(error: { code?: string; message: string }): Error {
     return new Error("Los datos del pago no son válidos.");
   }
 
+  if (error.code === "40001") {
+    return new Error("Otro proceso está modificando el comprobante. Reintenta.");
+  }
+
+  if (error.code === "42883") {
+    return new Error("No se pudo crear el pago. Ejecuta la migración de la RPC.");
+  }
+
   return new Error(
     "No se pudo completar la operación con la base de datos. Intenta nuevamente."
   );
@@ -189,45 +197,28 @@ export async function getPaymentDetail(id: string): Promise<PaymentDetail> {
 export async function createPayment(
   values: PaymentFormValues
 ): Promise<PaymentDetail> {
-  const { data, error } = await supabase
-    .from("payment")
-    .insert({
-      entity_id: values.entityId,
-      direction: values.direction,
-      payment_date: values.paymentDate,
-      amount: values.amount,
-      method: values.method,
-      reference: values.reference || null,
-      notes: values.notes || null,
-      receipt_year: 0,
-      receipt_serial: 0,
-    })
-    .select()
-    .single();
+  const { data, error } = await supabase.rpc(
+    "create_payment_with_allocations",
+    {
+      p_entity_id: values.entityId,
+      p_direction: values.direction,
+      p_payment_date: values.paymentDate,
+      p_amount: values.amount,
+      p_method: values.method,
+      p_reference: values.reference || "",
+      p_notes: values.notes || "",
+      p_allocations: values.allocations.map((item) => ({
+        comprobante_id: item.comprobanteId,
+        amount: item.amount,
+      })),
+    }
+  );
 
   if (error) {
     throw mapError(error);
   }
 
-  const paymentId = (data as PaymentRow).id;
-
-  if (values.allocations.length > 0) {
-    const { error: allocationsError } = await supabase
-      .from("payment_allocation")
-      .insert(
-        values.allocations.map((item) => ({
-          payment_id: paymentId,
-          comprobante_id: item.comprobanteId,
-          amount: item.amount,
-        }))
-      );
-
-    if (allocationsError) {
-      throw mapError(allocationsError);
-    }
-  }
-
-  return getPaymentDetail(paymentId);
+  return getPaymentDetail(data as string);
 }
 
 export async function addAllocations(

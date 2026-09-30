@@ -16,4 +16,6 @@ export interface Purchase {
   creditDays: number | null; // requerido si CREDITO; null si CONTADO
   dueDate: string | null; // calculada: issueDate + creditDays
   status: PurchaseStatus;
+  paidAmount: number; // suma de payment_allocation.amount con payment.status='REGISTRADO'
+  balance: number; // total - paidAmount, nunca negativo
 }

@@ -16,4 +16,6 @@ export interface Sale {
   creditDays: number | null; // requerido si CREDITO; null si CONTADO
   dueDate: string | null; // calculada: issueDate + creditDays
   status: SaleStatus;
+  paidAmount: number; // suma de payment_allocation.amount con payment.status='REGISTRADO'
+  balance: number; // total - paidAmount, nunca negativo
 }

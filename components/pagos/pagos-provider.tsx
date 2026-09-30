@@ -12,11 +12,13 @@ import {
 import { toast } from "sonner";
 
 import type { CarteraResumen } from "@/components/cartera/types";
+import { useCompras } from "@/components/compras/compras-provider";
 import type {
   AllocationInput,
   Payment,
   PaymentDetail,
 } from "@/components/pagos/types";
+import { useVentas } from "@/components/ventas/ventas-provider";
 import { getCarteraResumen } from "@/lib/pagos/cartera";
 import {
   addAllocations,
@@ -57,6 +59,8 @@ export function PagosProvider({ children }: { children: React.ReactNode }) {
   const [summary, setSummary] = useState<CarteraResumen | null>(null);
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
   const isMounted = useRef(true);
+  const { refresh: refreshSales } = useVentas();
+  const { refresh: refreshPurchases } = useCompras();
 
   const refresh = useCallback(async () => {
     try {
@@ -119,26 +123,41 @@ export function PagosProvider({ children }: { children: React.ReactNode }) {
   const addPayment = useCallback(
     async (values: PaymentFormValues) => {
       const detail = await createPayment(values);
-      await Promise.all([refresh(), refreshSummary()]);
+      await Promise.all([
+        refresh(),
+        refreshSummary(),
+        refreshSales(),
+        refreshPurchases(),
+      ]);
       return detail;
     },
-    [refresh, refreshSummary]
+    [refresh, refreshSummary, refreshSales, refreshPurchases]
   );
 
   const assignAllocations = useCallback(
     async (paymentId: string, items: AllocationInput[]) => {
       await addAllocations(paymentId, items);
-      await Promise.all([refresh(), refreshSummary()]);
+      await Promise.all([
+        refresh(),
+        refreshSummary(),
+        refreshSales(),
+        refreshPurchases(),
+      ]);
     },
-    [refresh, refreshSummary]
+    [refresh, refreshSummary, refreshSales, refreshPurchases]
   );
 
   const annulPayment = useCallback(
     async (id: string, reason: string) => {
       await voidPayment(id, reason);
-      await Promise.all([refresh(), refreshSummary()]);
+      await Promise.all([
+        refresh(),
+        refreshSummary(),
+        refreshSales(),
+        refreshPurchases(),
+      ]);
     },
-    [refresh, refreshSummary]
+    [refresh, refreshSummary, refreshSales, refreshPurchases]
   );
 
   const value = useMemo(
