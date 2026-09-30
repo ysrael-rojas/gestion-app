@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useTable, type SortingState } from "@tanstack/react-table";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -14,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import type { Client } from "@/components/clientes/types";
 import type { Sale } from "@/components/ventas/types";
 import {
@@ -21,10 +21,15 @@ import {
   salesTableFeatures,
   type SalesRow,
 } from "@/components/ventas/sales-columns";
+import {
+  applyListadoFilters,
+  type ListadoFilters,
+} from "@/lib/filters/listado-filters";
 
 interface SalesDataTableProps {
   sales: Sale[];
   clients: Client[];
+  filters: ListadoFilters;
   isLoading?: boolean;
   onView: (sale: Sale) => void;
   onEdit: (sale: Sale) => void;
@@ -42,6 +47,7 @@ function getClientName(clients: Client[], entityId: string): string {
 export function SalesDataTable({
   sales,
   clients,
+  filters,
   isLoading = false,
   onView,
   onEdit,
@@ -49,14 +55,14 @@ export function SalesDataTable({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
-  const data = useMemo<SalesRow[]>(
-    () =>
-      sales.map((sale) => ({
-        ...sale,
-        clientName: getClientName(clients, sale.entityId),
-      })),
-    [sales, clients]
-  );
+  const data = useMemo<SalesRow[]>(() => {
+    const rows = sales.map((sale) => ({
+      ...sale,
+      clientName: getClientName(clients, sale.entityId),
+    }));
+
+    return applyListadoFilters(rows, filters);
+  }, [sales, clients, filters]);
 
   const columns = useMemo(
     () => getSalesColumns({ onView, onEdit }),
@@ -73,6 +79,7 @@ export function SalesDataTable({
       sorting,
       globalFilter,
     },
+    autoResetPageIndex: true,
     initialState: {
       pagination: {
         pageIndex: 0,
@@ -142,24 +149,7 @@ export function SalesDataTable({
         </Table>
       </div>
 
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Anterior
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Siguiente
-        </Button>
-      </div>
+      <DataTablePagination table={table} />
     </div>
   );
 }

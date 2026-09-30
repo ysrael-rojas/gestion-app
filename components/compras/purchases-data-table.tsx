@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useTable, type SortingState } from "@tanstack/react-table";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -14,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import type { Client } from "@/components/clientes/types";
 import type { Purchase } from "@/components/compras/types";
 import {
@@ -21,10 +21,15 @@ import {
   purchasesTableFeatures,
   type PurchasesRow,
 } from "@/components/compras/purchases-columns";
+import {
+  applyListadoFilters,
+  type ListadoFilters,
+} from "@/lib/filters/listado-filters";
 
 interface PurchasesDataTableProps {
   purchases: Purchase[];
   clients: Client[];
+  filters: ListadoFilters;
   isLoading?: boolean;
   onView: (purchase: Purchase) => void;
   onEdit: (purchase: Purchase) => void;
@@ -42,6 +47,7 @@ function getSupplierName(clients: Client[], supplierId: string): string {
 export function PurchasesDataTable({
   purchases,
   clients,
+  filters,
   isLoading = false,
   onView,
   onEdit,
@@ -49,14 +55,14 @@ export function PurchasesDataTable({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
-  const data = useMemo<PurchasesRow[]>(
-    () =>
-      purchases.map((purchase) => ({
-        ...purchase,
-        supplierName: getSupplierName(clients, purchase.supplierId),
-      })),
-    [purchases, clients]
-  );
+  const data = useMemo<PurchasesRow[]>(() => {
+    const rows = purchases.map((purchase) => ({
+      ...purchase,
+      supplierName: getSupplierName(clients, purchase.supplierId),
+    }));
+
+    return applyListadoFilters(rows, filters);
+  }, [purchases, clients, filters]);
 
   const columns = useMemo(
     () => getPurchasesColumns({ onView, onEdit }),
@@ -73,6 +79,7 @@ export function PurchasesDataTable({
       sorting,
       globalFilter,
     },
+    autoResetPageIndex: true,
     initialState: {
       pagination: {
         pageIndex: 0,
@@ -142,24 +149,7 @@ export function PurchasesDataTable({
         </Table>
       </div>
 
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Anterior
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Siguiente
-        </Button>
-      </div>
+      <DataTablePagination table={table} />
     </div>
   );
 }

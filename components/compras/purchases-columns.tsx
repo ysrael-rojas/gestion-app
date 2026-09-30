@@ -24,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { PaymentStatusBadge } from "@/components/shared/payment-status-badge";
 import type { Purchase } from "@/components/compras/types";
 import {
   getOptionLabel,
@@ -150,11 +151,11 @@ export function getPurchasesColumns({ onView, onEdit }: PurchasesColumnsActions)
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Estado
+            Estado Pago
             <ArrowUpDown />
           </Button>
         ),
-        cell: ({ getValue }) => getValue(),
+        cell: ({ row }) => <PaymentStatusBadge status={row.original.status} />,
       }
     ),
     columnHelper.accessor((purchase) => purchase.creditDays, {
