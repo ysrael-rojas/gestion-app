@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -55,44 +56,53 @@ export function ListingsToolbar({ children }: ListingsToolbarProps) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-2">
-        <Input
-          type="date"
-          aria-label="Desde"
-          className="w-auto"
-          value={filters.desde ?? ""}
-          onChange={(event) =>
-            updateFilters({ desde: event.target.value || null })
-          }
-        />
-        <Input
-          type="date"
-          aria-label="Hasta"
-          className="w-auto"
-          value={filters.hasta ?? ""}
-          onChange={(event) =>
-            updateFilters({ hasta: event.target.value || null })
-          }
-        />
-        <Select
-          value={filters.estado}
-          items={PAYMENT_STATUS_FILTER_OPTIONS}
-          onValueChange={(value) =>
-            updateFilters({
-              estado: value ?? DEFAULT_PAYMENT_STATUS_FILTER,
-            })
-          }
-        >
-          <SelectTrigger aria-label="Estado de pago">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PAYMENT_STATUS_FILTER_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Label>Desde:</Label>
+          <Input
+            type="date"
+            aria-label="Desde"
+            className="w-auto"
+            value={filters.desde ?? ""}
+            onChange={(event) =>
+              updateFilters({ desde: event.target.value || null })
+            }
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Label>Hasta:</Label>
+          <Input
+            type="date"
+            aria-label="Hasta"
+            className="w-auto"
+            value={filters.hasta ?? ""}
+            onChange={(event) =>
+              updateFilters({ hasta: event.target.value || null })
+            }
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <Label>Estado pago:</Label>
+          <Select
+            value={filters.estado}
+            items={PAYMENT_STATUS_FILTER_OPTIONS}
+            onValueChange={(value) =>
+              updateFilters({
+                estado: value ?? DEFAULT_PAYMENT_STATUS_FILTER,
+              })
+            }
+          >
+            <SelectTrigger aria-label="Estado de pago">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAYMENT_STATUS_FILTER_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         {hasActiveFilters ? (
           <Button variant="ghost" onClick={clearFilters}>
             <X />
