@@ -326,7 +326,7 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
           name="paymentType"
           render={({ field }) => (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="paymentType">Tipo de pago</Label>
+              <Label htmlFor="paymentType">Condición</Label>
               <Select
                 value={field.value ? field.value : null}
                 items={paymentTypeItems}
