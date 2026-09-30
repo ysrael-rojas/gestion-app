@@ -1,6 +1,7 @@
 ---
 description: Verifica los criterios de aceptación de una spec usando el agente spec-verifier.
 agent: spec-verifier
+model: opencode-go/deepseek-v4.1-flash
 ---
 
 Verifica la spec indicada. La ruta es: $ARGUMENTS

@@ -222,6 +222,7 @@ export function getSalesColumns({ onView, onEdit }: SalesColumnsActions) {
                       <Button
                         variant="ghost"
                         size="icon-sm"
+                        nativeButton={false}
                         render={
                           <Link
                             href={`/pagos/ingresos?entityId=${sale.entityId}&comprobanteId=${sale.id}`}

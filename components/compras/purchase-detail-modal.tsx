@@ -151,6 +151,7 @@ export function PurchaseDetailModal({
           <CardFooter className="justify-end gap-2">
             {purchase.status === "PENDIENTE" ? (
               <Button
+                nativeButton={false}
                 render={
                   <Link
                     href={`/pagos/egresos?entityId=${purchase.supplierId}&comprobanteId=${purchase.id}`}

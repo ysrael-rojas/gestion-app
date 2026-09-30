@@ -1,6 +1,6 @@
 # SPEC 09 — Pagos, anticipos y recibos de ingreso/egreso
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 07, SPEC 08
 > **Date:** 2026-09-29
 > **Objective:** Registrar pagos de ventas y compras en un módulo único que emite recibos de ingreso/egreso con numeración anual por tipo, permite abonos parciales y anticipos, los asigna a una o varias facturas y actualiza el estado PAGADO/PENDIENTE de cada comprobante.
@@ -482,30 +482,30 @@ Convenciones:
 
 ## Acceptance criteria
 
-- [ ] Existen `public.payment`, `public.payment_allocation` y `public.receipt_sequence` con columnas, checks, índices, triggers y RLS descritos; `receipt_sequence` no tiene políticas.
-- [ ] Existen las vistas `voucher_balance` y `payment_balance` con `security_invoker = true` y `grant select` a `anon` y `authenticated`.
-- [ ] Insertar un pago asigna `receipt_number` con el patrón `RI-AAAA-000001` o `RE-AAAA-000001`; dos pagos consecutivos del mismo año y dirección reciben correlativos consecutivos.
-- [ ] Un pago con `issue_date` de otro año usa el correlativo de ese año (`receipt_year` = año de emisión).
-- [ ] Un pago que falla no consume correlativo: al reintentar, el número asignado es el inmediato siguiente al último emitido existente.
-- [ ] Un pago insertado sin asignaciones queda con `unassigned_amount = amount` en `payment_balance`.
-- [ ] Asignar importes a una o varias facturas crea filas en `payment_allocation`; una factura puede recibir varios pagos y un pago puede cubrir varias facturas.
-- [ ] Intentar asignar a una factura un importe mayor a su saldo lanza error y no inserta la asignación.
-- [ ] No se puede asignar una factura de venta a un pago de dirección `EGRESO`, ni una factura de otra entidad.
-- [ ] Al cubrir el total de una factura, `comprobante.status` pasa a `PAGADO`; con saldo parcial o cero asignado permanece `PENDIENTE`.
-- [ ] Anular un pago actualiza `status = 'ANULADO'` con motivo y `voided_at`, conserva `receipt_number` y devuelve el saldo a las facturas afectadas (vuelven a `PENDIENTE` si tenían importe aplicado).
-- [ ] `receipt_number` y `void_reason` no se pueden dejar en estados inconsistentes (el check `payment_void_check` lo impide).
-- [ ] `/pagos/ingresos` y `/pagos/egresos` renderizan sin errores en consola, con skeleton al cargar y `toast.error` en fallos.
-- [ ] Registrar un pago desde la UI muestra el recibo y persiste al recargar.
-- [ ] El formulario exige entidad, fecha de pago, importe mayor a 0 y método; rechaza asignaciones que sumen más que el importe.
-- [ ] El campo **Referencia** es opcional en todos los métodos y se imprime cuando fue ingresado.
-- [ ] Un pago con saldo sin asignar muestra el botón **Asignar saldo** y permite aplicarlo a facturas abiertas después.
-- [ ] **Anular pago** pide un motivo y no borra el recibo.
-- [ ] **Imprimir recibo** abre el diálogo, permite elegir 58/80 mm (default 80), conserva el ancho entre sesiones y en la impresión solo se ve el recibo.
-- [ ] El recibo muestra número, fecha de emisión, fecha de pago, entidad, método, referencia, importe, detalle de asignaciones y saldo sin asignar.
-- [ ] Reimprimir un recibo usa el mismo número y no crea un pago nuevo.
-- [ ] El sidebar muestra **PAGOS** con **INGRESOS** y **EGRESOS**, navega a las rutas y marca el subítem activo.
-- [ ] `/ventas/listado` y `/compras/listado` muestran **Registrar pago** solo en comprobantes `PENDIENTE` y abren el formulario precargado en la ruta de pagos correspondiente.
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] Existen `public.payment`, `public.payment_allocation` y `public.receipt_sequence` con columnas, checks, índices, triggers y RLS descritos; `receipt_sequence` no tiene políticas.
+- [x] Existen las vistas `voucher_balance` y `payment_balance` con `security_invoker = true` y `grant select` a `anon` y `authenticated`.
+- [x] Insertar un pago asigna `receipt_number` con el patrón `RI-AAAA-000001` o `RE-AAAA-000001`; dos pagos consecutivos del mismo año y dirección reciben correlativos consecutivos.
+- [x] Un pago con `issue_date` de otro año usa el correlativo de ese año (`receipt_year` = año de emisión).
+- [x] Un pago que falla no consume correlativo: al reintentar, el número asignado es el inmediato siguiente al último emitido existente.
+- [x] Un pago insertado sin asignaciones queda con `unassigned_amount = amount` en `payment_balance`.
+- [x] Asignar importes a una o varias facturas crea filas en `payment_allocation`; una factura puede recibir varios pagos y un pago puede cubrir varias facturas.
+- [x] Intentar asignar a una factura un importe mayor a su saldo lanza error y no inserta la asignación.
+- [x] No se puede asignar una factura de venta a un pago de dirección `EGRESO`, ni una factura de otra entidad.
+- [x] Al cubrir el total de una factura, `comprobante.status` pasa a `PAGADO`; con saldo parcial o cero asignado permanece `PENDIENTE`.
+- [x] Anular un pago actualiza `status = 'ANULADO'` con motivo y `voided_at`, conserva `receipt_number` y devuelve el saldo a las facturas afectadas (vuelven a `PENDIENTE` si tenían importe aplicado).
+- [x] `receipt_number` y `void_reason` no se pueden dejar en estados inconsistentes (el check `payment_void_check` lo impide).
+- [x] `/pagos/ingresos` y `/pagos/egresos` renderizan sin errores en consola, con skeleton al cargar y `toast.error` en fallos.
+- [x] Registrar un pago desde la UI muestra el recibo y persiste al recargar.
+- [x] El formulario exige entidad, fecha de pago, importe mayor a 0 y método; rechaza asignaciones que sumen más que el importe.
+- [x] El campo **Referencia** es opcional en todos los métodos y se imprime cuando fue ingresado.
+- [x] Un pago con saldo sin asignar muestra el botón **Asignar saldo** y permite aplicarlo a facturas abiertas después.
+- [x] **Anular pago** pide un motivo y no borra el recibo.
+- [x] **Imprimir recibo** abre el diálogo, permite elegir 58/80 mm (default 80), conserva el ancho entre sesiones y en la impresión solo se ve el recibo.
+- [x] El recibo muestra número, fecha de emisión, fecha de pago, entidad, método, referencia, importe, detalle de asignaciones y saldo sin asignar.
+- [x] Reimprimir un recibo usa el mismo número y no crea un pago nuevo.
+- [x] El sidebar muestra **PAGOS** con **INGRESOS** y **EGRESOS**, navega a las rutas y marca el subítem activo.
+- [x] `/ventas/listado` y `/compras/listado` muestran **Registrar pago** solo en comprobantes `PENDIENTE` y abren el formulario precargado en la ruta de pagos correspondiente.
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 

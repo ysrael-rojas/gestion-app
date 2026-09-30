@@ -217,6 +217,7 @@ export function getPurchasesColumns({ onView, onEdit }: PurchasesColumnsActions)
                       <Button
                         variant="ghost"
                         size="icon-sm"
+                        nativeButton={false}
                         render={
                           <Link
                             href={`/pagos/egresos?entityId=${purchase.supplierId}&comprobanteId=${purchase.id}`}
