@@ -111,21 +111,21 @@ Convención: las clases de color siguen los design tokens de shadcn/Tailwind (si
 
 ## Acceptance criteria
 
-- [ ] `/ventas/listado` y `/compras/listado` muestran una fila superior con los filtros a la izquierda y el botón "Registrar venta" / "Registrar compra" a la derecha.
-- [ ] Los filtros son: `desde` (date), `hasta` (date) y estado de pago (`Todos` / `Pagado` / `Pendiente`); por defecto todos vacíos / `Todos`.
-- [ ] Los filtros se persisten en `searchParams`: `?desde=YYYY-MM-DD&hasta=YYYY-MM-DD&estado=PAGADO|PENDIENTE`. Recargar la página conserva los filtros y compartir la URL reproduce el mismo listado.
-- [ ] El filtro de fecha filtra sobre `issueDate` (Fecha emisión) y es inclusivo en ambos extremos.
-- [ ] El filtro de estado mapea `Pagado` → `status === "PAGADO"`, `Pendiente` → `status === "PENDIENTE"`, `Todos` no aplica filtro (y se omite de la URL).
-- [ ] Si `desde` o `hasta` no son fechas válidas, se ignoran sin romper la página (validación tolerante en `parseListadoFilters`).
-- [ ] Cuando hay al menos un filtro activo, aparece el botón "Limpiar filtros" que resetea los `searchParams` y la paginación a la página 0.
-- [ ] El input de búsqueda libre "Buscar ventas/compras" sigue funcionando y conserva su posición actual (sobre la tabla, debajo de la fila de filtros).
-- [ ] La columna "Estado" se renombra a "Estado Pago" en ambas tablas.
-- [ ] La celda de "Estado Pago" muestra badge verde para `PAGADO` y rojo para `PENDIENTE`, con buen contraste en modo claro y oscuro.
-- [ ] El badge usa `bg-emerald-500/15` / `bg-red-500/15` con `text-emerald-700` / `text-red-700` en claro y `*-300` en oscuro — sin colores hex hardcodeados.
+- [x] `/ventas/listado` y `/compras/listado` muestran una fila superior con los filtros a la izquierda y el botón "Registrar venta" / "Registrar compra" a la derecha.
+- [x] Los filtros son: `desde` (date), `hasta` (date) y estado de pago (`Todos` / `Pagado` / `Pendiente`); por defecto todos vacíos / `Todos`.
+- [x] Los filtros se persisten en `searchParams`: `?desde=YYYY-MM-DD&hasta=YYYY-MM-DD&estado=PAGADO|PENDIENTE`. Recargar la página conserva los filtros y compartir la URL reproduce el mismo listado.
+- [x] El filtro de fecha filtra sobre `issueDate` (Fecha emisión) y es inclusivo en ambos extremos.
+- [x] El filtro de estado mapea `Pagado` → `status === "PAGADO"`, `Pendiente` → `status === "PENDIENTE"`, `Todos` no aplica filtro (y se omite de la URL).
+- [x] Si `desde` o `hasta` no son fechas válidas, se ignoran sin romper la página (validación tolerante en `parseListadoFilters`).
+- [x] Cuando hay al menos un filtro activo, aparece el botón "Limpiar filtros" que resetea los `searchParams` y la paginación a la página 0.
+- [x] El input de búsqueda libre "Buscar ventas/compras" sigue funcionando y conserva su posición actual (sobre la tabla, debajo de la fila de filtros).
+- [x] La columna "Estado" se renombra a "Estado Pago" en ambas tablas.
+- [x] La celda de "Estado Pago" muestra badge verde para `PAGADO` y rojo para `PENDIENTE`, con buen contraste en modo claro y oscuro.
+- [x] El badge usa `bg-emerald-500/15` / `bg-red-500/15` con `text-emerald-700` / `text-red-700` en claro y `*-300` en oscuro — sin colores hex hardcodeados.
 - [ ] La paginación muestra: contador "Mostrando X–Y de Z", selector de tamaño (10/25/50/100, default 10), botones Anterior/Siguiente y números de página con elipsis cuando hay más de 5 páginas.
 - [ ] Cambiar el tamaño de página resetea al índice 0.
 - [ ] Cambiar cualquier filtro resetea la paginación al índice 0.
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
