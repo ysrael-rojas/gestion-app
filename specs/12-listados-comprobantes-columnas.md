@@ -1,6 +1,6 @@
 # SPEC 12 — Labels en filtros y reestructuración de columnas en listados de ventas y compras
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 07, SPEC 08, SPEC 11
 > **Date:** 2026-09-30
 > **Objective:** Añadir etiquetas visibles a los filtros de fecha y estado del `ListingsToolbar` y reestructurar (encabezados, orden y alineación) las columnas de los listados de ventas y compras, renombrando "Tipo pago" a "Condición".
@@ -93,24 +93,24 @@ En ventas el orden actual ya coincide. En compras hay que reubicar `status`, que
 
 ## Acceptance criteria
 
-- [ ] En `/ventas/listado` y `/compras/listado` el filtro de fecha de inicio muestra la etiqueta `Desde:`.
-- [ ] El filtro de fecha final muestra la etiqueta `Hasta:`.
-- [ ] El filtro de estado muestra la etiqueta `Estado pago:`.
-- [ ] El input de búsqueda libre conserva solo su placeholder, sin etiqueta visible.
-- [ ] La primera columna se titula `F. emisión` y su contenido (encabezado y celdas) está centrado.
-- [ ] La segunda columna se titula `T. comprobante` y su contenido está centrado.
-- [ ] La columna `Nro comprobante` tiene su contenido centrado.
-- [ ] La columna `Cliente` (ventas) y `Proveedor` (compras) tiene su contenido alineado a la izquierda.
-- [ ] La columna `Total` tiene su contenido alineado a la derecha.
-- [ ] La columna se titula `Condición` y muestra los valores `CONTADO` / `CREDITO` en el listado.
-- [ ] La columna `Días de crédito` tiene su contenido centrado.
-- [ ] La columna se titula `F. vencimiento` y su contenido está centrado.
-- [ ] La columna se titula `Estado pago` y su contenido (badge) está centrado.
-- [ ] En ambas tablas el orden de columnas es: F. emisión, T. comprobante, Nro comprobante, Cliente/Proveedor, Total, Condición, Días de crédito, F. vencimiento, Estado pago, Acciones.
-- [ ] El botón de ordenamiento de cada encabezado sigue siendo clickeable luego de aplicar la alineación.
-- [ ] En el formulario de venta y de compra, la etiqueta del `Select` de pago dice `Condición` y las opciones siguen siendo `Contado` / `Crédito`.
-- [ ] En el modal de detalle de venta y de compra, la etiqueta del campo de pago dice `Condición` y el valor sigue siendo `Contado` / `Crédito`.
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] En `/ventas/listado` y `/compras/listado` el filtro de fecha de inicio muestra la etiqueta `Desde:`.
+- [x] El filtro de fecha final muestra la etiqueta `Hasta:`.
+- [x] El filtro de estado muestra la etiqueta `Estado pago:`.
+- [x] El input de búsqueda libre conserva solo su placeholder, sin etiqueta visible.
+- [x] La primera columna se titula `F. emisión` y su contenido (encabezado y celdas) está centrado.
+- [x] La segunda columna se titula `T. comprobante` y su contenido está centrado.
+- [x] La columna `Nro comprobante` tiene su contenido centrado.
+- [x] La columna `Cliente` (ventas) y `Proveedor` (compras) tiene su contenido alineado a la izquierda.
+- [x] La columna `Total` tiene su contenido alineado a la derecha.
+- [x] La columna se titula `Condición` y muestra los valores `CONTADO` / `CREDITO` en el listado.
+- [x] La columna `Días de crédito` tiene su contenido centrado.
+- [x] La columna se titula `F. vencimiento` y su contenido está centrado.
+- [x] La columna se titula `Estado pago` y su contenido (badge) está centrado.
+- [x] En ambas tablas el orden de columnas es: F. emisión, T. comprobante, Nro comprobante, Cliente/Proveedor, Total, Condición, Días de crédito, F. vencimiento, Estado pago, Acciones.
+- [x] El botón de ordenamiento de cada encabezado sigue siendo clickeable luego de aplicar la alineación.
+- [x] En el formulario de venta y de compra, la etiqueta del `Select` de pago dice `Condición` y las opciones siguen siendo `Contado` / `Crédito`.
+- [x] En el modal de detalle de venta y de compra, la etiqueta del campo de pago dice `Condición` y el valor sigue siendo `Contado` / `Crédito`.
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
