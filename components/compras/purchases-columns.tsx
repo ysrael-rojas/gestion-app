@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   columnFilteringFeature,
   createColumnHelper,
@@ -14,7 +15,7 @@ import {
   sortFn_text,
   tableFeatures,
 } from "@tanstack/react-table";
-import { ArrowUpDown, Eye, Pencil, Printer } from "lucide-react";
+import { ArrowUpDown, Eye, Pencil, Printer, Wallet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -209,6 +210,28 @@ export function getPurchasesColumns({ onView, onEdit }: PurchasesColumnsActions)
                 </TooltipTrigger>
                 <TooltipContent>Ver</TooltipContent>
               </Tooltip>
+              {purchase.status === "PENDIENTE" ? (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        nativeButton={false}
+                        render={
+                          <Link
+                            href={`/pagos/egresos?entityId=${purchase.supplierId}&comprobanteId=${purchase.id}`}
+                          />
+                        }
+                      />
+                    }
+                  >
+                    <Wallet />
+                    <span className="sr-only">Registrar pago</span>
+                  </TooltipTrigger>
+                  <TooltipContent>Registrar pago</TooltipContent>
+                </Tooltip>
+              ) : null}
               <Tooltip>
                 <TooltipTrigger
                   render={<Button variant="ghost" size="icon-sm" />}

@@ -133,9 +133,192 @@ export type Database = {
         }
         Relationships: []
       }
+      payment: {
+        Row: {
+          amount: number
+          created_at: string
+          direction: Database["public"]["Enums"]["payment_direction"]
+          entity_id: string
+          id: string
+          issue_date: string
+          method: Database["public"]["Enums"]["payment_method"]
+          notes: string | null
+          payment_date: string
+          receipt_number: string | null
+          receipt_serial: number
+          receipt_year: number
+          reference: string | null
+          status: Database["public"]["Enums"]["payment_status"]
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          direction: Database["public"]["Enums"]["payment_direction"]
+          entity_id: string
+          id?: string
+          issue_date?: string
+          method: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          payment_date: string
+          receipt_number?: string | null
+          receipt_serial: number
+          receipt_year: number
+          reference?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          direction?: Database["public"]["Enums"]["payment_direction"]
+          entity_id?: string
+          id?: string
+          issue_date?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          notes?: string | null
+          payment_date?: string
+          receipt_number?: string | null
+          receipt_serial?: number
+          receipt_year?: number
+          reference?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entidad"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_allocation: {
+        Row: {
+          amount: number
+          comprobante_id: string
+          created_at: string
+          id: string
+          payment_id: string
+        }
+        Insert: {
+          amount: number
+          comprobante_id: string
+          created_at?: string
+          id?: string
+          payment_id: string
+        }
+        Update: {
+          amount?: number
+          comprobante_id?: string
+          created_at?: string
+          id?: string
+          payment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocation_comprobante_id_fkey"
+            columns: ["comprobante_id"]
+            isOneToOne: false
+            referencedRelation: "comprobante"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocation_comprobante_id_fkey"
+            columns: ["comprobante_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_balance"
+            referencedColumns: ["comprobante_id"]
+          },
+          {
+            foreignKeyName: "payment_allocation_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocation_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment_balance"
+            referencedColumns: ["payment_id"]
+          },
+        ]
+      }
+      receipt_sequence: {
+        Row: {
+          direction: Database["public"]["Enums"]["payment_direction"]
+          last_serial: number
+          year: number
+        }
+        Insert: {
+          direction: Database["public"]["Enums"]["payment_direction"]
+          last_serial?: number
+          year: number
+        }
+        Update: {
+          direction?: Database["public"]["Enums"]["payment_direction"]
+          last_serial?: number
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      payment_balance: {
+        Row: {
+          amount: number | null
+          assigned_amount: number | null
+          direction: Database["public"]["Enums"]["payment_direction"] | null
+          entity_id: string | null
+          payment_id: string | null
+          status: Database["public"]["Enums"]["payment_status"] | null
+          unassigned_amount: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entidad"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voucher_balance: {
+        Row: {
+          balance: number | null
+          comprobante_id: string | null
+          effective_due_date: string | null
+          entity_id: string | null
+          issue_date: string | null
+          paid_amount: number | null
+          payment_type: Database["public"]["Enums"]["payment_type"] | null
+          status: Database["public"]["Enums"]["comprobante_status"] | null
+          total: number | null
+          voucher_kind: Database["public"]["Enums"]["voucher_kind"] | null
+          voucher_number: string | null
+          voucher_type: Database["public"]["Enums"]["voucher_type"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comprobante_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "entidad"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
@@ -143,6 +326,9 @@ export type Database = {
     Enums: {
       comprobante_status: "PAGADO" | "PENDIENTE"
       document_type: "SIN_DOCUMENTO" | "RUC" | "DNI" | "CARNET_EXTRANJERIA"
+      payment_direction: "INGRESO" | "EGRESO"
+      payment_method: "EFECTIVO" | "TRANSFERENCIA_BCP" | "TARJETA_CREDITO"
+      payment_status: "REGISTRADO" | "ANULADO"
       payment_type: "CONTADO" | "CREDITO"
       voucher_kind: "COMPRA" | "VENTA"
       voucher_type: "FACTURA" | "BOLETA" | "NOTA_VENTA"
@@ -275,6 +461,9 @@ export const Constants = {
     Enums: {
       comprobante_status: ["PAGADO", "PENDIENTE"],
       document_type: ["SIN_DOCUMENTO", "RUC", "DNI", "CARNET_EXTRANJERIA"],
+      payment_direction: ["INGRESO", "EGRESO"],
+      payment_method: ["EFECTIVO", "TRANSFERENCIA_BCP", "TARJETA_CREDITO"],
+      payment_status: ["REGISTRADO", "ANULADO"],
       payment_type: ["CONTADO", "CREDITO"],
       voucher_kind: ["COMPRA", "VENTA"],
       voucher_type: ["FACTURA", "BOLETA", "NOTA_VENTA"],
