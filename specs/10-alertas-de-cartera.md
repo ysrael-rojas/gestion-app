@@ -1,6 +1,6 @@
 # SPEC 10 — Avisos de cartera y contadores en la navegación
 
-> **Status:** Draft
+> **Status:** Implementado
 > **Depends on:** SPEC 09
 > **Date:** 2026-09-29
 > **Objective:** Mostrar en el inicio un resumen de cartera con cantidades y montos por cobrar, por pagar y sin asignar, y exponer contadores en **PAGOS** que enlacen a las listas filtradas de pendientes y vencidos.
@@ -17,7 +17,7 @@ SPEC 09 deja pagos y saldos consultables pero sin señales visibles: el usuario 
 - `lib/pagos/cartera.ts`: `getCarteraResumen()`, `listOpenVouchers(direction)` y `listUnassignedPayments(direction)`, leyendo `voucher_balance` y `payment_balance`.
 - Extender `components/pagos/pagos-provider.tsx` con `summary`, `isSummaryLoading` y `refreshSummary`, y refrescar el resumen tras `addPayment`, `assignAllocations` y `annulPayment`.
 - Reescribir `app/page.tsx` como tablero **Resumen de cartera**: una tarjeta por cada cartera (**Por cobrar**, **Por pagar**, **Recibos sin asignar**, **Pagos sin asignar**) con cantidad, monto total y desglose de vencidos; listas cortas (máximo 5) de comprobantes vencidos con enlace a la lista filtrada.
-- Filtros por `searchParams` en `/pagos/ingresos` y `/pagos/egresos`: `?filtro=pendientes`, `?filtro=sin-asignar` y `?filtro=vencidas`; la vista aplica el filtro sobre las filas ya cargadas y muestra un chip removible.
+- Filtros por `searchParams` en `/pagos/ingresos` y `/pagos/egresos`: `?filtro=pendientes` y `?filtro=vencidas` listan **comprobantes** con saldo en la dirección de la vista (vencidos en el segundo caso) vía `listOpenVouchers`; `?filtro=sin-asignar` acota la tabla de **pagos** a los `REGISTRADO` con saldo sin asignar vía `listUnassignedPayments`. La vista muestra un chip removible y, sin `filtro`, conserva la tabla de pagos de SPEC 09.
 - Contadores en `components/app-sidebar.tsx`: `SidebarMenuBadge` en **PAGOS** (total) y en cada subítem (**INGRESOS**: por cobrar + recibos sin asignar; **EGRESOS**: por pagar + pagos sin asignar), leyendo el resumen del provider.
 - Enlaces de los avisos: cada tarjeta y cada lista del inicio enlaza a `/pagos/ingresos` o `/pagos/egresos` con el `filtro` correspondiente.
 - Reglas de vencimiento explícitas: un comprobante con saldo está **vencido** cuando su `effective_due_date` (`due_date` si es CRÉDITO, `issue_date` si es CONTADO) es anterior a hoy.
@@ -98,9 +98,10 @@ Filtros de la vista (`components/pagos/payments-view.tsx`, SPEC 09):
 ```ts
 type PaymentsFilter = "todas" | "pendientes" | "sin-asignar" | "vencidas";
 // ?filtro=<valor> en /pagos/ingresos y /pagos/egresos
-// "pendientes": comprobantes con saldo en la dirección de la vista
-// "sin-asignar": pagos REGISTRADO con unassigned_amount > 0
-// "vencidas": comprobantes con saldo y effective_due_date < hoy
+// "pendientes": lista de comprobantes con saldo (listOpenVouchers)
+// "vencidas": igual, solo los que cumplen isOverdue (effective_due_date < hoy)
+// "sin-asignar": tabla de pagos REGISTRADO con unassigned_amount > 0 (listUnassignedPayments)
+// sin filtro ("todas"): tabla de pagos de SPEC 09 sin acotar
 ```
 
 Convenciones:
@@ -115,7 +116,7 @@ Convenciones:
 1. Crear `components/cartera/types.ts` y `lib/pagos/cartera.ts` con `getCarteraResumen`, `listOpenVouchers` y `listUnassignedPayments`. Verificar `npm run lint`.
 2. Extender `components/pagos/pagos-provider.tsx` con `summary`, `isSummaryLoading` y `refreshSummary`; llamar `refreshSummary` tras `addPayment`, `assignAllocations` y `annulPayment`, y al montar. Verificar `npm run build`.
 3. Añadir `SidebarMenuBadge` en `components/app-sidebar.tsx`: total en **PAGOS** y desglose en **INGRESOS** y **EGRESOS**, ocultos cuando el conteo es 0 y visibles en modo colapsado. Verificar que el sidebar renderiza sin error.
-4. Añadir los filtros `?filtro=` a `components/pagos/payments-view.tsx` y leerlos con `await searchParams` en `app/pagos/ingresos/page.tsx` y `app/pagos/egresos/page.tsx`. Verificar: `?filtro=pendientes`, `?filtro=sin-asignar` y `?filtro=vencidas` acotan las filas.
+4. Añadir los filtros `?filtro=` a `components/pagos/payments-view.tsx` y leerlos con `await searchParams` en `app/pagos/ingresos/page.tsx` y `app/pagos/egresos/page.tsx`. `pendientes`/`vencidas` renderizan la lista de comprobantes (`listOpenVouchers`); `sin-asignar` acota la tabla de pagos a los no asignados. Verificar: los tres valores acotan las filas y sin filtro se ven todas.
 5. Reescribir `app/page.tsx` (client component) con las cuatro tarjetas del resumen, el desglose de vencidos y las listas cortas con enlaces filtrados.
    - Manual: `/` muestra Por cobrar, Por pagar, Recibos sin asignar y Pagos sin asignar con cantidad y monto.
 6. Enlazar cada tarjeta y lista del inicio a `/pagos/ingresos?filtro=…` o `/pagos/egresos?filtro=…`. Verificar la navegación.
@@ -123,21 +124,21 @@ Convenciones:
 
 ## Acceptance criteria
 
-- [ ] Existe `lib/pagos/cartera.ts` con `getCarteraResumen`, `listOpenVouchers` y `listUnassignedPayments`, sin nuevas tablas ni migraciones.
-- [ ] `CarteraResumen` agrega cantidad y monto de ventas por cobrar, compras por pagar, recibos sin asignar y pagos sin asignar.
-- [ ] Un comprobante con saldo 0 no se cuenta; una venta o compra parcialmente pagada sí se cuenta por su saldo restante.
-- [ ] Un comprobante CONTADO con saldo y `issue_date` anterior a hoy se cuenta como vencido; uno con fecha de hoy no.
-- [ ] Un comprobante CRÉDITO se cuenta como vencido cuando `due_date < hoy` y su saldo es mayor a 0.
-- [ ] Un pago `ANULADO` no se cuenta como sin asignar.
-- [ ] `/` muestra cuatro tarjetas (**Por cobrar**, **Por pagar**, **Recibos sin asignar**, **Pagos sin asignar**) con cantidad y monto, y el desglose de vencidos.
-- [ ] Cada tarjeta y cada lista corta enlaza a la lista filtrada correspondiente del módulo de pagos.
-- [ ] El sidebar muestra un contador en **PAGOS** y contadores separados en **INGRESOS** y **EGRESOS**; se ocultan cuando el conteo es 0.
-- [ ] Registrar, anular un pago o asignar saldo actualiza los contadores y el resumen sin recargar la página.
-- [ ] `/pagos/ingresos?filtro=pendientes`, `?filtro=sin-asignar` y `?filtro=vencidas` acotan las filas; sin `filtro` se muestran todas.
-- [ ] El mismo comportamiento de filtros aplica en `/pagos/egresos`.
-- [ ] Quitar el filtro devuelve la lista completa y la URL queda sin el parámetro.
-- [ ] Si la carga del resumen falla, se muestra un `toast.error` en español y la app sigue usable.
-- [ ] `npm run lint` y `npm run build` pasan.
+- [x] Existe `lib/pagos/cartera.ts` con `getCarteraResumen`, `listOpenVouchers` y `listUnassignedPayments`, sin nuevas tablas ni migraciones.
+- [x] `CarteraResumen` agrega cantidad y monto de ventas por cobrar, compras por pagar, recibos sin asignar y pagos sin asignar.
+- [x] Un comprobante con saldo 0 no se cuenta; una venta o compra parcialmente pagada sí se cuenta por su saldo restante.
+- [x] Un comprobante CONTADO con saldo y `issue_date` anterior a hoy se cuenta como vencido; uno con fecha de hoy no.
+- [x] Un comprobante CRÉDITO se cuenta como vencido cuando `due_date < hoy` y su saldo es mayor a 0.
+- [x] Un pago `ANULADO` no se cuenta como sin asignar.
+- [x] `/` muestra cuatro tarjetas (**Por cobrar**, **Por pagar**, **Recibos sin asignar**, **Pagos sin asignar**) con cantidad y monto, y el desglose de vencidos.
+- [x] Cada tarjeta y cada lista corta enlaza a la lista filtrada correspondiente del módulo de pagos.
+- [x] El sidebar muestra un contador en **PAGOS** y contadores separados en **INGRESOS** y **EGRESOS**; se ocultan cuando el conteo es 0.
+- [x] Registrar, anular un pago o asignar saldo actualiza los contadores y el resumen sin recargar la página.
+- [x] `/pagos/ingresos?filtro=pendientes`, `?filtro=sin-asignar` y `?filtro=vencidas` acotan las filas; sin `filtro` se muestran todas.
+- [x] El mismo comportamiento de filtros aplica en `/pagos/egresos`.
+- [x] Quitar el filtro devuelve la lista completa y la URL queda sin el parámetro.
+- [x] Si la carga del resumen falla, se muestra un `toast.error` en español y la app sigue usable.
+- [x] `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
@@ -147,6 +148,7 @@ Convenciones:
 - **Sí:** contadores en **PAGOS** y en sus subítems **INGRESOS**/**EGRESOS**, ocultos cuando valen 0.
 - **Sí:** `CONTADO` con saldo vence desde el día siguiente a su emisión (`effective_due_date = issue_date`).
 - **Sí:** las listas filtradas viven en las rutas de pagos mediante `?filtro=`; el inicio y el sidebar solo enlazan.
+- **Sí:** `?filtro=pendientes`/`vencidas` listan **comprobantes** (no pagos) dentro de las rutas de pagos, porque el saldo y el vencimiento son atributos del comprobante; `?filtro=sin-asignar` acota la tabla de pagos; sin filtro se conserva la tabla de pagos de SPEC 09.
 - **Sí:** `/` deja de ser la pantalla de ejemplo y pasa a ser el tablero de cartera.
 - **No:** centro de notificaciones, correo, push, mora/intereses, API/cron de vencimientos y agregaciones en el servidor.
 

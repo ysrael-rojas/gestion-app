@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useTable, type SortingState } from "@tanstack/react-table";
+import { X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,10 +28,19 @@ import {
   paymentsTableFeatures,
   type PaymentsRow,
 } from "@/components/pagos/payments-columns";
-import type { Payment, PaymentDirection } from "@/components/pagos/types";
+import type {
+  Payment,
+  PaymentDirection,
+  VoucherBalance,
+} from "@/components/pagos/types";
+import { listOpenVouchers, listUnassignedPayments } from "@/lib/pagos/cartera";
+import { isOverdue } from "@/lib/pagos/saldos";
 import type { PaymentFormValues } from "@/lib/schemas/payment";
+import { formatCurrency, formatDate, getTodayLocalDate } from "@/lib/utils";
 
 const SKELETON_ROWS = 5;
+
+export type PaymentsFilter = "todas" | "pendientes" | "sin-asignar" | "vencidas";
 
 interface ViewLabels {
   title: string;
@@ -53,6 +64,12 @@ const VIEW_LABELS: Record<PaymentDirection, ViewLabels> = {
   },
 };
 
+const FILTER_LABELS: Record<Exclude<PaymentsFilter, "todas">, string> = {
+  pendientes: "Pendientes",
+  "sin-asignar": "Sin asignar",
+  vencidas: "Vencidas",
+};
+
 function getEntityName(clients: Client[], entityId: string): string {
   return (
     clients.find((client) => client.id === entityId)?.name ??
@@ -60,25 +77,150 @@ function getEntityName(clients: Client[], entityId: string): string {
   );
 }
 
+function getFilterErrorMessage(error: unknown): string {
+  return error instanceof Error
+    ? error.message
+    : "No se pudo cargar la lista filtrada. Intenta nuevamente.";
+}
+
+interface VouchersTableProps {
+  vouchers: VoucherBalance[];
+  clients: Client[];
+  isLoading: boolean;
+  emptyLabel: string;
+}
+
+function VouchersTable({
+  vouchers,
+  clients,
+  isLoading,
+  emptyLabel,
+}: VouchersTableProps) {
+  const columnsCount = 5;
+
+  return (
+    <div className="overflow-hidden rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Comprobante</TableHead>
+            <TableHead>Entidad</TableHead>
+            <TableHead>Emisión</TableHead>
+            <TableHead>Vencimiento</TableHead>
+            <TableHead className="text-right">Saldo</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            Array.from({ length: SKELETON_ROWS }).map((_, rowIndex) => (
+              <TableRow key={`voucher-skeleton-${rowIndex}`}>
+                {Array.from({ length: columnsCount }).map((_, cellIndex) => (
+                  <TableCell key={`voucher-skeleton-${rowIndex}-${cellIndex}`}>
+                    <Skeleton className="h-5 w-full" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : vouchers.length ? (
+            vouchers.map((voucher) => (
+              <TableRow key={voucher.comprobanteId}>
+                <TableCell>{voucher.voucherNumber}</TableCell>
+                <TableCell>
+                  {getEntityName(clients, voucher.entityId)}
+                </TableCell>
+                <TableCell>{formatDate(voucher.issueDate)}</TableCell>
+                <TableCell>
+                  {voucher.effectiveDueDate
+                    ? formatDate(voucher.effectiveDueDate)
+                    : "—"}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatCurrency(voucher.balance)}
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell
+                colSpan={columnsCount}
+                className="h-24 text-center"
+              >
+                {emptyLabel}
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 interface PaymentsViewProps {
   direction: PaymentDirection;
   initialEntityId?: string;
   initialComprobanteId?: string;
+  initialFilter?: PaymentsFilter;
 }
 
 export function PaymentsView({
   direction,
   initialEntityId,
   initialComprobanteId,
+  initialFilter,
 }: PaymentsViewProps) {
   const { payments, isLoading, addPayment } = usePagos();
   const { clients } = useClientes();
+  const router = useRouter();
+  const pathname = usePathname();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(Boolean(initialEntityId));
   const [viewingPaymentId, setViewingPaymentId] = useState<string | null>(null);
   const [printingPaymentId, setPrintingPaymentId] = useState<string | null>(null);
+  const [vouchers, setVouchers] = useState<VoucherBalance[] | null>(null);
+  const [unassignedIds, setUnassignedIds] = useState<Set<string> | null>(null);
+  const [today] = useState(() => getTodayLocalDate());
+  const filter = initialFilter ?? "todas";
+  const isVoucherFilter = filter === "pendientes" || filter === "vencidas";
   const labels = VIEW_LABELS[direction];
+
+  useEffect(() => {
+    let active = true;
+
+    if (filter === "pendientes" || filter === "vencidas") {
+      listOpenVouchers(direction)
+        .then((data) => {
+          if (active) {
+            setVouchers(data);
+          }
+        })
+        .catch((error) => {
+          if (active) {
+            toast.error(getFilterErrorMessage(error));
+          }
+        });
+    } else if (filter === "sin-asignar") {
+      listUnassignedPayments(direction)
+        .then((data) => {
+          if (active) {
+            setUnassignedIds(new Set(data.map((payment) => payment.id)));
+          }
+        })
+        .catch((error) => {
+          if (active) {
+            toast.error(getFilterErrorMessage(error));
+          }
+        });
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [filter, direction]);
+
+  const clearFilter = useCallback(() => {
+    router.replace(pathname);
+  }, [router, pathname]);
 
   const openView = useCallback((payment: Payment) => {
     setViewingPaymentId(payment.id);
@@ -107,12 +249,29 @@ export function PaymentsView({
     () =>
       payments
         .filter((payment) => payment.direction === direction)
+        .filter((payment) =>
+          filter === "sin-asignar"
+            ? unassignedIds !== null && unassignedIds.has(payment.id)
+            : true
+        )
         .map((payment) => ({
           ...payment,
           entityName: getEntityName(clients, payment.entityId),
         })),
-    [payments, direction, clients]
+    [payments, direction, clients, filter, unassignedIds]
   );
+
+  const visibleVouchers = useMemo(() => {
+    if (!vouchers) {
+      return [];
+    }
+
+    return filter === "vencidas"
+      ? vouchers.filter((voucher) =>
+          isOverdue(voucher.effectiveDueDate, voucher.balance, today)
+        )
+      : vouchers;
+  }, [vouchers, filter, today]);
 
   const columns = useMemo(
     () => getPaymentsColumns({ onView: openView }),
@@ -155,76 +314,112 @@ export function PaymentsView({
           <Button onClick={() => setModalOpen(true)}>Registrar pago</Button>
         </div>
 
-        <div className="overflow-hidden rounded-md border">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder ? null : (
-                        <table.FlexRender header={header} />
-                      )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: SKELETON_ROWS }).map((_, rowIndex) => (
-                  <TableRow key={`skeleton-${rowIndex}`}>
-                    {Array.from({ length: columns.length }).map(
-                      (_, cellIndex) => (
-                        <TableCell key={`skeleton-${rowIndex}-${cellIndex}`}>
-                          <Skeleton className="h-5 w-full" />
-                        </TableCell>
-                      )
-                    )}
-                  </TableRow>
-                ))
-              ) : table.getRowModel().rows.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getAllCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        <table.FlexRender cell={cell} />
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    {labels.empty}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+        {filter !== "todas" ? (
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Filtro:</span>
+            <span className="inline-flex items-center gap-1 rounded-md border bg-muted px-2 py-1 text-xs font-medium">
+              {FILTER_LABELS[filter]}
+              <button
+                type="button"
+                onClick={clearFilter}
+                aria-label="Quitar filtro"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          </div>
+        ) : null}
 
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            Anterior
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            Siguiente
-          </Button>
-        </div>
+        {isVoucherFilter ? (
+          <VouchersTable
+            vouchers={visibleVouchers}
+            clients={clients}
+            isLoading={vouchers === null}
+            emptyLabel={
+              filter === "vencidas"
+                ? "No hay comprobantes vencidos"
+                : "No hay comprobantes pendientes"
+            }
+          />
+        ) : (
+          <>
+            <div className="overflow-hidden rounded-md border">
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead key={header.id}>
+                          {header.isPlaceholder ? null : (
+                            <table.FlexRender header={header} />
+                          )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    Array.from({ length: SKELETON_ROWS }).map((_, rowIndex) => (
+                      <TableRow key={`skeleton-${rowIndex}`}>
+                        {Array.from({ length: columns.length }).map(
+                          (_, cellIndex) => (
+                            <TableCell
+                              key={`skeleton-${rowIndex}-${cellIndex}`}
+                            >
+                              <Skeleton className="h-5 w-full" />
+                            </TableCell>
+                          )
+                        )}
+                      </TableRow>
+                    ))
+                  ) : table.getRowModel().rows.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow key={row.id}>
+                        {row.getAllCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            <table.FlexRender cell={cell} />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={columns.length}
+                        className="h-24 text-center"
+                      >
+                        {filter === "sin-asignar"
+                          ? "No hay pagos con saldo sin asignar"
+                          : labels.empty}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Siguiente
+              </Button>
+            </div>
+          </>
+        )}
       </div>
 
       <PaymentModal

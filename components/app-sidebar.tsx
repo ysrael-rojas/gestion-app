@@ -25,12 +25,14 @@ import {
   SidebarGroup,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import { usePagos } from "@/components/pagos/pagos-provider";
 
 const menu = {
   group: "MAESTRO",
@@ -39,6 +41,16 @@ const menu = {
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const { summary, isSummaryLoading } = usePagos();
+
+  const ingresosCount = summary
+    ? summary.receivable.count + summary.unassignedReceipts.count
+    : 0;
+  const egresosCount = summary
+    ? summary.payable.count + summary.unassignedPayments.count
+    : 0;
+  const pagosCount = ingresosCount + egresosCount;
+  const showBadge = (count: number) => !isSummaryLoading && count > 0;
 
   return (
     <Sidebar collapsible="icon">
@@ -105,6 +117,11 @@ export function AppSidebar() {
                 <span>PAGOS</span>
                 <ChevronRight className="ml-auto transition-transform duration-200 [[data-panel-open]_&]:rotate-90" />
               </CollapsibleTrigger>
+              {showBadge(pagosCount) ? (
+                <SidebarMenuBadge className="group-data-[collapsible=icon]:flex">
+                  {pagosCount}
+                </SidebarMenuBadge>
+              ) : null}
               <CollapsibleContent>
                 <SidebarMenuSub>
                   <SidebarMenuSubItem>
@@ -115,6 +132,9 @@ export function AppSidebar() {
                       <ArrowDownCircle />
                       <span>INGRESOS</span>
                     </SidebarMenuSubButton>
+                    {showBadge(ingresosCount) ? (
+                      <SidebarMenuBadge>{ingresosCount}</SidebarMenuBadge>
+                    ) : null}
                   </SidebarMenuSubItem>
                   <SidebarMenuSubItem>
                     <SidebarMenuSubButton
@@ -124,6 +144,9 @@ export function AppSidebar() {
                       <ArrowUpCircle />
                       <span>EGRESOS</span>
                     </SidebarMenuSubButton>
+                    {showBadge(egresosCount) ? (
+                      <SidebarMenuBadge>{egresosCount}</SidebarMenuBadge>
+                    ) : null}
                   </SidebarMenuSubItem>
                 </SidebarMenuSub>
               </CollapsibleContent>
