@@ -6,6 +6,11 @@ import { calculateAmounts } from "@/lib/ventas/amounts";
 
 type ComprobanteRow = Tables<"comprobante">;
 
+interface VoucherBalance {
+  paidAmount: number;
+  balance: number;
+}
+
 type ComprobanteMutation = Pick<
   ComprobanteRow,
   | "entity_id"
@@ -38,7 +43,12 @@ function mapPurchaseValues(values: PurchaseFormValues): ComprobanteMutation {
   };
 }
 
-function mapPurchaseRow(row: ComprobanteRow): Purchase {
+function mapPurchaseRow(
+  row: ComprobanteRow,
+  balanceMap?: Map<string, VoucherBalance>
+): Purchase {
+  const balance = balanceMap?.get(row.id);
+
   return {
     id: row.id,
     issueDate: row.issue_date,
@@ -53,6 +63,8 @@ function mapPurchaseRow(row: ComprobanteRow): Purchase {
     creditDays: row.credit_days,
     dueDate: row.due_date,
     status: row.status,
+    paidAmount: balance?.paidAmount ?? 0,
+    balance: balance?.balance ?? row.total,
   };
 }
 
@@ -71,18 +83,44 @@ function mapError(error: { code?: string; message: string }): Error {
 }
 
 export async function listPurchases(): Promise<Purchase[]> {
-  const { data, error } = await supabase
-    .from("comprobante")
-    .select("*")
-    .eq("voucher_kind", "COMPRA")
-    .is("deleted_at", null)
-    .order("issue_date", { ascending: false });
+  const [purchasesResult, balancesResult] = await Promise.all([
+    supabase
+      .from("comprobante")
+      .select("*")
+      .eq("voucher_kind", "COMPRA")
+      .is("deleted_at", null)
+      .order("issue_date", { ascending: false }),
+    supabase
+      .from("voucher_balance")
+      .select("comprobante_id, paid_amount, balance")
+      .eq("voucher_kind", "COMPRA"),
+  ]);
 
-  if (error) {
-    throw mapError(error);
+  if (purchasesResult.error) {
+    throw mapError(purchasesResult.error);
   }
 
-  return (data as ComprobanteRow[]).map(mapPurchaseRow);
+  const balanceMap = new Map<string, VoucherBalance>();
+
+  if (balancesResult.error) {
+    console.error(
+      "No se pudo cargar el saldo de las compras:",
+      balancesResult.error
+    );
+  } else {
+    for (const row of balancesResult.data ?? []) {
+      if (row.comprobante_id) {
+        balanceMap.set(row.comprobante_id, {
+          paidAmount: row.paid_amount ?? 0,
+          balance: row.balance ?? 0,
+        });
+      }
+    }
+  }
+
+  return (purchasesResult.data as ComprobanteRow[]).map((row) =>
+    mapPurchaseRow(row, balanceMap)
+  );
 }
 
 export async function createPurchaseRecord(
