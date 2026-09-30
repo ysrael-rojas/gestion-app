@@ -107,8 +107,9 @@ export function PagosProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     isMounted.current = true;
 
-    void refresh();
-    void refreshSummary();
+    void (async () => {
+      await Promise.all([refresh(), refreshSummary()]);
+    })();
 
     return () => {
       isMounted.current = false;
