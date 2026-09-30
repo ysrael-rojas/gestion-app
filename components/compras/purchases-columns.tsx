@@ -28,7 +28,6 @@ import { PaymentStatusBadge } from "@/components/shared/payment-status-badge";
 import type { Purchase } from "@/components/compras/types";
 import {
   getOptionLabel,
-  PAYMENT_TYPES,
   SALE_STATUSES,
   VOUCHER_TYPES,
 } from "@/lib/data/sale-options";
@@ -63,130 +62,161 @@ export function getPurchasesColumns({ onView, onEdit }: PurchasesColumnsActions)
   return columnHelper.columns([
     columnHelper.accessor("issueDate", {
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Fecha emisión
-          <ArrowUpDown />
-        </Button>
+        <div className="flex w-full justify-center">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            F. emisión
+            <ArrowUpDown />
+          </Button>
+        </div>
       ),
-      cell: ({ getValue }) => formatDate(getValue()),
+      cell: ({ getValue }) => (
+        <div className="text-center">{formatDate(getValue())}</div>
+      ),
     }),
     columnHelper.accessor(
       (purchase) => getOptionLabel(VOUCHER_TYPES, purchase.voucherType),
       {
         id: "voucherType",
         header: ({ column }) => (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Tipo comprobante
-            <ArrowUpDown />
-          </Button>
+          <div className="flex w-full justify-center">
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              T. comprobante
+              <ArrowUpDown />
+            </Button>
+          </div>
         ),
-        cell: ({ getValue }) => getValue(),
+        cell: ({ getValue }) => <div className="text-center">{getValue()}</div>,
       }
     ),
     columnHelper.accessor("voucherNumber", {
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Nro comprobante
-          <ArrowUpDown />
-        </Button>
-      ),
-      cell: ({ getValue }) => getValue(),
-    }),
-    columnHelper.accessor("supplierName", {
-      id: "supplier",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Proveedor
-          <ArrowUpDown />
-        </Button>
-      ),
-      cell: ({ getValue }) => getValue(),
-    }),
-    columnHelper.accessor("total", {
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Total
-          <ArrowUpDown />
-        </Button>
-      ),
-      cell: ({ getValue }) => formatCurrency(getValue()),
-    }),
-    columnHelper.accessor(
-      (purchase) => getOptionLabel(PAYMENT_TYPES, purchase.paymentType),
-      {
-        id: "paymentType",
-        header: ({ column }) => (
+        <div className="flex w-full justify-center">
           <Button
             variant="ghost"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            Tipo pago
+            Nro comprobante
             <ArrowUpDown />
           </Button>
-        ),
-        cell: ({ getValue }) => getValue(),
-      }
-    ),
+        </div>
+      ),
+      cell: ({ getValue }) => <div className="text-center">{getValue()}</div>,
+    }),
+    columnHelper.accessor("supplierName", {
+      id: "supplier",
+      header: ({ column }) => (
+        <div className="flex w-full justify-start">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Proveedor
+            <ArrowUpDown />
+          </Button>
+        </div>
+      ),
+      cell: ({ getValue }) => <div className="text-left">{getValue()}</div>,
+    }),
+    columnHelper.accessor("total", {
+      header: ({ column }) => (
+        <div className="flex w-full justify-end">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Total
+            <ArrowUpDown />
+          </Button>
+        </div>
+      ),
+      cell: ({ getValue }) => (
+        <div className="text-right">{formatCurrency(getValue())}</div>
+      ),
+    }),
+    columnHelper.accessor((purchase) => purchase.paymentType, {
+      id: "paymentType",
+      header: ({ column }) => (
+        <div className="flex w-full justify-center">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Condición
+            <ArrowUpDown />
+          </Button>
+        </div>
+      ),
+      cell: ({ getValue }) => <div className="text-center">{getValue()}</div>,
+    }),
+    columnHelper.accessor((purchase) => purchase.creditDays, {
+      id: "creditDays",
+      header: ({ column }) => (
+        <div className="flex w-full justify-center">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Días de crédito
+            <ArrowUpDown />
+          </Button>
+        </div>
+      ),
+      cell: ({ getValue }) => (
+        <div className="text-center">{getValue() ?? "—"}</div>
+      ),
+    }),
+    columnHelper.accessor((purchase) => purchase.dueDate, {
+      id: "dueDate",
+      header: ({ column }) => (
+        <div className="flex w-full justify-center">
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            F. vencimiento
+            <ArrowUpDown />
+          </Button>
+        </div>
+      ),
+      cell: ({ getValue }) => {
+        const value = getValue();
+        return (
+          <div className="text-center">{value ? formatDate(value) : "—"}</div>
+        );
+      },
+    }),
     columnHelper.accessor(
       (purchase) => getOptionLabel(SALE_STATUSES, purchase.status),
       {
         id: "status",
         header: ({ column }) => (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Estado Pago
-            <ArrowUpDown />
-          </Button>
+          <div className="flex w-full justify-center">
+            <Button
+              variant="ghost"
+              onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+              }
+            >
+              Estado pago
+              <ArrowUpDown />
+            </Button>
+          </div>
         ),
-        cell: ({ row }) => <PaymentStatusBadge status={row.original.status} />,
+        cell: ({ row }) => (
+          <div className="flex justify-center">
+            <PaymentStatusBadge status={row.original.status} />
+          </div>
+        ),
       }
     ),
-    columnHelper.accessor((purchase) => purchase.creditDays, {
-      id: "creditDays",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Días de crédito
-          <ArrowUpDown />
-        </Button>
-      ),
-      cell: ({ getValue }) => getValue() ?? "—",
-    }),
-    columnHelper.accessor((purchase) => purchase.dueDate, {
-      id: "dueDate",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Fecha de vencimiento
-          <ArrowUpDown />
-        </Button>
-      ),
-      cell: ({ getValue }) => {
-        const value = getValue();
-        return value ? formatDate(value) : "—";
-      },
-    }),
     columnHelper.display({
       id: "actions",
       header: () => <span className="sr-only">Acciones</span>,
