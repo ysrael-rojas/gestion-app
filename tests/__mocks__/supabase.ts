@@ -18,11 +18,9 @@
 
 type AnyRow = Record<string, unknown>;
 
-type Result<T> = { data: T; error: null } | { data: null; error: unknown };
-
-type TableResult = Result<AnyRow[]>;
-type SingleResult = Result<AnyRow>;
-type RpcResult = Result<unknown>;
+type TableResult = { data: AnyRow[] | null; error: unknown };
+type SingleResult = { data: AnyRow | null; error: unknown };
+type RpcResult = { data: unknown; error: unknown };
 
 interface QueryBuilder {
   select: (cols?: string) => QueryBuilder;
@@ -31,6 +29,7 @@ interface QueryBuilder {
   eq: (col: string, val: unknown) => QueryBuilder;
   gt: (col: string, val: unknown) => QueryBuilder;
   is: (col: string, val: unknown) => QueryBuilder;
+  in: (col: string, vals: unknown[]) => QueryBuilder;
   order: (col: string, opts?: { ascending?: boolean }) => QueryBuilder;
   single: () => Promise<SingleResult>;
   maybeSingle: () => Promise<SingleResult>;
@@ -96,6 +95,7 @@ export function createMockSupabase(): MockSupabase {
       eq: () => builder,
       gt: () => builder,
       is: () => builder,
+      in: () => builder,
       order: () => builder,
       single: async () => {
         const result = nextTableResult(table);
