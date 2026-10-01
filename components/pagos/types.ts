@@ -29,6 +29,23 @@ export interface PaymentAllocation {
   voucherType: VoucherType;
 }
 
+export interface PaymentHistoryEntry {
+  allocationId: string; // payment_allocation.id
+  paymentId: string; // payment.id (FK para ReceiptDialog)
+  receiptNumber: string; // "RI-2026-000001" | "RE-2026-000001"
+  paymentDate: string; // "YYYY-MM-DD" — fecha efectiva del pago
+  issueDate: string; // "YYYY-MM-DD" — fecha de emisión del recibo
+  direction: PaymentDirection;
+  method: PaymentMethod;
+  reference: string | null;
+  paymentAmount: number; // importe total del pago
+  amount: number; // importe aplicado a este comprobante (allocation.amount)
+  status: PaymentStatus; // "REGISTRADO" | "ANULADO"
+  voidedAt: string | null;
+  voidReason: string | null;
+  notes: string | null;
+}
+
 export interface PaymentDetail extends Payment {
   allocations: PaymentAllocation[];
   assignedAmount: number;

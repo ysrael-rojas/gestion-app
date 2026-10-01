@@ -4,6 +4,7 @@ import type {
   PaymentAllocation,
   PaymentDetail,
   PaymentDirection,
+  PaymentHistoryEntry,
   VoucherBalance,
 } from "@/components/pagos/types";
 import type { PaymentFormValues } from "@/lib/schemas/payment";
@@ -14,6 +15,24 @@ type PaymentRow = Tables<"payment">;
 type AllocationRow = Tables<"payment_allocation">;
 type PaymentBalanceRow = Tables<"payment_balance">;
 type VoucherBalanceRow = Tables<"voucher_balance">;
+
+type PaymentHistoryRow = {
+  allocation_id: string;
+  id: string;
+  receipt_number: string | null;
+  payment_date: string;
+  issue_date: string;
+  direction: PaymentRow["direction"];
+  method: PaymentRow["method"];
+  reference: string | null;
+  payment_amount: number;
+  status: PaymentRow["status"];
+  voided_at: string | null;
+  void_reason: string | null;
+  notes: string | null;
+  allocation_amount: number;
+  receipt_serial: number;
+};
 
 function mapPaymentRow(row: PaymentRow): Payment {
   return {
@@ -60,6 +79,25 @@ function mapVoucherBalanceRow(row: VoucherBalanceRow): VoucherBalance {
     total: row.total ?? 0,
     paidAmount: row.paid_amount ?? 0,
     balance: row.balance ?? 0,
+  };
+}
+
+function mapPaymentHistoryRow(row: PaymentHistoryRow): PaymentHistoryEntry {
+  return {
+    allocationId: row.allocation_id,
+    paymentId: row.id,
+    receiptNumber: row.receipt_number ?? "",
+    paymentDate: row.payment_date,
+    issueDate: row.issue_date,
+    direction: row.direction,
+    method: row.method,
+    reference: row.reference,
+    paymentAmount: row.payment_amount,
+    amount: row.allocation_amount,
+    status: row.status,
+    voidedAt: row.voided_at,
+    voidReason: row.void_reason,
+    notes: row.notes,
   };
 }
 
@@ -192,6 +230,80 @@ export async function getPaymentDetail(id: string): Promise<PaymentDetail> {
     assignedAmount: balance?.assigned_amount ?? 0,
     unassignedAmount: balance?.unassigned_amount ?? payment.amount,
   };
+}
+
+export async function getPaymentHistory(
+  comprobanteId: string
+): Promise<PaymentHistoryEntry[]> {
+  const { data: allocationsData, error: allocationsError } = await supabase
+    .from("payment_allocation")
+    .select("*")
+    .eq("comprobante_id", comprobanteId);
+
+  if (allocationsError) {
+    throw mapError(allocationsError);
+  }
+
+  const allocationRows = allocationsData as AllocationRow[];
+
+  if (allocationRows.length === 0) {
+    return [];
+  }
+
+  const paymentIds = [...new Set(allocationRows.map((row) => row.payment_id))];
+
+  const { data: paymentsData, error: paymentsError } = await supabase
+    .from("payment")
+    .select("*")
+    .in("id", paymentIds);
+
+  if (paymentsError) {
+    throw mapError(paymentsError);
+  }
+
+  const paymentMap = new Map<string, PaymentRow>();
+
+  for (const row of paymentsData as PaymentRow[]) {
+    paymentMap.set(row.id, row);
+  }
+
+  const historyRows: PaymentHistoryRow[] = [];
+
+  for (const allocation of allocationRows) {
+    const payment = paymentMap.get(allocation.payment_id);
+
+    if (!payment) {
+      continue;
+    }
+
+    historyRows.push({
+      allocation_id: allocation.id,
+      id: payment.id,
+      receipt_number: payment.receipt_number,
+      payment_date: payment.payment_date,
+      issue_date: payment.issue_date,
+      direction: payment.direction,
+      method: payment.method,
+      reference: payment.reference,
+      payment_amount: payment.amount,
+      status: payment.status,
+      voided_at: payment.voided_at,
+      void_reason: payment.void_reason,
+      notes: payment.notes,
+      allocation_amount: allocation.amount,
+      receipt_serial: payment.receipt_serial,
+    });
+  }
+
+  historyRows.sort((a, b) => {
+    if (a.issue_date !== b.issue_date) {
+      return a.issue_date < b.issue_date ? 1 : -1;
+    }
+
+    return b.receipt_serial - a.receipt_serial;
+  });
+
+  return historyRows.map(mapPaymentHistoryRow);
 }
 
 export async function createPayment(
