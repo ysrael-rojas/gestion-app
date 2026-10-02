@@ -208,7 +208,7 @@
     "supabase": {
       "enabled": true,
       "type": "remote",
-      "url": "https://mcp.supabase.com/mcp?project_ref=hurattoyvarlfdydvugd\u0026features=database,docs,development,debugging"
+      "url": "https://mcp.supabase.com/mcp?project_ref=hurattoyvarlfdydvugd\u0026features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching"
     }
   },
   "permission": {
