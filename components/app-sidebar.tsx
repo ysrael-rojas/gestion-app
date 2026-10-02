@@ -8,6 +8,7 @@ import {
   Building2,
   ChevronRight,
   Database,
+  Landmark,
   Receipt,
   ShoppingCart,
   Users,
@@ -36,7 +37,10 @@ import { usePagos } from "@/components/pagos/pagos-provider";
 
 const menu = {
   group: "MAESTRO",
-  items: [{ label: "Clientes/Proveedores", href: "/clientes/listado" }],
+  items: [
+    { label: "Clientes/Proveedores", href: "/clientes/listado" },
+    { label: "Cajas y Bancos", href: "/cajas-bancos/listado" },
+  ],
 };
 
 export function AppSidebar() {
@@ -81,7 +85,7 @@ export function AppSidebar() {
                         render={<Link href={item.href} />}
                         isActive={pathname === item.href}
                       >
-                        <Users />
+                        {item.label === "Cajas y Bancos" ? <Landmark /> : <Users />}
                         <span>{item.label}</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
