@@ -15,8 +15,25 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - `npm run dev` — servidor de desarrollo (http://localhost:3000)
 - `npm run lint` — ESLint (`eslint-config-next`)
 - `npm run build` — build de producción (también ejecuta el typecheck)
+- `npm test` — Vitest (unit + components) una vez
+- `npm run test:unit` — solo tests unitarios (`tests/unit/`)
+- `npm run test:components` — solo tests de componente (`tests/components/`)
+- `npm run test:watch` — Vitest en modo watch
+- `npm run test:coverage` — Vitest con coverage v8 (umbral informativo, no rompe CI)
+- `npm run test:e2e` — Playwright contra el dev server (ver sección Tests)
+- `npm run gen:types` — regenera `lib/supabase/types.ts` desde el CLI de Supabase (ver sección Tests)
 
-No hay runner de tests ni scripts `test`/`typecheck`. Para validar cambios: `npm run lint` y luego `npm run build`.
+Para validar cambios: `npm run lint` + `npm test` + `npm run build`.
+
+## Tests
+
+- **Unit + componentes:** `npm test` (cubre `lib/pagos/`, `lib/comprobantes/`, `lib/schemas/`, `lib/ventas/`, `lib/clientes/` y tres componentes: `PaymentHistorySection`, `PaymentStatusBadge`, `DataTablePagination`).
+- **Cobertura:** `npm run test:coverage`. Métrica informativa, sin umbral que rompa builds.
+- **E2E:** `npm run test:e2e` requiere:
+  1. El CLI de Playwright con browsers instalados (`npx playwright install chromium` la primera vez).
+  2. **El dev server debe estar accesible en `http://localhost:3000`.** El config lo arranca automáticamente con `reuseExistingServer: true`; si ya hay un dev server corriendo, lo reusa.
+  3. Credenciales Supabase válidas en `.env` y seed manual en la DB (el e2e `tests/e2e/registrar-pago-y-ver-saldo.spec.ts` documenta el seed exacto en su comentario inicial).
+- **`npm run gen:types`:** regenera `lib/supabase/types.ts` desde el CLI oficial de Supabase. Requiere `supabase` instalado globalmente y `supabase link --project-ref hurattoyvarlfdydvugd`. **Cuidado:** el script actual usa `> lib/supabase/types.ts` que trunca el archivo antes de ejecutar el comando; si `supabase` falla, `types.ts` queda en 0 bytes. Restaurable con `git checkout HEAD -- lib/supabase/types.ts`. SPEC 16 debería cambiar el script a una variante que solo escriba en éxito.
 
 ## Estructura y alias
 

@@ -3,6 +3,16 @@ import type { PurchaseFormValues } from "@/lib/schemas/purchase";
 import { supabase } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/supabase/types";
 import { calculateAmounts } from "@/lib/ventas/amounts";
+import { BalanceLoadError } from "@/lib/comprobantes/comprobantes";
+import type { BalanceLoadError as BalanceLoadErrorType } from "@/lib/comprobantes/comprobantes";
+
+export { BalanceLoadError };
+export type { BalanceLoadErrorType };
+
+export interface PurchaseListResult {
+  purchases: Purchase[];
+  balanceError: BalanceLoadErrorType | null;
+}
 
 type ComprobanteRow = Tables<"comprobante">;
 
@@ -82,7 +92,7 @@ function mapError(error: { code?: string; message: string }): Error {
   );
 }
 
-export async function listPurchases(): Promise<Purchase[]> {
+export async function listPurchases(): Promise<PurchaseListResult> {
   const [purchasesResult, balancesResult] = await Promise.all([
     supabase
       .from("comprobante")
@@ -101,12 +111,10 @@ export async function listPurchases(): Promise<Purchase[]> {
   }
 
   const balanceMap = new Map<string, VoucherBalance>();
+  let balanceError: BalanceLoadErrorType | null = null;
 
   if (balancesResult.error) {
-    console.error(
-      "No se pudo cargar el saldo de las compras:",
-      balancesResult.error
-    );
+    balanceError = new BalanceLoadError("balance", balancesResult.error);
   } else {
     for (const row of balancesResult.data ?? []) {
       if (row.comprobante_id) {
@@ -118,9 +126,12 @@ export async function listPurchases(): Promise<Purchase[]> {
     }
   }
 
-  return (purchasesResult.data as ComprobanteRow[]).map((row) =>
-    mapPurchaseRow(row, balanceMap)
-  );
+  return {
+    purchases: (purchasesResult.data as ComprobanteRow[]).map((row) =>
+      mapPurchaseRow(row, balanceMap)
+    ),
+    balanceError,
+  };
 }
 
 export async function createPurchaseRecord(

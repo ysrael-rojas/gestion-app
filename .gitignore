@@ -42,5 +42,7 @@ yarn-error.log*
 next-env.d.ts
 
 .playwright-mcp/*
+/test-results/
+/playwright-report/
 # Local Pi runtime state
 .atl/

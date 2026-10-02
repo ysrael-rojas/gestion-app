@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTable, type SortingState } from "@tanstack/react-table";
+import { toast } from "sonner";
 
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +22,7 @@ import {
   salesTableFeatures,
   type SalesRow,
 } from "@/components/ventas/sales-columns";
+import type { BalanceLoadError } from "@/lib/comprobantes/comprobantes";
 import {
   applyListadoFilters,
   type ListadoFilters,
@@ -31,6 +33,7 @@ interface SalesDataTableProps {
   clients: Client[];
   filters: ListadoFilters;
   isLoading?: boolean;
+  balanceError?: BalanceLoadError | null;
   onView: (sale: Sale) => void;
   onEdit: (sale: Sale) => void;
 }
@@ -49,9 +52,16 @@ export function SalesDataTable({
   clients,
   filters,
   isLoading = false,
+  balanceError,
   onView,
   onEdit,
 }: SalesDataTableProps) {
+  useEffect(() => {
+    if (balanceError) {
+      toast.error("No se pudieron cargar los saldos. Reintenta.");
+    }
+  }, [balanceError]);
+
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
