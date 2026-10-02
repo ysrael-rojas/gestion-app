@@ -1,6 +1,6 @@
 # SPEC 15 — Calidad: tests de pagos/saldos, fin del log silencioso y tipos regenerados
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 09, SPEC 13, SPEC 14
 > **Date:** 2026-10-01
 > **Objective:** Cubrir con tests automatizados los caminos críticos de pagos transaccionales y saldos, eliminar la degradación silenciosa de balances por `console.error`, y regenerar `lib/supabase/types.ts` desde el CLI de Supabase para evitar desincronización futura.
