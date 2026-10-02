@@ -19,6 +19,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  EntityAutocomplete,
+  toEntityAutocompleteItems,
+} from "@/components/shared/entity-autocomplete";
 import { useClientes } from "@/components/clientes/clientes-provider";
 import type {
   PaymentType,
@@ -149,10 +153,7 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
       : "";
 
   const registrationDate = sale?.registrationDate ?? getTodayLocalDate();
-  const clientItems = clients.map((client) => ({
-    value: client.id,
-    label: client.name,
-  }));
+  const clientItems = toEntityAutocompleteItems(clients);
 
   const errors = form.formState.errors;
 
@@ -231,30 +232,15 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
           render={({ field }) => (
             <div className="flex flex-col gap-1.5 sm:col-span-2">
               <Label htmlFor="entityId">Cliente</Label>
-              <Select
-                value={field.value ? field.value : null}
+              <EntityAutocomplete
+                id="entityId"
                 items={clientItems}
-                onValueChange={(value) => field.onChange(value ?? "")}
-              >
-                <SelectTrigger id="entityId" className="w-full">
-                  <SelectValue
-                    placeholder={
-                      isLoading
-                        ? "Cargando..."
-                        : clients.length
-                          ? "Selecciona un cliente"
-                          : "No hay clientes"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientItems.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                value={field.value ? field.value : null}
+                onValueChange={(value) => field.onChange(value)}
+                placeholder="Buscar cliente..."
+                isLoading={isLoading}
+                aria-invalid={!!errors.entityId}
+              />
               <FieldError message={errors.entityId?.message} />
             </div>
           )}
