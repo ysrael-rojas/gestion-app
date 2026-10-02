@@ -1,3 +1,4 @@
+// GENERATED — NO EDITAR — npm run gen:types
 export type Json =
   | string
   | number
