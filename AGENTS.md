@@ -87,23 +87,12 @@ Para validar cambios: `npm run lint` + `npm test` + `npm run build`.
 
 ## Skills instalados (`.agents/skills/`)
 
+- `spec` — diseñar una spec antes de escribir código.
+- `spec-impl` — implementar una spec aprobada (crea rama y avanza por pasos).
 - `supabase` — tareas de Supabase (Database, Auth, Edge Functions, Realtime, Storage, SSR, RLS, CLI/MCP).
 - `supabase-postgres-best-practices` — cargar antes de crear/alterar tablas, RLS, índices o migraciones en Postgres.
 
-## Flujo de trabajo (ODD)
+## Flujo de trabajo (specs)
 
-Este proyecto sigue **Organic Driven Development (ODD)** mediante el ecosistema de el Gentleman (no usa los skills de `/spec` ni `/spec-impl`).
-
-- **Autorizar** — investigation, explanation, review, comparison y proposal-only requests son read-only: nada de writes, apply, o implementation artifacts. Si la intención es ambigua, una pregunta y se espera.
-- **Explorar** — leer código existente y los requisitos primero, en proporción a la magnitud del pedido.
-- **Resolver incertidumbre** — una pregunta enfocada al usuario solo cuando hay una decisión de producto sin cerrar; en otro caso, una asunción documentada basta.
-- **Clasificar** — el trabajo es sustantivo cuando la exploración arroja ≥2 pasos de implementación o progreso que vale la pena recuperar tras una interrupción. Trabajo pequeño y comprendido se hace directo.
-- **Track antes del primer write** — para implementación sustantiva, crear `odd/tasks/<feature>.md` y su espejo en Engram (`odd/<feature>/tasks`); reflejar la lista en el todo visible antes de la primera escritura.
-- **Implementar task por task** — cada task cierra con un work-unit commit en la rama del feature (branch primero si estás en `main`), con tests y docs junto al comportamiento, en mensaje Conventional Commit. Push, PR y merge son decisiones humanas; el flujo solo entrega trabajo commiteado.
-- **Cerrar** — reportar el outcome verificado, todos los checks fallidos/saltados/pendientes, y el próximo paso.
-
-**Subagentes** — para exploración bounded, implementación o verificación, delegar vía subagentes con tareas self-contained y edit-paths explícitos. Delegar no es opcional cuando se cruzan los triggers (4+ archivos a entender, escritura multi-file, incidente, sesión larga, verificación).
-
-**Memoria Engram** — usar `mem_search` / `mem_save` / `mem_session_summary` / `mem_pin` para persistir descubrimientos, decisiones y patrones. En sesiones futuras, `mem_context` recupera el contexto.
-
-**Specs legacy** — la carpeta `specs/` queda como referencia histórica. Las features nuevas no generan spec; viven en `odd/tasks/`.
+- Los specs se guardan en `specs/` (se crea al primer uso).
+- Nunca hacer commit sin que el usuario lo pida explícitamente.
