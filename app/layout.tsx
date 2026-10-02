@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { AppSidebar } from "@/components/app-sidebar";
+import { CajasBancosProvider } from "@/components/cajas-bancos/cajas-bancos-provider";
 import { ClientesProvider } from "@/components/clientes/clientes-provider";
 import { ComprasProvider } from "@/components/compras/compras-provider";
 import { PagosProvider } from "@/components/pagos/pagos-provider";
@@ -37,19 +38,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <SidebarProvider>
           <ClientesProvider>
-            <VentasProvider>
-              <ComprasProvider>
-                <PagosProvider>
-                  <AppSidebar />
-                  <SidebarInset>
-                    <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-                      <SidebarTrigger />
-                    </header>
-                    {children}
-                  </SidebarInset>
-                </PagosProvider>
-              </ComprasProvider>
-            </VentasProvider>
+            <CajasBancosProvider>
+              <VentasProvider>
+                <ComprasProvider>
+                  <PagosProvider>
+                    <AppSidebar />
+                    <SidebarInset>
+                      <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
+                        <SidebarTrigger />
+                      </header>
+                      {children}
+                    </SidebarInset>
+                  </PagosProvider>
+                </ComprasProvider>
+              </VentasProvider>
+            </CajasBancosProvider>
           </ClientesProvider>
         </SidebarProvider>
         <Toaster />

@@ -83,6 +83,57 @@ export type Database = {
           },
         ]
       }
+      cash_account: {
+        Row: {
+          account_number: string | null
+          bank_name: string | null
+          cci: string | null
+          created_at: string
+          currency: string
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          opening_balance: number
+          opening_balance_date: string
+          type: Database["public"]["Enums"]["cash_account_type"]
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          bank_name?: string | null
+          cci?: string | null
+          created_at?: string
+          currency?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          opening_balance?: number
+          opening_balance_date?: string
+          type: Database["public"]["Enums"]["cash_account_type"]
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          bank_name?: string | null
+          cci?: string | null
+          created_at?: string
+          currency?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          opening_balance?: number
+          opening_balance_date?: string
+          type?: Database["public"]["Enums"]["cash_account_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       entidad: {
         Row: {
           address: string
@@ -331,6 +382,7 @@ export type Database = {
       }
     }
     Enums: {
+      cash_account_type: "CASH_BOX" | "BANK_ACCOUNT"
       comprobante_status: "PAGADO" | "PENDIENTE"
       document_type: "SIN_DOCUMENTO" | "RUC" | "DNI" | "CARNET_EXTRANJERIA"
       payment_direction: "INGRESO" | "EGRESO"
@@ -466,6 +518,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      cash_account_type: ["CASH_BOX", "BANK_ACCOUNT"],
       comprobante_status: ["PAGADO", "PENDIENTE"],
       document_type: ["SIN_DOCUMENTO", "RUC", "DNI", "CARNET_EXTRANJERIA"],
       payment_direction: ["INGRESO", "EGRESO"],
