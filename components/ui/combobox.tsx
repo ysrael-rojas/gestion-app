@@ -34,21 +34,24 @@ function ComboboxInput({
         data-slot="combobox-clear"
         aria-label="Limpiar selección"
         className={cn(
-          "mr-1 hidden items-center justify-center text-muted-foreground transition-colors hover:text-foreground",
-          "data-[visible]:flex"
+          "mr-1 hidden items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground",
+          "data-[visible]:flex",
+          "data-[disabled]:cursor-not-allowed disabled:opacity-50"
         )}
-        render={<XIcon className="size-3.5" />}
-      />
+      >
+        <XIcon className="size-3.5" />
+      </ComboboxPrimitive.Clear>
       <ComboboxPrimitive.Trigger
         data-slot="combobox-trigger"
         aria-label="Abrir lista"
         className={cn(
-          "flex h-8 w-7 items-center justify-center text-muted-foreground transition-colors",
+          "flex h-8 w-7 items-center justify-center rounded-sm text-muted-foreground transition-colors",
           "hover:text-foreground",
           "data-[disabled]:cursor-not-allowed disabled:opacity-50"
         )}
-        render={<ChevronDownIcon className="size-4" />}
-      />
+      >
+        <ChevronDownIcon className="size-4" />
+      </ComboboxPrimitive.Trigger>
     </div>
   );
 }
