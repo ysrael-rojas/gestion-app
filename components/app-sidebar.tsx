@@ -39,7 +39,6 @@ const menu = {
   group: "MAESTRO",
   items: [
     { label: "Clientes/Proveedores", href: "/clientes/listado" },
-    { label: "Cajas y Bancos", href: "/cajas-bancos/listado" },
   ],
 };
 
@@ -85,7 +84,7 @@ export function AppSidebar() {
                         render={<Link href={item.href} />}
                         isActive={pathname === item.href}
                       >
-                        {item.label === "Cajas y Bancos" ? <Landmark /> : <Users />}
+                        <Users />
                         <span>{item.label}</span>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
@@ -93,6 +92,16 @@ export function AppSidebar() {
                 </SidebarMenuSub>
               </CollapsibleContent>
             </Collapsible>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                render={<Link href="/cajas-bancos/listado" />}
+                isActive={pathname === "/cajas-bancos/listado"}
+                tooltip="CAJAS Y BANCOS"
+              >
+                <Landmark />
+                <span>CAJAS Y BANCOS</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
                 render={<Link href="/ventas/listado" />}
