@@ -48,3 +48,11 @@ next-env.d.ts
 /playwright-report/
 # Local Pi runtime state
 .atl/
+.codegraph/
+
+# Local OpenCode / Gentle AI runtime state
+.gentle-ai-*.json
+.pi/
+
+# Windows quirk artifact (echo > nul redirections)
+/nul
