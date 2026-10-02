@@ -24,7 +24,7 @@ const paymentRow = (overrides: Record<string, unknown> = {}) => ({
   issue_date: "2026-09-30",
   payment_date: "2026-09-30",
   receipt_serial: 1,
-  receipt_number: "RI-2026-000001",
+  receipt_number: "RI-000001",
   amount: 50,
   method: "EFECTIVO",
   reference: null,
@@ -79,7 +79,7 @@ describe("pagos.ts", () => {
       mock.setTable("payment", {
         data: [
           paymentRow({ id: "p-1", issue_date: "2026-09-30" }),
-          paymentRow({ id: "p-2", issue_date: "2026-09-29", receipt_serial: 2, receipt_number: "RI-2026-000002" }),
+          paymentRow({ id: "p-2", issue_date: "2026-09-29", receipt_serial: 2, receipt_number: "RI-000002" }),
         ],
         error: null,
       });
@@ -211,7 +211,7 @@ describe("pagos.ts", () => {
       mock.queueTable("payment", {
         data: [
           paymentRow({ id: "p-1", issue_date: "2026-09-30", receipt_serial: 1 }),
-          paymentRow({ id: "p-2", issue_date: "2026-09-25", receipt_serial: 2, receipt_number: "RI-2026-000002" }),
+          paymentRow({ id: "p-2", issue_date: "2026-09-25", receipt_serial: 2, receipt_number: "RI-000002" }),
         ],
         error: null,
       });

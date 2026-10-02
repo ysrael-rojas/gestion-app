@@ -44,7 +44,7 @@ SPEC 09 modeló `payment_allocation` e introdujo el recibo imprimible dentro de 
 
 No se crean tablas, vistas, columnas ni migraciones. Se reutiliza lo definido en SPEC 09:
 
-- `public.payment` (id, entity_id, direction, payment_date, issue_date, receipt_year, receipt_serial, receipt_number, amount, method, reference, status, void_reason, voided_at, notes).
+- `public.payment` (id, entity_id, direction, payment_date, issue_date, receipt_serial, receipt_number, amount, method, reference, status, void_reason, voided_at, notes).
 - `public.payment_allocation` (id, payment_id, comprobante_id, amount).
 - `public.voucher_balance` solo si más adelante se necesita consultar saldos vivos (esta spec no la usa).
 
@@ -54,7 +54,7 @@ Tipo añadido a `components/pagos/types.ts`:
 export interface PaymentHistoryEntry {
   allocationId: string;       // payment_allocation.id
   paymentId: string;          // payment.id (FK para ReceiptDialog)
-  receiptNumber: string;      // "RI-2026-000001" | "RE-2026-000001"
+  receiptNumber: string;      // "RI-000001" | "RE-000001"
   paymentDate: string;        // "YYYY-MM-DD" — fecha efectiva del pago
   issueDate: string;          // "YYYY-MM-DD" — fecha de emisión del recibo
   direction: PaymentDirection;
