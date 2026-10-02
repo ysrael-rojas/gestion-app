@@ -20,6 +20,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  EntityAutocomplete,
+  toEntityAutocompleteItems,
+} from "@/components/shared/entity-autocomplete";
 import type { Client } from "@/components/clientes/types";
 import { useClientes } from "@/components/clientes/clientes-provider";
 import { AllocationPicker } from "@/components/pagos/allocation-picker";
@@ -171,10 +175,7 @@ export function PaymentForm({
   const numericAmount = Number(amountValue);
   const amount = Number.isFinite(numericAmount) ? numericAmount : 0;
 
-  const entityItems = entities.map((entity) => ({
-    value: entity.id,
-    label: entity.name,
-  }));
+  const entityItems = toEntityAutocompleteItems(entities);
 
   const handleSuggestAmount = useCallback(
     (value: number) => {
@@ -202,30 +203,19 @@ export function PaymentForm({
           render={({ field }) => (
             <div className="flex flex-col gap-1.5 sm:col-span-2">
               <Label htmlFor="entityId">Entidad</Label>
-              <Select
-                value={field.value ? field.value : null}
+              <EntityAutocomplete
+                id="entityId"
                 items={entityItems}
-                onValueChange={(value) => field.onChange(value ?? "")}
-              >
-                <SelectTrigger id="entityId" className="w-full">
-                  <SelectValue
-                    placeholder={
-                      isEntitiesLoading
-                        ? "Cargando..."
-                        : entities.length
-                          ? "Selecciona una entidad"
-                          : "No hay entidades disponibles"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {entityItems.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                value={field.value ? field.value : null}
+                onValueChange={(value) => field.onChange(value)}
+                placeholder={
+                  direction === "INGRESO"
+                    ? "Buscar cliente..."
+                    : "Buscar proveedor..."
+                }
+                isLoading={isEntitiesLoading}
+                aria-invalid={!!errors.entityId}
+              />
               <FieldError message={errors.entityId?.message} />
             </div>
           )}

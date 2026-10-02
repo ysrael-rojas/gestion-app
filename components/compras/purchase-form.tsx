@@ -19,6 +19,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  EntityAutocomplete,
+  toEntityAutocompleteItems,
+} from "@/components/shared/entity-autocomplete";
 import type { Client } from "@/components/clientes/types";
 import type {
   PaymentType,
@@ -177,10 +181,7 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
       : "";
 
   const registrationDate = purchase?.registrationDate ?? getTodayLocalDate();
-  const supplierItems = suppliers.map((supplier) => ({
-    value: supplier.id,
-    label: supplier.name,
-  }));
+  const supplierItems = toEntityAutocompleteItems(suppliers);
 
   const errors = form.formState.errors;
 
@@ -259,30 +260,15 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
           render={({ field }) => (
             <div className="flex flex-col gap-1.5 sm:col-span-2">
               <Label htmlFor="supplierId">Proveedor</Label>
-              <Select
-                value={field.value ? field.value : null}
+              <EntityAutocomplete
+                id="supplierId"
                 items={supplierItems}
-                onValueChange={(value) => field.onChange(value ?? "")}
-              >
-                <SelectTrigger id="supplierId" className="w-full">
-                  <SelectValue
-                    placeholder={
-                      isSuppliersLoading
-                        ? "Cargando..."
-                        : suppliers.length
-                          ? "Selecciona un proveedor"
-                          : "No hay proveedores"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {supplierItems.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                value={field.value ? field.value : null}
+                onValueChange={(value) => field.onChange(value)}
+                placeholder="Buscar proveedor..."
+                isLoading={isSuppliersLoading}
+                aria-invalid={!!errors.supplierId}
+              />
               <FieldError message={errors.supplierId?.message} />
             </div>
           )}
