@@ -68,11 +68,9 @@ create table public.payment (
   direction public.payment_direction not null,
   payment_date date not null,
   issue_date date not null default current_date,
-  receipt_year integer not null,
   receipt_serial integer not null,
   receipt_number text generated always as (
     (case when direction = 'INGRESO' then 'RI' else 'RE' end)
-    || '-' || receipt_year::text
     || '-' || lpad(receipt_serial::text, 6, '0')
   ) stored,
   amount numeric(12,2) not null check (amount > 0),
@@ -84,7 +82,7 @@ create table public.payment (
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint payment_receipt_unique unique (direction, receipt_year, receipt_serial),
+  constraint payment_receipt_unique unique (direction, receipt_serial),
   constraint payment_void_check check (
     (status = 'ANULADO' and void_reason is not null and voided_at is not null)
     or (status = 'REGISTRADO' and void_reason is null and voided_at is null)
@@ -136,8 +134,7 @@ create function private.assign_receipt_number() returns trigger
 language plpgsql security definer set search_path = ''
 as $$
 begin
-  new.receipt_year := extract(year from new.issue_date)::integer;
-  new.receipt_serial := private.next_receipt_serial(new.direction, new.receipt_year);
+  new.receipt_serial := private.next_receipt_serial(new.direction);
   return new;
 end;
 $$;
@@ -339,9 +336,9 @@ export interface Payment {
   id: string;
   entityId: string;
   direction: PaymentDirection;
-  issueDate: string;             // "YYYY-MM-DD" — define el año del correlativo
+  issueDate: string;             // "YYYY-MM-DD" — fecha de emisión del recibo
   paymentDate: string;           // "YYYY-MM-DD" — fecha efectiva del pago
-  receiptNumber: string;         // "RI-2026-000001" | "RE-2026-000001"
+  receiptNumber: string;         // "RI-000001" | "RE-000001"
   amount: number;
   method: PaymentMethod;
   reference: string | null;      // nro de operación BCP / autorización de tarjeta
@@ -484,8 +481,7 @@ Convenciones:
 
 - [x] Existen `public.payment`, `public.payment_allocation` y `public.receipt_sequence` con columnas, checks, índices, triggers y RLS descritos; `receipt_sequence` no tiene políticas.
 - [x] Existen las vistas `voucher_balance` y `payment_balance` con `security_invoker = true` y `grant select` a `anon` y `authenticated`.
-- [x] Insertar un pago asigna `receipt_number` con el patrón `RI-AAAA-000001` o `RE-AAAA-000001`; dos pagos consecutivos del mismo año y dirección reciben correlativos consecutivos.
-- [x] Un pago con `issue_date` de otro año usa el correlativo de ese año (`receipt_year` = año de emisión).
+- [x] Insertar un pago asigna `receipt_number` con el patrón `RI-000001` o `RE-000001`; dos pagos consecutivos de la misma dirección reciben correlativos consecutivos globales (no se reinician por año).
 - [x] Un pago que falla no consume correlativo: al reintentar, el número asignado es el inmediato siguiente al último emitido existente.
 - [x] Un pago insertado sin asignaciones queda con `unassigned_amount = amount` en `payment_balance`.
 - [x] Asignar importes a una o varias facturas crea filas en `payment_allocation`; una factura puede recibir varios pagos y un pago puede cubrir varias facturas.
@@ -511,9 +507,9 @@ Convenciones:
 
 - **Sí:** una tabla `payment` con `direction` (INGRESO/EGRESO) en lugar de dos tablas; un solo correlativo por dirección y año.
 - **Sí:** correlativo asignado por trigger `before insert` dentro de la misma transacción: no hay huecos por fallos y los anulados conservan su número.
-- **Sí:** formato `RI-AAAA-000001` / `RE-AAAA-000001` con el año de `issue_date` (fecha de emisión del recibo), no el de `payment_date`.
+- **Sí:** formato `RI-000001` / `RE-000001` (correlativo global por dirección, sin año). Cambio posterior a la implementación inicial: se eliminó `receipt_year` y la PK de `receipt_sequence` pasó a ser solo `direction`; ver migración `20260930120000_rename_receipt_format_drop_year`.
 - **Sí:** `issue_date` la fija la base (`current_date`) y no se edita; la fecha variable que captura el usuario es `payment_date`.
-- **Sí:** tabla contador `receipt_sequence` por `(direction, year)` con `insert … on conflict do update` atómico; reinicia cada año.
+- **Sí:** tabla contador `receipt_sequence` por `direction` con `insert … on conflict do update` atómico; correlativo global sin reset anual.
 - **Sí:** funciones auxiliares en el esquema `private` con `security definer` y `search_path = ''`, para que la API no exponga el contador ni permita escribir el estado a mano.
 - **Sí:** asignaciones en tabla puente `payment_allocation` (N:M entre pago y comprobante) para soportar abonos parciales y varias facturas por pago.
 - **Sí:** `status` del comprobante derivado del saldo aplicado por triggers (`refresh_comprobante_status`), sin edición manual.
@@ -531,7 +527,7 @@ Convenciones:
 
 | Riesgo | Mitigación |
 | --- | --- |
-| La columna generada `receipt_number` depende de `receipt_year`/`receipt_serial` que escribe un trigger `before insert` | Verificar el orden trigger → columna generada en la migración; si falla, calcular `receipt_number` en la capa de datos. |
+| La columna generada `receipt_number` depende de `receipt_serial` que escribe un trigger `before insert` | Verificar el orden trigger → columna generada en la migración; si falla, calcular `receipt_number` en la capa de datos. |
 | `insert … on conflict do update … returning` con alias de tabla puede variar entre versiones | Probar el correlativo con dos inserts consecutivos y uno que falle; si falla, usar `select … for update` sobre `receipt_sequence`. |
 | Trigger `before insert` que a su vez llama a otra función `security definer` con `search_path = ''` | Cualificar esquema en todas las referencias (`public.…`, `private.…`) y probar la migración completa antes de continuar. |
 | `createPayment` hace dos inserts (pago y asignaciones) sin transacción única desde el cliente | Si falla el segundo, el pago queda como saldo sin asignar (estado válido y reutilizable con **Asignar saldo**). |

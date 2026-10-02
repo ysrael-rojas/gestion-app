@@ -62,17 +62,18 @@ declare
   v_paid           numeric(12,2);
 begin
   -- 1) Insert del pago. El trigger payment_assign_receipt
-  --    (private.assign_receipt_number) escribe receipt_year y
-  --    receipt_serial en before insert, dentro de esta misma
-  --    transacción, así que un fallo posterior hace rollback
-  --    también del correlativo (no quedan huecos).
+  --    (private.assign_receipt_number) escribe receipt_serial
+  --    en before insert, dentro de esta misma transacción,
+  --    así que un fallo posterior hace rollback también del
+  --    correlativo (no quedan huecos). No se asigna receipt_year
+  --    porque el formato actual no incluye el año.
   insert into public.payment (
     entity_id, direction, payment_date, amount, method, reference, notes,
-    receipt_year, receipt_serial
+    receipt_serial
   ) values (
     p_entity_id, p_direction, p_payment_date, p_amount, p_method,
     nullif(p_reference, ''), nullif(p_notes, ''),
-    0, 0
+    0
   )
   returning id into v_payment_id;
 
@@ -126,7 +127,7 @@ grant execute on function public.create_payment_with_allocations(
 Notas sobre la migración:
 
 - No se toca la tabla `payment`, ni `payment_allocation`, ni los triggers existentes. La validación de dirección/tipo de comprobante (`validate_allocation`) y de unicidad (`payment_allocation_unique`) sigue corriendo en los `insert into payment_allocation` que dispara la RPC. El raise de `validate_allocation` cae dentro de la misma unidad atómica → rollback completo.
-- El trigger `payment_assign_receipt` (`before insert`) corre primero, escribe `receipt_year`/`receipt_serial` y la columna generada `receipt_number` se actualiza. Si algo más adelante falla, todo el bloque (incluido el `last_serial` de `receipt_sequence`) retrocede: el correlativo queda libre para el siguiente intento, igual que hoy pero sin pagos huérfanos.
+- El trigger `payment_assign_receipt` (`before insert`) corre primero, escribe `receipt_serial` y la columna generada `receipt_number` se actualiza. Si algo más adelante falla, todo el bloque (incluido el `last_serial` de `receipt_sequence`) retrocede: el correlativo queda libre para el siguiente intento, igual que hoy pero sin pagos huérfanos.
 - Los triggers `after insert` sobre `payment_allocation` (`allocation_refresh_status`) y `after update` sobre `payment` (`payment_refresh_status`) también forman parte de la transacción: el `comprobante.status` que pasa a `PAGADO` cuando la suma de asignaciones cubre el total queda consistente o se revierte.
 - `p_reference`/`p_notes` se guardan como `null` si llegan vacíos (mismo criterio que el `createPayment` actual).
 - `p_allocations` es `jsonb` con shape `[{"comprobante_id": "<uuid>", "amount": <numeric>}, …]`. Si viene `[]` o `null`, el pago se crea como anticipo sin asignaciones (mismo comportamiento actual).
@@ -207,7 +208,7 @@ interface PagosContextValue {
 2. Regenerar los tipos de Supabase en `lib/supabase/types.ts`. Verificar `npm run lint`.
 3. Refactor `lib/pagos/pagos.ts`:
    - `createPayment` pasa a llamar `supabase.rpc('create_payment_with_allocations', ...)` con el payload del data model; conserva la firma externa.
-   - El `PaymentRow` con `receipt_year=0, receipt_serial=0` desaparece del insert: el pago se crea vía la RPC.
+   - El `PaymentRow` con `receipt_serial=0` desaparece del insert: el pago se crea vía la RPC.
    - `mapError` se amplía con los códigos del data model. Verificar `npm run lint`.
 4. `components/pagos/pagos-provider.tsx`:
    - Reordenar los providers en `app/layout.tsx` para que `PagosProvider` quede dentro de `VentasProvider`/`ComprasProvider` (`Clientes → Ventas → Compras → Pagos → children`); sin esto los hooks `useVentas`/`useCompras` lanzarían al llamarse desde `PagosProvider`.
@@ -274,7 +275,7 @@ interface PagosContextValue {
 | La RPC corre con `security definer` y necesita `search_path = ''` para no ser troyano | Cualificar todas las referencias (`public.…`) en el cuerpo; probar la migración en un pago real antes de seguir. |
 | `for update` sobre `comprobante` dentro de un bucle puede bloquear otras altas si la transacción queda abierta mucho tiempo | El cuerpo de la RPC es trivial (dos `select` y un `insert` por item); el tamaño de `p_allocations` esperado es pequeño. Si en el futuro crece, mover a una sola sentencia `insert … select` con cálculo previo de saldos. |
 | El raise de `validate_allocation` (en `private`) cae dentro de la transacción de la RPC, así que un fallo en una asignación revierte también el `insert payment` previo | Es exactamente lo que se quiere; documentado en la spec y verificado con un caso controlado. |
-| `PaymentRow` ya no se usa para `createPayment`; los tipos quedan sin uso en `lib/pagos/pagos.ts` | Mantener el type para `mapPaymentRow`; eliminar los literales `receipt_year=0/receipt_serial=0` del flujo pero dejar `PaymentRow` como tipo de retorno de select. `npm run lint` lo confirma. |
+| `PaymentRow` ya no se usa para `createPayment`; los tipos quedan sin uso en `lib/pagos/pagos.ts` | Mantener el type para `mapPaymentRow`; eliminar el literal `receipt_serial=0` del flujo pero dejar `PaymentRow` como tipo de retorno de select. `npm run lint` lo confirma. |
 | Dos consultas paralelas (`comprobante` + `voucher_balance`) duplican latencia | `Promise.all` las ejecuta en paralelo; la vista ya está indexada por `comprobante_id` en su `group by`. Medir con `npm run dev` antes/después si hace falta. |
 | Si la consulta a `voucher_balance` falla, se rompe el render del listado | `try/catch` por consulta: si falla la vista, se devuelven las ventas/compras con `paidAmount=0, balance=total` y se conserva el error en `console.error` (sin `toast`). El error real del listado (de la tabla) sigue mostrándose con su `toast.error`. |
 | El `for update` puede causar `40001` (serialization failure) en concurrencia | `mapError` traduce `40001` a un mensaje accionable ("Reintenta"); el caller del provider dispara `refresh` y la UI se reintenta sola. |

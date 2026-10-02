@@ -8,9 +8,9 @@ export interface Payment {
   id: string;
   entityId: string;
   direction: PaymentDirection;
-  issueDate: string; // "YYYY-MM-DD" — define el año del correlativo
+  issueDate: string; // "YYYY-MM-DD" — fecha de emisión del recibo
   paymentDate: string; // "YYYY-MM-DD" — fecha efectiva del pago
-  receiptNumber: string; // "RI-2026-000001" | "RE-2026-000001"
+  receiptNumber: string; // "RI-000001" | "RE-000001"
   amount: number;
   method: PaymentMethod;
   reference: string | null; // nro de operación BCP / autorización de tarjeta
@@ -32,7 +32,7 @@ export interface PaymentAllocation {
 export interface PaymentHistoryEntry {
   allocationId: string; // payment_allocation.id
   paymentId: string; // payment.id (FK para ReceiptDialog)
-  receiptNumber: string; // "RI-2026-000001" | "RE-2026-000001"
+  receiptNumber: string; // "RI-000001" | "RE-000001"
   paymentDate: string; // "YYYY-MM-DD" — fecha efectiva del pago
   issueDate: string; // "YYYY-MM-DD" — fecha de emisión del recibo
   direction: PaymentDirection;

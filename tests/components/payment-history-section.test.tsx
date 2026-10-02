@@ -21,7 +21,7 @@ import type { PaymentHistoryEntry } from "@/components/pagos/types";
 const sampleEntry = (overrides: Partial<PaymentHistoryEntry> = {}): PaymentHistoryEntry => ({
   allocationId: "a-1",
   paymentId: "p-1",
-  receiptNumber: "RI-2026-000001",
+  receiptNumber: "RI-000001",
   paymentDate: "2026-09-30",
   issueDate: "2026-09-30",
   direction: "INGRESO",
@@ -79,7 +79,7 @@ describe("PaymentHistorySection", () => {
       sampleEntry({
         allocationId: "a-2",
         paymentId: "p-2",
-        receiptNumber: "RI-2026-000002",
+        receiptNumber: "RI-000002",
         amount: 30,
       }),
     ]);
@@ -94,8 +94,8 @@ describe("PaymentHistorySection", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("RI-2026-000001")).toBeInTheDocument();
-      expect(screen.getByText("RI-2026-000002")).toBeInTheDocument();
+      expect(screen.getByText("RI-000001")).toBeInTheDocument();
+      expect(screen.getByText("RI-000002")).toBeInTheDocument();
     });
 
     const printButtons = screen.getAllByRole("button", { name: /imprimir recibo/i });

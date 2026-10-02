@@ -147,7 +147,6 @@ export type Database = {
           payment_date: string
           receipt_number: string | null
           receipt_serial: number
-          receipt_year: number
           reference: string | null
           status: Database["public"]["Enums"]["payment_status"]
           updated_at: string
@@ -166,7 +165,6 @@ export type Database = {
           payment_date: string
           receipt_number?: string | null
           receipt_serial: number
-          receipt_year: number
           reference?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
@@ -185,7 +183,6 @@ export type Database = {
           payment_date?: string
           receipt_number?: string | null
           receipt_serial?: number
-          receipt_year?: number
           reference?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
@@ -259,17 +256,14 @@ export type Database = {
         Row: {
           direction: Database["public"]["Enums"]["payment_direction"]
           last_serial: number
-          year: number
         }
         Insert: {
           direction: Database["public"]["Enums"]["payment_direction"]
           last_serial?: number
-          year: number
         }
         Update: {
           direction?: Database["public"]["Enums"]["payment_direction"]
           last_serial?: number
-          year?: number
         }
         Relationships: []
       }

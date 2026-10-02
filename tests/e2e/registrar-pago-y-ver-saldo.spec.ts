@@ -64,7 +64,7 @@ test.describe.serial("registrar pago y ver saldo", () => {
     await page.getByRole("button", { name: "Ver" }).first().click();
     await expect(page.getByText("Historial de pagos")).toBeVisible();
 
-    // La fila del pago aparece con su número de recibo (RI-YYYY-NNNNNN).
-    await expect(page.locator("text=/RI-\\d{4}-\\d{6}/")).toBeVisible();
+    // La fila del pago aparece con su número de recibo (RI-NNNNNN).
+    await expect(page.locator("text=/RI-\\d{6}/")).toBeVisible();
   });
 });
