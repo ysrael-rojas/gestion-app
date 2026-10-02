@@ -12,6 +12,7 @@ import {
 
 import type { Sale } from "@/components/ventas/types";
 import {
+  type BalanceLoadError,
   createSaleRecord,
   listSales,
   updateSaleRecord,
@@ -22,6 +23,7 @@ interface VentasContextValue {
   sales: Sale[];
   isLoading: boolean;
   error: string | null;
+  balanceError: BalanceLoadError | null;
   addSale: (values: SaleFormValues) => Promise<void>;
   updateSale: (id: string, values: SaleFormValues) => Promise<void>;
   refresh: () => Promise<void>;
@@ -39,17 +41,21 @@ export function VentasProvider({ children }: { children: React.ReactNode }) {
   const [sales, setSales] = useState<Sale[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [balanceError, setBalanceError] = useState<BalanceLoadError | null>(
+    null
+  );
   const isMounted = useRef(true);
 
   const refresh = useCallback(async () => {
     try {
-      const data = await listSales();
+      const { sales: data, balanceError: nextBalanceError } = await listSales();
 
       if (!isMounted.current) {
         return;
       }
 
       setSales(data);
+      setBalanceError(nextBalanceError);
       setError(null);
     } catch (err) {
       if (!isMounted.current) {
@@ -97,11 +103,12 @@ export function VentasProvider({ children }: { children: React.ReactNode }) {
       sales,
       isLoading,
       error,
+      balanceError,
       addSale,
       updateSale,
       refresh,
     }),
-    [sales, isLoading, error, addSale, updateSale, refresh]
+    [sales, isLoading, error, balanceError, addSale, updateSale, refresh]
   );
 
   return (

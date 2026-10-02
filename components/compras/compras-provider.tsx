@@ -12,6 +12,7 @@ import {
 
 import type { Purchase } from "@/components/compras/types";
 import {
+  type BalanceLoadError,
   createPurchaseRecord,
   listPurchases,
   updatePurchaseRecord,
@@ -22,6 +23,7 @@ interface ComprasContextValue {
   purchases: Purchase[];
   isLoading: boolean;
   error: string | null;
+  balanceError: BalanceLoadError | null;
   addPurchase: (values: PurchaseFormValues) => Promise<void>;
   updatePurchase: (id: string, values: PurchaseFormValues) => Promise<void>;
   refresh: () => Promise<void>;
@@ -39,17 +41,22 @@ export function ComprasProvider({ children }: { children: React.ReactNode }) {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [balanceError, setBalanceError] = useState<BalanceLoadError | null>(
+    null
+  );
   const isMounted = useRef(true);
 
   const refresh = useCallback(async () => {
     try {
-      const data = await listPurchases();
+      const { purchases: data, balanceError: nextBalanceError } =
+        await listPurchases();
 
       if (!isMounted.current) {
         return;
       }
 
       setPurchases(data);
+      setBalanceError(nextBalanceError);
       setError(null);
     } catch (err) {
       if (!isMounted.current) {
@@ -97,11 +104,12 @@ export function ComprasProvider({ children }: { children: React.ReactNode }) {
       purchases,
       isLoading,
       error,
+      balanceError,
       addPurchase,
       updatePurchase,
       refresh,
     }),
-    [purchases, isLoading, error, addPurchase, updatePurchase, refresh]
+    [purchases, isLoading, error, balanceError, addPurchase, updatePurchase, refresh]
   );
 
   return (

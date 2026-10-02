@@ -26,7 +26,7 @@ function getErrorMessage(error: unknown): string {
 
 export function VentasListadoView({ filters }: VentasListadoViewProps) {
   const { clients } = useClientes();
-  const { sales, isLoading, addSale, updateSale } = useVentas();
+  const { sales, isLoading, balanceError, addSale, updateSale } = useVentas();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [viewingSale, setViewingSale] = useState<Sale | null>(null);
@@ -80,6 +80,7 @@ export function VentasListadoView({ filters }: VentasListadoViewProps) {
         clients={clients}
         filters={filters}
         isLoading={isLoading}
+        balanceError={balanceError}
         onView={openView}
         onEdit={openEdit}
       />

@@ -26,7 +26,7 @@ function getErrorMessage(error: unknown): string {
 
 export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
   const { clients } = useClientes();
-  const { purchases, isLoading, addPurchase, updatePurchase } = useCompras();
+  const { purchases, isLoading, balanceError, addPurchase, updatePurchase } = useCompras();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
   const [viewingPurchase, setViewingPurchase] = useState<Purchase | null>(null);
@@ -80,6 +80,7 @@ export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
         clients={clients}
         filters={filters}
         isLoading={isLoading}
+        balanceError={balanceError}
         onView={openView}
         onEdit={openEdit}
       />

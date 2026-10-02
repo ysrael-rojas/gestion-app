@@ -25,6 +25,21 @@ type ComprobanteMutation = Pick<
   | "status"
 >;
 
+export class BalanceLoadError extends Error {
+  constructor(
+    public readonly source: "balance" | "payment_balance",
+    public readonly cause: unknown
+  ) {
+    super("No se pudo cargar el saldo de los comprobantes.");
+    this.name = "BalanceLoadError";
+  }
+}
+
+export interface SaleListResult {
+  sales: Sale[];
+  balanceError: BalanceLoadError | null;
+}
+
 function mapSaleValues(values: SaleFormValues): ComprobanteMutation {
   const amounts = calculateAmounts(values.total);
 
@@ -81,7 +96,7 @@ function mapError(error: { code?: string; message: string }): Error {
   );
 }
 
-export async function listSales(): Promise<Sale[]> {
+export async function listSales(): Promise<SaleListResult> {
   const [salesResult, balancesResult] = await Promise.all([
     supabase
       .from("comprobante")
@@ -100,12 +115,10 @@ export async function listSales(): Promise<Sale[]> {
   }
 
   const balanceMap = new Map<string, VoucherBalance>();
+  let balanceError: BalanceLoadError | null = null;
 
   if (balancesResult.error) {
-    console.error(
-      "No se pudo cargar el saldo de las ventas:",
-      balancesResult.error
-    );
+    balanceError = new BalanceLoadError("balance", balancesResult.error);
   } else {
     for (const row of balancesResult.data ?? []) {
       if (row.comprobante_id) {
@@ -117,9 +130,12 @@ export async function listSales(): Promise<Sale[]> {
     }
   }
 
-  return (salesResult.data as ComprobanteRow[]).map((row) =>
-    mapSaleRow(row, balanceMap)
-  );
+  return {
+    sales: (salesResult.data as ComprobanteRow[]).map((row) =>
+      mapSaleRow(row, balanceMap)
+    ),
+    balanceError,
+  };
 }
 
 export async function createSaleRecord(
