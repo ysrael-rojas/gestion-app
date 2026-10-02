@@ -206,9 +206,9 @@
       "type": "local"
     },
     "supabase": {
+      "enabled": true,
       "type": "remote",
-      "url": "https://mcp.supabase.com/mcp?project_ref=hurattoyvarlfdydvugd&features=database,docs,development,debugging",
-      "enabled": true
+      "url": "https://mcp.supabase.com/mcp?project_ref=hurattoyvarlfdydvugd\u0026features=database,docs,development,debugging"
     }
   },
   "permission": {
