@@ -1,7 +1,7 @@
 # Tarea: autocomplete en campos de cliente y proveedor
 
 **Feature:** `entity-autocomplete`
-**Estado:** en curso
+**Estado:** shipped (PR #20 mergeado en main, más fix #21)
 **Rama:** actual (no se creará rama a menos que el usuario lo pida; los cambios son work-unit commits)
 **Módulos afectados:** Compras, Ventas, Pagos (Ingresos y Egresos)
 
@@ -115,5 +115,9 @@ Archivo nuevo: `tests/components/entity-autocomplete.test.tsx`
   ahora usan `<EntityAutocomplete>` en el campo cliente/proveedor; los
   otros `Select` del proyecto (`voucherType`, `paymentType`, `status`,
   `method`, `receiptWidth`) quedan sin tocar.
-- Sin commits creados. El usuario debe pedirlos explícitamente (regla del
-  repo: "Nunca hacer commit sin que el usuario lo pida explícitamente").
+- Mergeado en `main` vía PR #20 (`a75674f`), con los commits `55d22f7` (wrapper
+  de Combobox), `699d578` (`EntityAutocomplete`), `d284f01` (reemplazo en los 3
+  formularios) y `239fc70`.
+- Follow-up mergeado vía PR #21 (`6880b48`, commit `9b242f1`): `ComboboxClear`
+  y `ComboboxTrigger` se renderizan como `<button>` nativos para eliminar el
+  warning de HTML nesting.

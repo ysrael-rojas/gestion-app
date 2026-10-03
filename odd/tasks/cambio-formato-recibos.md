@@ -1,8 +1,8 @@
 # Tarea: cambio de formato de recibos de pago
 
 **Feature:** `cambio-formato-recibos`
-**Estado:** en curso
-**Rama:** `main`
+**Estado:** shipped (PR #18 mergeado en main)
+**Rama:** `main` (mergeado)
 **Spec relacionada:** `specs/09-pagos-y-recibos.md`
 
 ## Objetivo
@@ -27,7 +27,11 @@ no haya huecos después del cambio.
 
 ### A. Migración SQL (Supabase)
 
-Archivo nuevo: `supabase/migrations/20260930120000_rename_receipt_format_drop_year.sql`
+Archivo: `supabase/migrations/20260930120000_rename_receipt_format_drop_year.sql`
+
+> Nota: aplicada en Supabase con el timestamp `20261002041054` vía MCP
+> (`supabase_apply_migration`), no con el timestamp del archivo local. El
+> archivo del repo conserva `20260930120000`; el historial remoto manda.
 
 Operaciones (idempotencia parcial, asume que la migración inicial de SPEC 09 está aplicada):
 
@@ -80,5 +84,7 @@ Operaciones (idempotencia parcial, asume que la migración inicial de SPEC 09 es
 - `npm run lint` pasa.
 - `npm test` pasa (los 3 archivos modificados + resto).
 - `npm run build` pasa.
-- Archivo de migración SQL entregado al usuario para aplicar manualmente
-  (no se pudo aplicar vía MCP en este entorno).
+- Migración aplicada vía `supabase_apply_migration` (MCP) como
+  `20261002041054_rename_receipt_format_drop_year`; confirmada en
+  `supabase_list_migrations`. `lib/supabase/types.ts` quedó sin `receipt_year`.
+- Mergeado en `main` vía PR #18 (`dc2d7e1`).
