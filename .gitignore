@@ -49,6 +49,8 @@ next-env.d.ts
 # Local Pi runtime state
 .atl/
 .codegraph/
+# Supabase CLI local cache (link metadata, CLI version)
+supabase/.temp/
 
 # Local OpenCode / Gentle AI runtime state
 .gentle-ai-*.json
