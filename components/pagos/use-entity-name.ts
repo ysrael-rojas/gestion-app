@@ -28,13 +28,10 @@ export function resolveEntityName(
 }
 
 /**
- * Devuelve una función que resuelve nombres de entidad buscando en clientes y
- * proveedores. Para INGRESO usa la lista de clientes del provider; para EGRESO
- * carga además los proveedores (`listSuppliers`). Un id nulo resuelve a "—".
+ * Devuelve las entidades seleccionables según la dirección: clientes para
+ * INGRESO y proveedores (`listSuppliers`) para EGRESO.
  */
-export function useEntityNameResolver(
-  direction: PaymentDirection
-): EntityNameResolver {
+export function useEntityOptions(direction: PaymentDirection): Client[] {
   const { clients } = useClientes();
   const [suppliers, setSuppliers] = useState<Client[]>([]);
 
@@ -64,7 +61,17 @@ export function useEntityNameResolver(
     };
   }, [direction]);
 
-  const entities = direction === "EGRESO" ? suppliers : clients;
+  return direction === "EGRESO" ? suppliers : clients;
+}
+
+/**
+ * Devuelve una función que resuelve nombres de entidad buscando en clientes y
+ * proveedores. Un id nulo resuelve a "—".
+ */
+export function useEntityNameResolver(
+  direction: PaymentDirection
+): EntityNameResolver {
+  const entities = useEntityOptions(direction);
 
   return useCallback(
     (entityId: string | null) => resolveEntityName(entities, entityId),

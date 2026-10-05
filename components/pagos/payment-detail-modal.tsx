@@ -21,9 +21,16 @@ import {
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  EntityAutocomplete,
+  toEntityAutocompleteItems,
+} from "@/components/shared/entity-autocomplete";
 import { AllocationPicker } from "@/components/pagos/allocation-picker";
 import { usePagos } from "@/components/pagos/pagos-provider";
-import { useEntityNameResolver } from "@/components/pagos/use-entity-name";
+import {
+  useEntityNameResolver,
+  useEntityOptions,
+} from "@/components/pagos/use-entity-name";
 import type {
   AllocationInput,
   PaymentDetail,
@@ -76,7 +83,12 @@ function PaymentDetailContent({
   const [assignItems, setAssignItems] = useState<AllocationInput[]>([]);
   const [voidReason, setVoidReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const resolveEntityName = useEntityNameResolver(detail?.direction ?? "INGRESO");
+  const [assignEntityId, setAssignEntityId] = useState<string | null>(null);
+  const detailDirection = detail?.direction ?? "INGRESO";
+  const resolveEntityName = useEntityNameResolver(detailDirection);
+  const entityOptions = useEntityOptions(detailDirection);
+  const entityItems = toEntityAutocompleteItems(entityOptions);
+  const assignEntity = detail?.entityId ?? assignEntityId;
 
   const loadDetail = useCallback(async () => {
     setIsLoading(true);
@@ -126,6 +138,7 @@ function PaymentDetailContent({
   const assignTotal = assignItems.reduce((sum, item) => sum + item.amount, 0);
   const canAssign =
     detail !== null &&
+    assignEntity !== null &&
     assignItems.length > 0 &&
     assignTotal > 0 &&
     assignTotal <= detail.unassignedAmount;
@@ -137,9 +150,10 @@ function PaymentDetailContent({
 
     try {
       setIsSubmitting(true);
-      await assignAllocations(detail.id, assignItems);
+      await assignAllocations(detail.id, assignItems, assignEntity ?? undefined);
       toast.success("Saldo asignado");
       setAssignItems([]);
+      setAssignEntityId(null);
       setMode("view");
       await loadDetail();
     } catch (err) {
@@ -291,9 +305,33 @@ function PaymentDetailContent({
               <CardTitle>Asignar saldo</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              {detail.entityId ? null : (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="assignEntityId">
+                    {detail.direction === "INGRESO" ? "Cliente" : "Proveedor"}
+                  </Label>
+                  <EntityAutocomplete
+                    id="assignEntityId"
+                    items={entityItems}
+                    value={assignEntityId}
+                    onValueChange={(value) => {
+                      setAssignEntityId(value ? value : null);
+                      setAssignItems([]);
+                    }}
+                    placeholder={
+                      detail.direction === "INGRESO"
+                        ? "Buscar cliente..."
+                        : "Buscar proveedor..."
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Elige una entidad para asignar el saldo a sus comprobantes.
+                  </p>
+                </div>
+              )}
               <AllocationPicker
                 direction={detail.direction}
-                entityId={detail.entityId ?? undefined}
+                entityId={assignEntity ?? undefined}
                 amount={detail.unassignedAmount}
                 value={assignItems}
                 onChange={setAssignItems}
@@ -303,6 +341,7 @@ function PaymentDetailContent({
                   variant="outline"
                   onClick={() => {
                     setAssignItems([]);
+                    setAssignEntityId(null);
                     setMode("view");
                   }}
                   disabled={isSubmitting}
@@ -363,7 +402,14 @@ function PaymentDetailContent({
         <CardFooter className="justify-between gap-2">
           <div className="flex gap-2">
             {isRegistered && hasUnassigned ? (
-              <Button variant="outline" onClick={() => setMode("assign")}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAssignEntityId(null);
+                  setAssignItems([]);
+                  setMode("assign");
+                }}
+              >
                 Asignar saldo
               </Button>
             ) : null}
