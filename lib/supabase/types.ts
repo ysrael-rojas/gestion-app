@@ -15,6 +15,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      cash_account: {
+        Row: {
+          account_number: string | null
+          bank_name: string | null
+          cci: string | null
+          created_at: string
+          currency: string
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          opening_balance: number
+          opening_balance_date: string
+          owner_id: string
+          type: Database["public"]["Enums"]["cash_account_type"]
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          bank_name?: string | null
+          cci?: string | null
+          created_at?: string
+          currency?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          opening_balance?: number
+          opening_balance_date?: string
+          owner_id?: string
+          type: Database["public"]["Enums"]["cash_account_type"]
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          bank_name?: string | null
+          cci?: string | null
+          created_at?: string
+          currency?: string
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          opening_balance?: number
+          opening_balance_date?: string
+          owner_id?: string
+          type?: Database["public"]["Enums"]["cash_account_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       comprobante: {
         Row: {
           created_at: string
@@ -25,7 +79,7 @@ export type Database = {
           id: string
           igv: number
           issue_date: string
-          owner_id: string | null
+          owner_id: string
           payment_type: Database["public"]["Enums"]["payment_type"]
           registration_date: string
           status: Database["public"]["Enums"]["comprobante_status"]
@@ -45,7 +99,7 @@ export type Database = {
           id?: string
           igv: number
           issue_date: string
-          owner_id?: string | null
+          owner_id?: string
           payment_type: Database["public"]["Enums"]["payment_type"]
           registration_date?: string
           status?: Database["public"]["Enums"]["comprobante_status"]
@@ -65,7 +119,7 @@ export type Database = {
           id?: string
           igv?: number
           issue_date?: string
-          owner_id?: string | null
+          owner_id?: string
           payment_type?: Database["public"]["Enums"]["payment_type"]
           registration_date?: string
           status?: Database["public"]["Enums"]["comprobante_status"]
@@ -86,60 +140,6 @@ export type Database = {
           },
         ]
       }
-      cash_account: {
-        Row: {
-          account_number: string | null
-          bank_name: string | null
-          cci: string | null
-          created_at: string
-          currency: string
-          deleted_at: string | null
-          id: string
-          is_active: boolean
-          name: string
-          notes: string | null
-          opening_balance: number
-          opening_balance_date: string
-          owner_id: string | null
-          type: Database["public"]["Enums"]["cash_account_type"]
-          updated_at: string
-        }
-        Insert: {
-          account_number?: string | null
-          bank_name?: string | null
-          cci?: string | null
-          created_at?: string
-          currency?: string
-          deleted_at?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          notes?: string | null
-          opening_balance?: number
-          opening_balance_date?: string
-          owner_id?: string | null
-          type: Database["public"]["Enums"]["cash_account_type"]
-          updated_at?: string
-        }
-        Update: {
-          account_number?: string | null
-          bank_name?: string | null
-          cci?: string | null
-          created_at?: string
-          currency?: string
-          deleted_at?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          notes?: string | null
-          owner_id?: string | null
-          opening_balance?: number
-          opening_balance_date?: string
-          type?: Database["public"]["Enums"]["cash_account_type"]
-          updated_at?: string
-        }
-        Relationships: []
-      }
       entidad: {
         Row: {
           address: string
@@ -154,7 +154,7 @@ export type Database = {
           is_supplier: boolean
           management_email: string
           name: string
-          owner_id: string | null
+          owner_id: string
           phone: string
           updated_at: string
         }
@@ -171,7 +171,7 @@ export type Database = {
           is_supplier?: boolean
           management_email?: string
           name: string
-          owner_id?: string | null
+          owner_id?: string
           phone?: string
           updated_at?: string
         }
@@ -188,7 +188,7 @@ export type Database = {
           is_supplier?: boolean
           management_email?: string
           name?: string
-          owner_id?: string | null
+          owner_id?: string
           phone?: string
           updated_at?: string
         }
@@ -199,12 +199,12 @@ export type Database = {
           amount: number
           created_at: string
           direction: Database["public"]["Enums"]["payment_direction"]
-          entity_id: string
+          entity_id: string | null
           id: string
           issue_date: string
           method: Database["public"]["Enums"]["payment_method"]
           notes: string | null
-          owner_id: string | null
+          owner_id: string
           payment_date: string
           receipt_number: string | null
           receipt_serial: number
@@ -218,12 +218,12 @@ export type Database = {
           amount: number
           created_at?: string
           direction: Database["public"]["Enums"]["payment_direction"]
-          entity_id: string
+          entity_id?: string | null
           id?: string
           issue_date?: string
           method: Database["public"]["Enums"]["payment_method"]
           notes?: string | null
-          owner_id?: string | null
+          owner_id?: string
           payment_date: string
           receipt_number?: string | null
           receipt_serial: number
@@ -237,12 +237,12 @@ export type Database = {
           amount?: number
           created_at?: string
           direction?: Database["public"]["Enums"]["payment_direction"]
-          entity_id?: string
+          entity_id?: string | null
           id?: string
           issue_date?: string
           method?: Database["public"]["Enums"]["payment_method"]
           notes?: string | null
-          owner_id?: string | null
+          owner_id?: string
           payment_date?: string
           receipt_number?: string | null
           receipt_serial?: number
@@ -268,7 +268,7 @@ export type Database = {
           comprobante_id: string
           created_at: string
           id: string
-          owner_id: string | null
+          owner_id: string
           payment_id: string
         }
         Insert: {
@@ -276,7 +276,7 @@ export type Database = {
           comprobante_id: string
           created_at?: string
           id?: string
-          owner_id?: string | null
+          owner_id?: string
           payment_id: string
         }
         Update: {
@@ -284,7 +284,7 @@ export type Database = {
           comprobante_id?: string
           created_at?: string
           id?: string
-          owner_id?: string | null
+          owner_id?: string
           payment_id?: string
         }
         Relationships: [
@@ -450,11 +450,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -475,11 +475,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -500,11 +500,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -517,18 +517,16 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  : never
 
 export const Constants = {
   public: {
