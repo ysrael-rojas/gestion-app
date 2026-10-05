@@ -114,6 +114,26 @@ describe("cartera.ts", () => {
       expect(resumen.unassignedPayments.amount).toBe(30);
     });
 
+    it("cuenta anticipos sin entidad en el bucket de sin asignar", async () => {
+      mock.setTable("voucher_balance", { data: [], error: null });
+      mock.setTable("payment_balance", {
+        data: [
+          paymentBalanceRow({
+            payment_id: "p-9",
+            entity_id: null,
+            direction: "INGRESO",
+            unassigned_amount: 40,
+          }),
+        ],
+        error: null,
+      });
+
+      const resumen = await getCarteraResumen();
+
+      expect(resumen.unassignedReceipts.count).toBe(1);
+      expect(resumen.unassignedReceipts.amount).toBe(40);
+    });
+
     it("lanza error cuando la consulta de voucher_balance falla", async () => {
       mock.setTable("voucher_balance", { data: [], error: { message: "boom" } });
       mock.setTable("payment_balance", { data: [], error: null });
@@ -198,6 +218,22 @@ describe("cartera.ts", () => {
       expect(result).toHaveLength(2);
       expect(result[0]?.id).toBe("p-1");
       expect(result[1]?.id).toBe("p-2");
+    });
+
+    it("tolera entity_id null (anticipo sin entidad)", async () => {
+      mock.setTable("payment_balance", {
+        data: [paymentBalanceRow({ payment_id: "p-9" })],
+        error: null,
+      });
+      mock.setTable("payment", {
+        data: [paymentRow({ id: "p-9", entity_id: null })],
+        error: null,
+      });
+
+      const result = await listUnassignedPayments("INGRESO");
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.entityId).toBeNull();
     });
 
     it("lanza error cuando falla la consulta de payment_balance", async () => {
