@@ -1,6 +1,6 @@
 # SPEC 17 — Fix: registro de pagos roto por `receipt_year` en la RPC
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 09, SPEC 13, SPEC 16
 > **Date:** 2026-10-05
 > **Objective:** Restaurar el registro de pagos recreando `create_payment_with_allocations` sin la referencia a la columna eliminada `receipt_year`, versionar esa migración en el repo y mapear los errores `42703`/`42501` con mensajes comprensibles en `mapError`.
@@ -143,16 +143,16 @@ Cambios en `lib/pagos/pagos.ts` (solo `mapError`, en `lib/pagos/pagos.ts:104-132
 
 ## Acceptance criteria
 
-- [ ] Existe el archivo `supabase/migrations/20261005120000_recreate_create_payment_rpc_no_receipt_year.sql` con el SQL del data model.
-- [ ] La función `public.create_payment_with_allocations` en la DB no contiene `receipt_year` en su definición (`pg_get_functiondef`).
-- [ ] `revoke ... from public, anon` y `grant ... to authenticated, service_role` aplicados sobre la función.
-- [ ] Registrar un pago sin asignaciones desde `/pagos/ingresos` funciona: aparece en el listado con su recibo y persiste al recargar.
-- [ ] Registrar un pago con asignación parcial actualiza `Pagado`/`Saldo` en el listado de ventas sin recargar.
-- [ ] Registrar el pago que cubre el total deja el comprobante PAGADO.
-- [ ] Asignar un importe mayor al saldo muestra `toast.error` con el mensaje del validador y no crea ningún pago (rollback completo, sin hueco de correlativo).
-- [ ] Un error `42703` de la RPC muestra "Error interno: el esquema de la base de datos está desactualizado. Avisa al administrador." (verificado forzando el error con el body viejo antes del fix, o por revisión de código).
-- [ ] Un error `42501` de la RPC muestra "No tienes permisos para esta operación. Cierra sesión y vuelve a entrar."
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan.
+- [x] Existe el archivo `supabase/migrations/20261005120000_recreate_create_payment_rpc_no_receipt_year.sql` con el SQL del data model.
+- [x] La función `public.create_payment_with_allocations` en la DB no contiene `receipt_year` en su definición (`pg_get_functiondef`).
+- [x] `revoke ... from public, anon` y `grant ... to authenticated, service_role` aplicados sobre la función.
+- [x] Registrar un pago sin asignaciones desde `/pagos/ingresos` funciona: aparece en el listado con su recibo y persiste al recargar.
+- [x] Registrar un pago con asignación parcial actualiza `Pagado`/`Saldo` en el listado de ventas sin recargar.
+- [x] Registrar el pago que cubre el total deja el comprobante PAGADO.
+- [x] Asignar un importe mayor al saldo muestra `toast.error` con el mensaje del validador y no crea ningún pago (rollback completo, sin hueco de correlativo).
+- [x] Un error `42703` de la RPC muestra "Error interno: el esquema de la base de datos está desactualizado. Avisa al administrador." (verificado forzando el error con el body viejo antes del fix, o por revisión de código).
+- [x] Un error `42501` de la RPC muestra "No tienes permisos para esta operación. Cierra sesión y vuelve a entrar."
+- [x] `npm run lint`, `npm test` y `npm run build` pasan.
 
 ## Decisions
 
