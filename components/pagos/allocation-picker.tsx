@@ -17,7 +17,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface AllocationPickerProps {
   direction: PaymentDirection;
-  entityId: string;
+  entityId?: string;
   amount: number;
   value: AllocationInput[];
   onChange: (allocations: AllocationInput[]) => void;
