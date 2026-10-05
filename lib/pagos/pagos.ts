@@ -126,6 +126,18 @@ function mapError(error: { code?: string; message: string }): Error {
     return new Error("No se pudo crear el pago. Ejecuta la migración de la RPC.");
   }
 
+  if (error.code === "42703") {
+    return new Error(
+      "Error interno: el esquema de la base de datos está desactualizado. Avisa al administrador."
+    );
+  }
+
+  if (error.code === "42501") {
+    return new Error(
+      "No tienes permisos para esta operación. Cierra sesión y vuelve a entrar."
+    );
+  }
+
   return new Error(
     "No se pudo completar la operación con la base de datos. Intenta nuevamente."
   );
