@@ -25,6 +25,7 @@ export type Database = {
           id: string
           igv: number
           issue_date: string
+          owner_id: string | null
           payment_type: Database["public"]["Enums"]["payment_type"]
           registration_date: string
           status: Database["public"]["Enums"]["comprobante_status"]
@@ -44,6 +45,7 @@ export type Database = {
           id?: string
           igv: number
           issue_date: string
+          owner_id?: string | null
           payment_type: Database["public"]["Enums"]["payment_type"]
           registration_date?: string
           status?: Database["public"]["Enums"]["comprobante_status"]
@@ -63,6 +65,7 @@ export type Database = {
           id?: string
           igv?: number
           issue_date?: string
+          owner_id?: string | null
           payment_type?: Database["public"]["Enums"]["payment_type"]
           registration_date?: string
           status?: Database["public"]["Enums"]["comprobante_status"]
@@ -97,6 +100,7 @@ export type Database = {
           notes: string | null
           opening_balance: number
           opening_balance_date: string
+          owner_id: string | null
           type: Database["public"]["Enums"]["cash_account_type"]
           updated_at: string
         }
@@ -113,6 +117,7 @@ export type Database = {
           notes?: string | null
           opening_balance?: number
           opening_balance_date?: string
+          owner_id?: string | null
           type: Database["public"]["Enums"]["cash_account_type"]
           updated_at?: string
         }
@@ -127,6 +132,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           notes?: string | null
+          owner_id?: string | null
           opening_balance?: number
           opening_balance_date?: string
           type?: Database["public"]["Enums"]["cash_account_type"]
@@ -148,6 +154,7 @@ export type Database = {
           is_supplier: boolean
           management_email: string
           name: string
+          owner_id: string | null
           phone: string
           updated_at: string
         }
@@ -164,6 +171,7 @@ export type Database = {
           is_supplier?: boolean
           management_email?: string
           name: string
+          owner_id?: string | null
           phone?: string
           updated_at?: string
         }
@@ -180,6 +188,7 @@ export type Database = {
           is_supplier?: boolean
           management_email?: string
           name?: string
+          owner_id?: string | null
           phone?: string
           updated_at?: string
         }
@@ -195,6 +204,7 @@ export type Database = {
           issue_date: string
           method: Database["public"]["Enums"]["payment_method"]
           notes: string | null
+          owner_id: string | null
           payment_date: string
           receipt_number: string | null
           receipt_serial: number
@@ -213,6 +223,7 @@ export type Database = {
           issue_date?: string
           method: Database["public"]["Enums"]["payment_method"]
           notes?: string | null
+          owner_id?: string | null
           payment_date: string
           receipt_number?: string | null
           receipt_serial: number
@@ -231,6 +242,7 @@ export type Database = {
           issue_date?: string
           method?: Database["public"]["Enums"]["payment_method"]
           notes?: string | null
+          owner_id?: string | null
           payment_date?: string
           receipt_number?: string | null
           receipt_serial?: number
@@ -256,6 +268,7 @@ export type Database = {
           comprobante_id: string
           created_at: string
           id: string
+          owner_id: string | null
           payment_id: string
         }
         Insert: {
@@ -263,6 +276,7 @@ export type Database = {
           comprobante_id: string
           created_at?: string
           id?: string
+          owner_id?: string | null
           payment_id: string
         }
         Update: {
@@ -270,6 +284,7 @@ export type Database = {
           comprobante_id?: string
           created_at?: string
           id?: string
+          owner_id?: string | null
           payment_id?: string
         }
         Relationships: [
