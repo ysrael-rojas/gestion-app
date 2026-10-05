@@ -21,9 +21,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import type { Client } from "@/components/clientes/types";
 import { AllocationPicker } from "@/components/pagos/allocation-picker";
 import { usePagos } from "@/components/pagos/pagos-provider";
+import { useEntityNameResolver } from "@/components/pagos/use-entity-name";
 import type {
   AllocationInput,
   PaymentDetail,
@@ -43,7 +43,6 @@ interface PaymentDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   paymentId: string | null;
-  clients: Client[];
   onPrint: (paymentId: string) => void;
 }
 
@@ -62,20 +61,11 @@ function DetailField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function getEntityName(clients: Client[], entityId: string): string {
-  return (
-    clients.find((client) => client.id === entityId)?.name ??
-    "Entidad no encontrada"
-  );
-}
-
 function PaymentDetailContent({
   paymentId,
-  clients,
   onPrint,
 }: {
   paymentId: string;
-  clients: Client[];
   onPrint: (paymentId: string) => void;
 }) {
   const { assignAllocations, annulPayment } = usePagos();
@@ -86,6 +76,7 @@ function PaymentDetailContent({
   const [assignItems, setAssignItems] = useState<AllocationInput[]>([]);
   const [voidReason, setVoidReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const resolveEntityName = useEntityNameResolver(detail?.direction ?? "INGRESO");
 
   const loadDetail = useCallback(async () => {
     setIsLoading(true);
@@ -228,7 +219,7 @@ function PaymentDetailContent({
               <div className="sm:col-span-2">
                 <DetailField
                   label="Entidad"
-                  value={getEntityName(clients, detail.entityId)}
+                  value={resolveEntityName(detail.entityId)}
                 />
               </div>
               <DetailField
@@ -302,7 +293,7 @@ function PaymentDetailContent({
             <CardContent className="flex flex-col gap-4">
               <AllocationPicker
                 direction={detail.direction}
-                entityId={detail.entityId}
+                entityId={detail.entityId ?? undefined}
                 amount={detail.unassignedAmount}
                 value={assignItems}
                 onChange={setAssignItems}
@@ -400,7 +391,6 @@ export function PaymentDetailModal({
   open,
   onOpenChange,
   paymentId,
-  clients,
   onPrint,
 }: PaymentDetailModalProps) {
   return (
@@ -417,7 +407,6 @@ export function PaymentDetailModal({
             <PaymentDetailContent
               key={paymentId}
               paymentId={paymentId}
-              clients={clients}
               onPrint={onPrint}
             />
           ) : null}

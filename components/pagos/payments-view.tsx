@@ -17,12 +17,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Client } from "@/components/clientes/types";
-import { useClientes } from "@/components/clientes/clientes-provider";
 import { usePagos } from "@/components/pagos/pagos-provider";
 import { PaymentModal } from "@/components/pagos/payment-modal";
 import { PaymentDetailModal } from "@/components/pagos/payment-detail-modal";
 import { ReceiptDialog } from "@/components/pagos/receipt-dialog";
+import {
+  useEntityNameResolver,
+  type EntityNameResolver,
+} from "@/components/pagos/use-entity-name";
 import {
   getPaymentsColumns,
   paymentsTableFeatures,
@@ -70,13 +72,6 @@ const FILTER_LABELS: Record<Exclude<PaymentsFilter, "todas">, string> = {
   vencidas: "Vencidas",
 };
 
-function getEntityName(clients: Client[], entityId: string): string {
-  return (
-    clients.find((client) => client.id === entityId)?.name ??
-    "Entidad no encontrada"
-  );
-}
-
 function getFilterErrorMessage(error: unknown): string {
   return error instanceof Error
     ? error.message
@@ -85,14 +80,14 @@ function getFilterErrorMessage(error: unknown): string {
 
 interface VouchersTableProps {
   vouchers: VoucherBalance[];
-  clients: Client[];
+  resolveName: EntityNameResolver;
   isLoading: boolean;
   emptyLabel: string;
 }
 
 function VouchersTable({
   vouchers,
-  clients,
+  resolveName,
   isLoading,
   emptyLabel,
 }: VouchersTableProps) {
@@ -126,7 +121,7 @@ function VouchersTable({
               <TableRow key={voucher.comprobanteId}>
                 <TableCell>{voucher.voucherNumber}</TableCell>
                 <TableCell>
-                  {getEntityName(clients, voucher.entityId)}
+                  {resolveName(voucher.entityId)}
                 </TableCell>
                 <TableCell>{formatDate(voucher.issueDate)}</TableCell>
                 <TableCell>
@@ -169,7 +164,7 @@ export function PaymentsView({
   initialFilter,
 }: PaymentsViewProps) {
   const { payments, isLoading, addPayment } = usePagos();
-  const { clients } = useClientes();
+  const resolveName = useEntityNameResolver(direction);
   const router = useRouter();
   const pathname = usePathname();
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -256,9 +251,9 @@ export function PaymentsView({
         )
         .map((payment) => ({
           ...payment,
-          entityName: getEntityName(clients, payment.entityId),
+          entityName: resolveName(payment.entityId),
         })),
-    [payments, direction, clients, filter, unassignedIds]
+    [payments, direction, resolveName, filter, unassignedIds]
   );
 
   const visibleVouchers = useMemo(() => {
@@ -334,7 +329,7 @@ export function PaymentsView({
         {isVoucherFilter ? (
           <VouchersTable
             vouchers={visibleVouchers}
-            clients={clients}
+            resolveName={resolveName}
             isLoading={vouchers === null}
             emptyLabel={
               filter === "vencidas"
@@ -439,7 +434,6 @@ export function PaymentsView({
           }
         }}
         paymentId={viewingPaymentId}
-        clients={clients}
         onPrint={openPrint}
       />
 
@@ -451,7 +445,6 @@ export function PaymentsView({
           }
         }}
         paymentId={printingPaymentId}
-        clients={clients}
       />
     </main>
   );

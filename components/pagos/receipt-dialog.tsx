@@ -26,8 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Client } from "@/components/clientes/types";
 import type { PaymentDetail } from "@/components/pagos/types";
+import { useEntityNameResolver } from "@/components/pagos/use-entity-name";
 import {
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
@@ -50,7 +50,6 @@ interface ReceiptDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   paymentId: string | null;
-  clients: Client[];
 }
 
 function ReceiptRow({
@@ -74,16 +73,12 @@ function ReceiptRow({
 
 function ReceiptContent({
   detail,
-  clients,
   width,
 }: {
   detail: PaymentDetail;
-  clients: Client[];
   width: ReceiptWidth;
 }) {
-  const entityName =
-    clients.find((client) => client.id === detail.entityId)?.name ??
-    "Entidad no encontrada";
+  const entityName = useEntityNameResolver(detail.direction)(detail.entityId);
 
   return (
     <div
@@ -157,11 +152,9 @@ function ReceiptContent({
 
 function ReceiptPreview({
   paymentId,
-  clients,
   width,
 }: {
   paymentId: string;
-  clients: Client[];
   width: ReceiptWidth;
 }) {
   const [detail, setDetail] = useState<PaymentDetail | null>(null);
@@ -218,13 +211,13 @@ function ReceiptPreview({
   return (
     <>
       <div className="flex justify-center overflow-x-auto">
-        <ReceiptContent detail={detail} clients={clients} width={width} />
+        <ReceiptContent detail={detail} width={width} />
       </div>
 
       {typeof document !== "undefined"
         ? createPortal(
             <div className="receipt-print-portal">
-              <ReceiptContent detail={detail} clients={clients} width={width} />
+              <ReceiptContent detail={detail} width={width} />
             </div>,
             document.body
           )
@@ -237,7 +230,6 @@ export function ReceiptDialog({
   open,
   onOpenChange,
   paymentId,
-  clients,
 }: ReceiptDialogProps) {
   const [width, setWidth] = useState<ReceiptWidth>(DEFAULT_WIDTH);
 
@@ -301,7 +293,6 @@ export function ReceiptDialog({
               <ReceiptPreview
                 key={paymentId}
                 paymentId={paymentId}
-                clients={clients}
                 width={width}
               />
             ) : null}
