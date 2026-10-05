@@ -6,7 +6,7 @@ export type PaymentStatus = "REGISTRADO" | "ANULADO";
 
 export interface Payment {
   id: string;
-  entityId: string;
+  entityId: string | null; // null = anticipo sin entidad asignada aún
   direction: PaymentDirection;
   issueDate: string; // "YYYY-MM-DD" — fecha de emisión del recibo
   paymentDate: string; // "YYYY-MM-DD" — fecha efectiva del pago

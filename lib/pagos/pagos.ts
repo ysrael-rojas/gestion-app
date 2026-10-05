@@ -324,7 +324,9 @@ export async function createPayment(
   const { data, error } = await supabase.rpc(
     "create_payment_with_allocations",
     {
-      p_entity_id: values.entityId,
+      // El RPC acepta entity_id NULL (anticipo sin entidad). El tipo generado
+      // declara `string` porque no modela la nulabilidad de los parámetros.
+      p_entity_id: (values.entityId ?? null) as string,
       p_direction: values.direction,
       p_payment_date: values.paymentDate,
       p_amount: values.amount,
@@ -347,10 +349,25 @@ export async function createPayment(
 
 export async function addAllocations(
   paymentId: string,
-  items: AllocationInput[]
+  items: AllocationInput[],
+  entityId?: string
 ): Promise<void> {
   if (items.length === 0) {
     return;
+  }
+
+  // Un pago sin entidad (anticipo genérico) se liga a la entidad elegida al
+  // asignarle facturas. El update es un no-op si el pago ya tiene entidad.
+  if (entityId) {
+    const { error: entityError } = await supabase
+      .from("payment")
+      .update({ entity_id: entityId })
+      .eq("id", paymentId)
+      .is("entity_id", null);
+
+    if (entityError) {
+      throw mapError(entityError);
+    }
   }
 
   const { error } = await supabase.from("payment_allocation").insert(

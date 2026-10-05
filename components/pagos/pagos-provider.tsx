@@ -37,7 +37,8 @@ interface PagosContextValue {
   addPayment: (values: PaymentFormValues) => Promise<PaymentDetail>;
   assignAllocations: (
     paymentId: string,
-    items: AllocationInput[]
+    items: AllocationInput[],
+    entityId?: string
   ) => Promise<void>;
   annulPayment: (id: string, reason: string) => Promise<void>;
   refresh: () => Promise<void>;
@@ -135,8 +136,8 @@ export function PagosProvider({ children }: { children: React.ReactNode }) {
   );
 
   const assignAllocations = useCallback(
-    async (paymentId: string, items: AllocationInput[]) => {
-      await addAllocations(paymentId, items);
+    async (paymentId: string, items: AllocationInput[], entityId?: string) => {
+      await addAllocations(paymentId, items, entityId);
       await Promise.all([
         refresh(),
         refreshSummary(),
