@@ -29,6 +29,30 @@ describe("paymentSchema", () => {
     }
   });
 
+  it("acepta un anticipo sin entidad y sin allocations", () => {
+    const { entityId, ...rest } = validPayment();
+    void entityId;
+    const result = paymentSchema.safeParse({
+      ...rest,
+      allocations: [],
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.entityId).toBeUndefined();
+    }
+  });
+
+  it("rechaza allocations cuando falta la entidad", () => {
+    const { entityId, ...rest } = validPayment();
+    void entityId;
+    const result = paymentSchema.safeParse(rest);
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const entityIssue = result.error.issues.find((i) => i.path[0] === "entityId");
+      expect(entityIssue?.message).toBe("Selecciona la entidad para asignar el pago.");
+    }
+  });
+
   it("rechaza monto 0 o negativo", () => {
     const result = paymentSchema.safeParse({ ...validPayment(), amount: 0 });
     expect(result.success).toBe(false);
