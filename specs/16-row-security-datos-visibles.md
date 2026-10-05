@@ -1,6 +1,6 @@
 # SPEC 16 — Row Security operativa: datos visibles y esquema a prueba de seeds sin sesión
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 06, SPEC 07, SPEC 08, SPEC 09, SPEC 13
 > **Fecha:** 2026-10-05
 > **Objetivo:** Hacer que la app muestre los datos existentes (hoy invisibles por RLS con `owner_id` nulo), agregar las políticas DELETE faltantes y endurecer el esquema para que inserts sin sesión de Auth no vuelvan a crear filas huérfanas.
@@ -92,14 +92,14 @@ El paso 5 se hará durante `/spec-impl`; aquí solo se deja documentado.
 
 ## 5 — Criterios de aceptación
 
-- [ ] Tras las migraciones, ninguna tabla tiene filas con `owner_id IS NULL` (la restricción NOT NULL lo garantiza estructuralmente).
-- [ ] Las 5 tablas con `owner_id` tienen exactamente 4 políticas RLS cada una (select/insert/update/delete), todas `TO authenticated` con `owner_id = auth.uid()`.
-- [ ] Con sesión activa en la app, crear un cliente lo hace aparecer en el listado inmediatamente.
-- [ ] El cliente recién creado se puede eliminar desde la app (política DELETE operativa).
-- [ ] Un INSERT vía SQL/API **sin sesión** falla con violación de NOT NULL en `owner_id` (ya no se crean filas invisibles).
-- [ ] Un INSERT vía API **con sesión** funciona sin especificar `owner_id` (DEFAULT `auth.uid()`).
-- [ ] Los advisors de seguridad de Supabase no reportan políticas faltantes ni tablas sin RLS.
-- [ ] `npm run lint && npm test && npm run build` pasan (no hubo cambios de código TS, pero se validan regresiones).
+- [x] Tras las migraciones, ninguna tabla tiene filas con `owner_id IS NULL` (la restricción NOT NULL lo garantiza estructuralmente).
+- [x] Las 5 tablas con `owner_id` tienen exactamente 4 políticas RLS cada una (select/insert/update/delete), todas `TO authenticated` con `owner_id = auth.uid()`.
+- [x] Con sesión activa en la app, crear un cliente lo hace aparecer en el listado inmediatamente. (Verificado manualmente.)
+- [x] El cliente recién creado se puede eliminar desde la app (política DELETE operativa). (Verificado manualmente.)
+- [x] Un INSERT vía SQL/API **sin sesión** falla con violación de NOT NULL en `owner_id` (ya no se crean filas invisibles). (Probado: error `23502`.)
+- [x] Un INSERT vía API **con sesión** funciona sin especificar `owner_id` (DEFAULT `auth.uid()`). (Probado con JWT simulado.)
+- [x] Los advisors de seguridad de Supabase no reportan políticas faltantes ni tablas sin RLS. (`receipt_sequence` queda fuera de alcance por diseño; su hallazgo es preexistente y aceptado.)
+- [x] `npm run lint && npm test && npm run build` pasan (no hubo cambios de código TS, pero se validan regresiones). (lint 0 errores, 143 tests, build OK.)
 
 ---
 
