@@ -1,6 +1,6 @@
 # SPEC 18 — Anticipos sin cliente y asignación tardía de saldo
 
-> **Status:** Draft
+> **Status:** Aprobado
 > **Depends on:** SPEC 09, SPEC 10, SPEC 13, SPEC 17
 > **Date:** 2026-10-05
 > **Objective:** Permitir registrar un anticipo sin entidad (cliente/proveedor) y asignarlo después a una entidad y una o varias facturas, mostrando "—" en toda la UI donde no haya nombre de entidad.
