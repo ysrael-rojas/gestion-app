@@ -52,8 +52,7 @@ next-env.d.ts
 # Supabase CLI local cache (link metadata, CLI version)
 supabase/.temp/
 
-# Local OpenCode / Gentle AI runtime state
-.gentle-ai-*.json
+# Local OpenCode runtime state
 .pi/
 
 # Windows quirk artifact (echo > nul redirections)
