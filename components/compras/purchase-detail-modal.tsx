@@ -197,7 +197,6 @@ export function PurchaseDetailModal({
           }
         }}
         paymentId={printingPaymentId}
-        clients={clients}
       />
     </>
   );

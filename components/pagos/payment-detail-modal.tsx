@@ -21,9 +21,16 @@ import {
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import type { Client } from "@/components/clientes/types";
+import {
+  EntityAutocomplete,
+  toEntityAutocompleteItems,
+} from "@/components/shared/entity-autocomplete";
 import { AllocationPicker } from "@/components/pagos/allocation-picker";
 import { usePagos } from "@/components/pagos/pagos-provider";
+import {
+  useEntityNameResolver,
+  useEntityOptions,
+} from "@/components/pagos/use-entity-name";
 import type {
   AllocationInput,
   PaymentDetail,
@@ -43,7 +50,6 @@ interface PaymentDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   paymentId: string | null;
-  clients: Client[];
   onPrint: (paymentId: string) => void;
 }
 
@@ -62,20 +68,11 @@ function DetailField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function getEntityName(clients: Client[], entityId: string): string {
-  return (
-    clients.find((client) => client.id === entityId)?.name ??
-    "Entidad no encontrada"
-  );
-}
-
 function PaymentDetailContent({
   paymentId,
-  clients,
   onPrint,
 }: {
   paymentId: string;
-  clients: Client[];
   onPrint: (paymentId: string) => void;
 }) {
   const { assignAllocations, annulPayment } = usePagos();
@@ -86,6 +83,12 @@ function PaymentDetailContent({
   const [assignItems, setAssignItems] = useState<AllocationInput[]>([]);
   const [voidReason, setVoidReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [assignEntityId, setAssignEntityId] = useState<string | null>(null);
+  const detailDirection = detail?.direction ?? "INGRESO";
+  const resolveEntityName = useEntityNameResolver(detailDirection);
+  const entityOptions = useEntityOptions(detailDirection);
+  const entityItems = toEntityAutocompleteItems(entityOptions);
+  const assignEntity = detail?.entityId ?? assignEntityId;
 
   const loadDetail = useCallback(async () => {
     setIsLoading(true);
@@ -135,6 +138,7 @@ function PaymentDetailContent({
   const assignTotal = assignItems.reduce((sum, item) => sum + item.amount, 0);
   const canAssign =
     detail !== null &&
+    assignEntity !== null &&
     assignItems.length > 0 &&
     assignTotal > 0 &&
     assignTotal <= detail.unassignedAmount;
@@ -146,9 +150,10 @@ function PaymentDetailContent({
 
     try {
       setIsSubmitting(true);
-      await assignAllocations(detail.id, assignItems);
+      await assignAllocations(detail.id, assignItems, assignEntity ?? undefined);
       toast.success("Saldo asignado");
       setAssignItems([]);
+      setAssignEntityId(null);
       setMode("view");
       await loadDetail();
     } catch (err) {
@@ -228,7 +233,7 @@ function PaymentDetailContent({
               <div className="sm:col-span-2">
                 <DetailField
                   label="Entidad"
-                  value={getEntityName(clients, detail.entityId)}
+                  value={resolveEntityName(detail.entityId)}
                 />
               </div>
               <DetailField
@@ -300,9 +305,33 @@ function PaymentDetailContent({
               <CardTitle>Asignar saldo</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              {detail.entityId ? null : (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="assignEntityId">
+                    {detail.direction === "INGRESO" ? "Cliente" : "Proveedor"}
+                  </Label>
+                  <EntityAutocomplete
+                    id="assignEntityId"
+                    items={entityItems}
+                    value={assignEntityId}
+                    onValueChange={(value) => {
+                      setAssignEntityId(value ? value : null);
+                      setAssignItems([]);
+                    }}
+                    placeholder={
+                      detail.direction === "INGRESO"
+                        ? "Buscar cliente..."
+                        : "Buscar proveedor..."
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Elige una entidad para asignar el saldo a sus comprobantes.
+                  </p>
+                </div>
+              )}
               <AllocationPicker
                 direction={detail.direction}
-                entityId={detail.entityId}
+                entityId={assignEntity ?? undefined}
                 amount={detail.unassignedAmount}
                 value={assignItems}
                 onChange={setAssignItems}
@@ -312,6 +341,7 @@ function PaymentDetailContent({
                   variant="outline"
                   onClick={() => {
                     setAssignItems([]);
+                    setAssignEntityId(null);
                     setMode("view");
                   }}
                   disabled={isSubmitting}
@@ -372,7 +402,14 @@ function PaymentDetailContent({
         <CardFooter className="justify-between gap-2">
           <div className="flex gap-2">
             {isRegistered && hasUnassigned ? (
-              <Button variant="outline" onClick={() => setMode("assign")}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAssignEntityId(null);
+                  setAssignItems([]);
+                  setMode("assign");
+                }}
+              >
                 Asignar saldo
               </Button>
             ) : null}
@@ -400,7 +437,6 @@ export function PaymentDetailModal({
   open,
   onOpenChange,
   paymentId,
-  clients,
   onPrint,
 }: PaymentDetailModalProps) {
   return (
@@ -417,7 +453,6 @@ export function PaymentDetailModal({
             <PaymentDetailContent
               key={paymentId}
               paymentId={paymentId}
-              clients={clients}
               onPrint={onPrint}
             />
           ) : null}

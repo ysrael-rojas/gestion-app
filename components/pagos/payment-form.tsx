@@ -60,7 +60,7 @@ const methodItems = PAYMENT_METHODS.map((option) => ({
 
 function createEmptyValues(
   direction: PaymentDirection,
-  entityId = ""
+  entityId?: string
 ): PaymentFormInput {
   return {
     entityId,
@@ -202,12 +202,12 @@ export function PaymentForm({
           name="entityId"
           render={({ field }) => (
             <div className="flex flex-col gap-1.5 sm:col-span-2">
-              <Label htmlFor="entityId">Entidad</Label>
+              <Label htmlFor="entityId">Cliente/Proveedor (opcional)</Label>
               <EntityAutocomplete
                 id="entityId"
                 items={entityItems}
                 value={field.value ? field.value : null}
-                onValueChange={(value) => field.onChange(value)}
+                onValueChange={(value) => field.onChange(value ? value : undefined)}
                 placeholder={
                   direction === "INGRESO"
                     ? "Buscar cliente..."
@@ -216,6 +216,9 @@ export function PaymentForm({
                 isLoading={isEntitiesLoading}
                 aria-invalid={!!errors.entityId}
               />
+              <p className="text-xs text-muted-foreground">
+                Sin entidad, el pago queda como anticipo sin asignar.
+              </p>
               <FieldError message={errors.entityId?.message} />
             </div>
           )}
