@@ -1,16 +1,11 @@
 import { redirect } from "next/navigation";
 
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppNavbar } from "@/components/app-navbar";
 import { CajasBancosProvider } from "@/components/cajas-bancos/cajas-bancos-provider";
 import { ClientesProvider } from "@/components/clientes/clientes-provider";
 import { ComprasProvider } from "@/components/compras/compras-provider";
 import { PagosProvider } from "@/components/pagos/pagos-provider";
 import { VentasProvider } from "@/components/ventas/ventas-provider";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AuthenticatedLayout({
@@ -28,24 +23,19 @@ export default async function AuthenticatedLayout({
   }
 
   return (
-    <SidebarProvider>
-      <ClientesProvider>
-        <CajasBancosProvider>
-          <VentasProvider>
-            <ComprasProvider>
-              <PagosProvider>
-                <AppSidebar />
-                <SidebarInset>
-                  <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
-                    <SidebarTrigger />
-                  </header>
-                  {children}
-                </SidebarInset>
-              </PagosProvider>
-            </ComprasProvider>
-          </VentasProvider>
-        </CajasBancosProvider>
-      </ClientesProvider>
-    </SidebarProvider>
+    <ClientesProvider>
+      <CajasBancosProvider>
+        <VentasProvider>
+          <ComprasProvider>
+            <PagosProvider>
+              <div className="flex min-h-svh flex-col">
+                <AppNavbar />
+                <main className="flex-1">{children}</main>
+              </div>
+            </PagosProvider>
+          </ComprasProvider>
+        </VentasProvider>
+      </CajasBancosProvider>
+    </ClientesProvider>
   );
 }
