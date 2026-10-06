@@ -1,6 +1,6 @@
 # SPEC 22 — Barra de navegación superior con NavigationMenu
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 04, SPEC 20
 > **Fecha:** 2026-10-06
 > **Objetivo:** Reemplazar el sidebar lateral por una barra de navegación superior con `NavigationMenu` de shadcn, conservando rutas, grupos desplegables y cierre de sesión.
@@ -38,15 +38,15 @@ Esta spec **no introduce estructuras de datos nuevas**. Es solo capa de presenta
 
 ## Criterios de aceptación
 
-- [ ] No existe `components/app-sidebar.tsx` y no quedan imports de `ui/sidebar` fuera de `ui/sidebar.tsx`.
-- [ ] El header muestra: marca, VENTAS, COMPRAS, MAESTRO▾, PAGOS▾, CAJA Y BANCOS▾ y "Cerrar sesión" a la derecha.
-- [ ] VENTAS y COMPRAS navegan directo; los tres grupos abren dropdown con exactamente los mismos `href` que el sidebar actual.
-- [ ] El item de la ruta actual se ve con estilo activo (incluidos los subitems dentro del dropdown).
-- [ ] No aparecen badges de conteo en la navegación.
-- [ ] En viewport de 375 px la barra hace scroll horizontal sin romper el layout.
-- [ ] "Cerrar sesión" funciona desde el header.
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan.
-- [ ] El test del navbar corre sin warnings de React.
+- [x] No existe `components/app-sidebar.tsx` y no quedan imports de `ui/sidebar` fuera de `ui/sidebar.tsx`.
+- [x] El header muestra: marca, VENTAS, COMPRAS, MAESTRO▾, PAGOS▾, CAJA Y BANCOS▾ y "Cerrar sesión" a la derecha.
+- [x] VENTAS y COMPRAS navegan directo; los tres grupos abren dropdown con exactamente los mismos `href` que el sidebar actual.
+- [x] El item de la ruta actual se ve con estilo activo (incluidos los subitems dentro del dropdown).
+- [x] No aparecen badges de conteo en la navegación.
+- [x] En viewport de 375 px la barra hace scroll horizontal sin romper el layout.
+- [x] "Cerrar sesión" funciona desde el header.
+- [x] `npm run lint`, `npm test` y `npm run build` pasan.
+- [x] El test del navbar corre sin warnings de React.
 
 ## Decisiones
 
