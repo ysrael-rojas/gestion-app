@@ -1,6 +1,6 @@
-# SPEC 20 — Datos demo para el módulo de caja y bancos
+# SPEC 21 — Datos demo para el módulo de caja y bancos
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 19
 > **Fecha:** 2026-10-06
 > **Objetivo:** Cargar datos de prueba (clientes, facturas de venta y recibos de ingreso en cuentas de caja/banco) en la DB de Supabase para explorar el módulo de caja y bancos con datos realistas.
@@ -47,14 +47,14 @@ recibos: type 'INGRESO', category_id = "Cobranza de venta"
 
 ## Criterios de aceptación
 
-- [ ] El script corre 2 veces seguidas sin error ni duplicados (counts idénticos tras cada corrida).
-- [ ] `/clientes` muestra 6 clientes para el owner de la demo (ya no GREEN PLAST).
-- [ ] `/ventas` muestra 14 facturas: 3 `PAGADO`, 4 `PENDIENTE` con pago parcial (saldo > 0) y 7 `PENDIENTE` sin pago.
-- [ ] El detalle de una factura `PARCIAL` muestra su historial de pagos con recibo, cuenta y método.
-- [ ] `/cajas-bancos/cuentas` muestra 2 cuentas con saldo > 0 (suma de ingresos − egresos a hoy, en PEN).
-- [ ] `/cajas-bancos/cuadres` muestra posición de efectivo y permite cerrar el día de ayer sin error.
-- [ ] Tras un cierre manual, intentar registrar un recibo con fecha anterior al cierre es bloqueado por la base.
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan (el cambio es solo SQL; nada de código de app debe romperse).
+- [x] El script corre 2 veces seguidas sin error ni duplicados (counts idénticos tras cada corrida).
+- [x] `/clientes` muestra 6 clientes para el owner de la demo (ya no GREEN PLAST).
+- [x] `/ventas` muestra 14 facturas: 3 `PAGADO`, 4 `PENDIENTE` con pago parcial (saldo > 0) y 7 `PENDIENTE` sin pago.
+- [x] El detalle de una factura con pago parcial muestra su historial de pagos con recibo, cuenta y método.
+- [x] `/cajas-bancos/cuentas` muestra 2 cuentas con saldo > 0 (suma de ingresos − egresos a hoy, en PEN).
+- [x] `/cajas-bancos/cuadres` muestra posición de efectivo y permite cerrar el día de ayer sin error.
+- [x] Tras un cierre manual, intentar registrar un recibo con fecha anterior al cierre es bloqueado por la base.
+- [x] `npm run lint`, `npm test` y `npm run build` pasan (el cambio es solo SQL; nada de código de app debe romperse).
 
 ## Decisiones
 
