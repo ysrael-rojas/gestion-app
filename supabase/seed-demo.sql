@@ -26,6 +26,12 @@ declare
   v_cli4 uuid := '00000004-0000-4000-8000-000000000004';
   v_cli5 uuid := '00000005-0000-4000-8000-000000000005';
   v_cli6 uuid := '00000006-0000-4000-8000-000000000006';
+  -- IDs de métodos y categorías: se resuelven por `code`/nombre más abajo,
+  -- porque ya fueron sembrados para este owner y no queremos hardcodearlos.
+  v_met_efectivo uuid;
+  v_met_transfer uuid;
+  v_met_tarjeta  uuid;
+  v_cat_cobranza uuid;
 begin
   -- Purga en orden de dependencias:
   --   payment_allocation -> payment -> cash_close -> comprobante -> entidad -> cash_account
@@ -113,4 +119,42 @@ begin
     ('c0000013-0000-4000-8000-000000000013'::uuid, v_cli1, 'FF01-00013',  4, 3540.00::numeric, 'CREDITO'::public.payment_type, 15),
     ('c0000014-0000-4000-8000-000000000014'::uuid, v_cli2, 'FF01-00014',  1, 1062.00::numeric, 'CONTADO'::public.payment_type, null::integer)
   ) as v(id, entity_id, voucher_number, days_ago, total, payment_type, credit_days);
+
+  -- Paso 5 — Recibos de ingreso (10) -----------------------------------
+  -- Métodos y categoría existentes, resueltos por `code`/nombre.
+  select id into strict v_met_efectivo from public.payment_method       where owner_id = v_owner and code = 'EFECTIVO';
+  select id into strict v_met_transfer from public.payment_method       where owner_id = v_owner and code = 'TRANSFERENCIA_BCP';
+  select id into strict v_met_tarjeta  from public.payment_method       where owner_id = v_owner and code = 'TARJETA_CREDITO';
+  select id into strict v_cat_cobranza from public.cash_receipt_category where owner_id = v_owner and name = 'Cobranza de venta' and direction = 'INGRESO';
+
+  -- `receipt_serial` y `receipt_number` (RI-NNNNNN) los asigna/genera la DB.
+  -- Los recibos se reparten en Caja General (efectivo) y Banco BCP (transferencia/tarjeta).
+  insert into public.payment (
+    id, owner_id, entity_id, direction, payment_date, amount,
+    method_id, cash_account_id, category_id, reference, notes
+  ) values
+    ('d0000001-0000-4000-8000-000000000001', v_owner, v_cli1, 'INGRESO', current_date - 72, 2500.00, v_met_efectivo, v_caja,  v_cat_cobranza, 'REC-0001', null),
+    ('d0000002-0000-4000-8000-000000000002', v_owner, v_cli2, 'INGRESO', current_date - 69, 1180.00, v_met_transfer, v_banco, v_cat_cobranza, 'TRF-BCP-0002', null),
+    ('d0000003-0000-4000-8000-000000000003', v_owner, v_cli3, 'INGRESO', current_date - 50, 3540.00, v_met_transfer, v_banco, v_cat_cobranza, 'TRF-BCP-0003', null),
+    ('d0000004-0000-4000-8000-000000000004', v_owner, v_cli4, 'INGRESO', current_date - 45,  300.00, v_met_efectivo, v_caja,  v_cat_cobranza, 'REC-0004', 'Abono parcial FF01-00004'),
+    ('d0000005-0000-4000-8000-000000000005', v_owner, v_cli5, 'INGRESO', current_date - 40, 1500.00, v_met_transfer, v_banco, v_cat_cobranza, 'TRF-BCP-0005', 'Abono parcial FF01-00005'),
+    ('d0000006-0000-4000-8000-000000000006', v_owner, v_cli6, 'INGRESO', current_date - 30,  500.00, v_met_efectivo, v_caja,  v_cat_cobranza, 'REC-0006', 'Abono parcial FF01-00006'),
+    ('d0000007-0000-4000-8000-000000000007', v_owner, v_cli1, 'INGRESO', current_date - 25, 2000.00, v_met_transfer, v_banco, v_cat_cobranza, 'TRF-BCP-0007', 'Abono parcial FF01-00007'),
+    ('d0000008-0000-4000-8000-000000000008', v_owner, v_cli5, 'INGRESO', current_date - 20, 1000.00, v_met_tarjeta,  v_banco, v_cat_cobranza, 'POS-0008', 'Segundo abono FF01-00005'),
+    ('d0000009-0000-4000-8000-000000000009', v_owner, v_cli1, 'INGRESO', current_date - 12, 1500.00, v_met_efectivo, v_caja,  v_cat_cobranza, 'REC-0009', 'Segundo abono FF01-00007'),
+    ('d0000010-0000-4000-8000-000000000010', v_owner, v_cli6, 'INGRESO', current_date -  6,  200.00, v_met_efectivo, v_caja,  v_cat_cobranza, 'REC-0010', 'Segundo abono FF01-00006');
+
+  -- Asignación de cada recibo a su factura. Los triggers recalculan el estado
+  -- del comprobante: PAGADO si el saldo llega a 0, PENDIENTE si queda saldo.
+  insert into public.payment_allocation (owner_id, payment_id, comprobante_id, amount) values
+    (v_owner, 'd0000001-0000-4000-8000-000000000001', 'c0000001-0000-4000-8000-000000000001', 2500.00),
+    (v_owner, 'd0000002-0000-4000-8000-000000000002', 'c0000002-0000-4000-8000-000000000002', 1180.00),
+    (v_owner, 'd0000003-0000-4000-8000-000000000003', 'c0000003-0000-4000-8000-000000000003', 3540.00),
+    (v_owner, 'd0000004-0000-4000-8000-000000000004', 'c0000004-0000-4000-8000-000000000004',  300.00),
+    (v_owner, 'd0000005-0000-4000-8000-000000000005', 'c0000005-0000-4000-8000-000000000005', 1500.00),
+    (v_owner, 'd0000006-0000-4000-8000-000000000006', 'c0000006-0000-4000-8000-000000000006',  500.00),
+    (v_owner, 'd0000007-0000-4000-8000-000000000007', 'c0000007-0000-4000-8000-000000000007', 2000.00),
+    (v_owner, 'd0000008-0000-4000-8000-000000000008', 'c0000005-0000-4000-8000-000000000005', 1000.00),
+    (v_owner, 'd0000009-0000-4000-8000-000000000009', 'c0000007-0000-4000-8000-000000000007', 1500.00),
+    (v_owner, 'd0000010-0000-4000-8000-000000000010', 'c0000006-0000-4000-8000-000000000006',  200.00);
 end $$;
