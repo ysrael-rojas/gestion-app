@@ -29,7 +29,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { PaymentDetail } from "@/components/pagos/types";
 import { useEntityNameResolver } from "@/components/pagos/use-entity-name";
 import {
-  PAYMENT_METHODS,
   PAYMENT_STATUSES,
 } from "@/lib/data/payment-options";
 import { getOptionLabel, VOUCHER_TYPES } from "@/lib/data/sale-options";
@@ -98,10 +97,9 @@ function ReceiptContent({
       <ReceiptRow label="Emisión" value={formatDate(detail.issueDate)} />
       <ReceiptRow label="Fecha de pago" value={formatDate(detail.paymentDate)} />
       <ReceiptRow label="Entidad" value={entityName} />
-      <ReceiptRow
-        label="Método"
-        value={getOptionLabel(PAYMENT_METHODS, detail.method)}
-      />
+      <ReceiptRow label="Cuenta" value={detail.cashAccountName} />
+      <ReceiptRow label="Categoría" value={detail.categoryName} />
+      <ReceiptRow label="Método" value={detail.methodName} />
       {detail.reference ? (
         <ReceiptRow label="Referencia" value={detail.reference} />
       ) : null}

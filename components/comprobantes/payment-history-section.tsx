@@ -26,7 +26,7 @@ import type {
   PaymentHistoryEntry,
   PaymentStatus,
 } from "@/components/pagos/types";
-import { PAYMENT_METHODS, PAYMENT_STATUSES } from "@/lib/data/payment-options";
+import { PAYMENT_STATUSES } from "@/lib/data/payment-options";
 import { getOptionLabel } from "@/lib/data/sale-options";
 import { getPaymentHistory } from "@/lib/pagos/pagos";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -158,7 +158,7 @@ export function PaymentHistorySection({
                       <TableCell>{formatDate(entry.paymentDate)}</TableCell>
                       <TableCell>{entry.receiptNumber}</TableCell>
                       <TableCell>
-                        {getOptionLabel(PAYMENT_METHODS, entry.method)}
+                        {entry.methodName}
                       </TableCell>
                       <TableCell className="text-right">
                         {formatCurrency(entry.amount)}

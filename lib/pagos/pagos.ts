@@ -16,6 +16,17 @@ type AllocationRow = Tables<"payment_allocation">;
 type PaymentBalanceRow = Tables<"payment_balance">;
 type VoucherBalanceRow = Tables<"voucher_balance">;
 
+type PaymentRefs = {
+  payment_method: { name: string } | null;
+  cash_account: { name: string } | null;
+  cash_receipt_category: { name: string } | null;
+};
+
+type PaymentRowWithRefs = PaymentRow & PaymentRefs;
+
+const PAYMENT_SELECT =
+  "*, payment_method(name), cash_account(name), cash_receipt_category(name)";
+
 type PaymentHistoryRow = {
   allocation_id: string;
   id: string;
@@ -23,7 +34,9 @@ type PaymentHistoryRow = {
   payment_date: string;
   issue_date: string;
   direction: PaymentRow["direction"];
-  method: PaymentRow["method"];
+  method_name: string;
+  cash_account_name: string;
+  category_name: string;
   reference: string | null;
   payment_amount: number;
   status: PaymentRow["status"];
@@ -34,7 +47,7 @@ type PaymentHistoryRow = {
   receipt_serial: number;
 };
 
-function mapPaymentRow(row: PaymentRow): Payment {
+function mapPaymentRow(row: PaymentRowWithRefs): Payment {
   return {
     id: row.id,
     entityId: row.entity_id,
@@ -43,7 +56,12 @@ function mapPaymentRow(row: PaymentRow): Payment {
     paymentDate: row.payment_date,
     receiptNumber: row.receipt_number ?? "",
     amount: row.amount,
-    method: row.method,
+    methodId: row.method_id,
+    methodName: row.payment_method?.name ?? "",
+    cashAccountId: row.cash_account_id,
+    cashAccountName: row.cash_account?.name ?? "",
+    categoryId: row.category_id,
+    categoryName: row.cash_receipt_category?.name ?? "",
     reference: row.reference,
     status: row.status,
     voidReason: row.void_reason,
@@ -90,7 +108,9 @@ function mapPaymentHistoryRow(row: PaymentHistoryRow): PaymentHistoryEntry {
     paymentDate: row.payment_date,
     issueDate: row.issue_date,
     direction: row.direction,
-    method: row.method,
+    methodName: row.method_name,
+    cashAccountName: row.cash_account_name,
+    categoryName: row.category_name,
     reference: row.reference,
     paymentAmount: row.payment_amount,
     amount: row.allocation_amount,
@@ -148,7 +168,7 @@ export async function listPayments(
 ): Promise<Payment[]> {
   const { data, error } = await supabase
     .from("payment")
-    .select("*")
+    .select(PAYMENT_SELECT)
     .eq("direction", direction)
     .order("issue_date", { ascending: false });
 
@@ -156,7 +176,27 @@ export async function listPayments(
     throw mapError(error);
   }
 
-  return (data as PaymentRow[]).map(mapPaymentRow);
+  return (data as unknown as PaymentRowWithRefs[]).map(mapPaymentRow);
+}
+
+export async function listAccountStatement(
+  cashAccountId: string,
+  from: string,
+  to: string
+): Promise<Payment[]> {
+  const { data, error } = await supabase
+    .from("payment")
+    .select(PAYMENT_SELECT)
+    .eq("cash_account_id", cashAccountId)
+    .gte("payment_date", from)
+    .lte("payment_date", to)
+    .order("payment_date", { ascending: true });
+
+  if (error) {
+    throw mapError(error);
+  }
+
+  return (data as unknown as PaymentRowWithRefs[]).map(mapPaymentRow);
 }
 
 export async function listOpenVouchers(
@@ -183,7 +223,7 @@ export async function listOpenVouchers(
 export async function getPaymentDetail(id: string): Promise<PaymentDetail> {
   const { data: paymentData, error: paymentError } = await supabase
     .from("payment")
-    .select("*")
+    .select(PAYMENT_SELECT)
     .eq("id", id)
     .single();
 
@@ -231,7 +271,7 @@ export async function getPaymentDetail(id: string): Promise<PaymentDetail> {
     }
   }
 
-  const payment = mapPaymentRow(paymentData as PaymentRow);
+  const payment = mapPaymentRow(paymentData as unknown as PaymentRowWithRefs);
   const balance = balanceData as PaymentBalanceRow | null;
 
   return {
@@ -266,16 +306,16 @@ export async function getPaymentHistory(
 
   const { data: paymentsData, error: paymentsError } = await supabase
     .from("payment")
-    .select("*")
+    .select(PAYMENT_SELECT)
     .in("id", paymentIds);
 
   if (paymentsError) {
     throw mapError(paymentsError);
   }
 
-  const paymentMap = new Map<string, PaymentRow>();
+  const paymentMap = new Map<string, PaymentRowWithRefs>();
 
-  for (const row of paymentsData as PaymentRow[]) {
+  for (const row of paymentsData as unknown as PaymentRowWithRefs[]) {
     paymentMap.set(row.id, row);
   }
 
@@ -295,7 +335,9 @@ export async function getPaymentHistory(
       payment_date: payment.payment_date,
       issue_date: payment.issue_date,
       direction: payment.direction,
-      method: payment.method,
+      method_name: payment.payment_method?.name ?? "",
+      cash_account_name: payment.cash_account?.name ?? "",
+      category_name: payment.cash_receipt_category?.name ?? "",
       reference: payment.reference,
       payment_amount: payment.amount,
       status: payment.status,
@@ -330,7 +372,9 @@ export async function createPayment(
       p_direction: values.direction,
       p_payment_date: values.paymentDate,
       p_amount: values.amount,
-      p_method: values.method,
+      p_method_id: values.methodId,
+      p_cash_account_id: values.cashAccountId,
+      p_category_id: values.categoryId,
       p_reference: values.reference || "",
       p_notes: values.notes || "",
       p_allocations: values.allocations.map((item) => ({

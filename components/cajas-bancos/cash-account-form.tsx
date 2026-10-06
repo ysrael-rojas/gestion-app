@@ -28,6 +28,7 @@ import {
   type CashAccountType,
 } from "@/lib/schemas/cash-account";
 import { getTodayLocalDate } from "@/lib/utils";
+import { CLOSING_PERIODICITY_OPTIONS } from "@/lib/data/cash-options";
 import type { CashAccount } from "@/lib/cuentas/entidades";
 
 interface CashAccountFormProps {
@@ -51,6 +52,7 @@ function createEmptyValues(defaultType: CashAccountType): CashAccountFormInput {
     bankName: "",
     accountNumber: "",
     cci: "",
+    closingPeriodicity: "",
     openingBalance: 0,
     openingBalanceDate: getTodayLocalDate(),
     notes: "",
@@ -108,6 +110,7 @@ export function CashAccountForm({
         bankName: account.bankName ?? "",
         accountNumber: account.accountNumber ?? "",
         cci: account.cci ?? "",
+        closingPeriodicity: account.closingPeriodicity ?? "",
         openingBalance: account.openingBalance,
         openingBalanceDate: account.openingBalanceDate,
         notes: account.notes ?? "",
@@ -173,6 +176,35 @@ export function CashAccountForm({
           />
           <FieldError message={errors.currency?.message} />
         </div>
+
+        <Controller
+          control={form.control}
+          name="closingPeriodicity"
+          render={({ field }) => (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="closingPeriodicity">Periodicidad de cierre</Label>
+              <Select
+                value={field.value ? field.value : "DEFAULT"}
+                items={CLOSING_PERIODICITY_OPTIONS}
+                onValueChange={(value) =>
+                  field.onChange(value === "DEFAULT" ? "" : (value ?? ""))
+                }
+              >
+                <SelectTrigger id="closingPeriodicity" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLOSING_PERIODICITY_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldError message={errors.closingPeriodicity?.message} />
+            </div>
+          )}
+        />
 
         <div className="flex flex-col gap-1.5 sm:col-span-2">
           <Label htmlFor="name">Nombre</Label>

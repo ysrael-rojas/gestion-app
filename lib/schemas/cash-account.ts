@@ -12,6 +12,15 @@ const optionalText = z
   .transform((value) => value.trim())
   .pipe(z.union([z.literal(""), z.string().max(120)]));
 
+export const CLOSING_PERIODICITIES = ["DAILY", "WEEKLY", "MONTHLY"] as const;
+export type ClosingPeriodicityValue = (typeof CLOSING_PERIODICITIES)[number];
+
+// "" = "usa la periodicidad predeterminada global" (se guarda como NULL).
+const optionalPeriodicity = z
+  .union([z.literal(""), z.enum(CLOSING_PERIODICITIES)])
+  .transform((value) => (value === "" ? null : value))
+  .optional();
+
 const baseCashAccountSchema = z.object({
   name: requiredText("Nombre"),
   currency: z
@@ -23,6 +32,7 @@ const baseCashAccountSchema = z.object({
   bankName: optionalText.optional(),
   accountNumber: optionalText.optional(),
   cci: optionalText.optional(),
+  closingPeriodicity: optionalPeriodicity,
   openingBalance: z.coerce
     .number()
     .nonnegative("El saldo inicial no puede ser negativo")
@@ -65,6 +75,7 @@ export const cashAccountFormSchema = z
     bankName: z.string().optional(),
     accountNumber: z.string().optional(),
     cci: z.string().optional(),
+    closingPeriodicity: optionalPeriodicity,
     openingBalance: z.coerce
       .number()
       .nonnegative("El saldo inicial no puede ser negativo")

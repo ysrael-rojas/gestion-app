@@ -5,12 +5,12 @@
       "model": "opencode-go/deepseek-v4.1-flash"
     },
     "plan": {
-      "model": "opencode-go/minimax-m3"
+      "model": "opencode-go/GLM-5.3-Flash"
     }
   },
   "mcp": {
     "context7": {
-      "enabled": false,
+      "enabled": true,
       "type": "remote",
       "url": "https://mcp.context7.com/mcp"
     },
@@ -20,7 +20,7 @@
         "mcp",
         "--tools=agent"
       ],
-      "enabled": false,
+      "enabled": true,
       "type": "local"
     },
     "playwright": {
@@ -29,7 +29,7 @@
         "-y",
         "@playwright/mcp@latest"
       ],
-      "enabled": false,
+      "enabled": true,
       "type": "local"
     },
     "shadcn": {
@@ -42,7 +42,7 @@
       "type": "local"
     },
     "supabase": {
-      "enabled": false,
+      "enabled": true,
       "oauth": {},
       "type": "remote",
       "url": "https://mcp.supabase.com/mcp?project_ref=hurattoyvarlfdydvugd&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching"

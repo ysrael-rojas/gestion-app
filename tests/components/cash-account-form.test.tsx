@@ -41,6 +41,7 @@ describe("CashAccountForm", () => {
           bankName: "BCP",
           accountNumber: "123-456",
           cci: "00212300456789012345",
+          closingPeriodicity: null,
           openingBalance: 1500,
           openingBalanceDate: "2025-01-15",
           notes: "Cuenta principal",

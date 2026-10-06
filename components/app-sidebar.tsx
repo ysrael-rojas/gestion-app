@@ -6,10 +6,12 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   Building2,
+  Calculator,
   ChevronRight,
   Database,
   Landmark,
   Receipt,
+  Settings,
   ShoppingCart,
   Users,
   Wallet,
@@ -91,19 +93,53 @@ export function AppSidebar() {
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   ))}
+                  <Collapsible defaultOpen render={<SidebarMenuSubItem />}>
+                    <CollapsibleTrigger
+                      render={<SidebarMenuSubButton />}
+                    >
+                      <Landmark />
+                      <span>CAJA Y BANCOS</span>
+                      <ChevronRight className="ml-auto transition-transform duration-200 [[data-panel-open]_&]:rotate-90" />
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link href="/cajas-bancos/cuentas" />}
+                            isActive={pathname === "/cajas-bancos/cuentas"}
+                          >
+                            <Wallet />
+                            <span>Detalle de Cuentas</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={<Link href="/cajas-bancos/cuadres" />}
+                            isActive={pathname === "/cajas-bancos/cuadres"}
+                          >
+                            <Calculator />
+                            <span>Cuadres de Caja</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            render={
+                              <Link href="/cajas-bancos/configuracion" />
+                            }
+                            isActive={
+                              pathname === "/cajas-bancos/configuracion"
+                            }
+                          >
+                            <Settings />
+                            <span>Configuración</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </SidebarMenuSub>
               </CollapsibleContent>
             </Collapsible>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                render={<Link href="/cajas-bancos/listado" />}
-                isActive={pathname === "/cajas-bancos/listado"}
-                tooltip="CAJAS Y BANCOS"
-              >
-                <Landmark />
-                <span>CAJAS Y BANCOS</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
                 render={<Link href="/ventas/listado" />}

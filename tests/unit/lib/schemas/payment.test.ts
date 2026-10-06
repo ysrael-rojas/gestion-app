@@ -6,7 +6,9 @@ const validPayment = () => ({
   direction: "INGRESO" as const,
   paymentDate: "2026-10-01",
   amount: 100,
-  method: "EFECTIVO" as const,
+  methodId: "550e8400-e29b-41d4-a716-446655440010",
+  cashAccountId: "550e8400-e29b-41d4-a716-446655440011",
+  categoryId: "550e8400-e29b-41d4-a716-446655440012",
   reference: "OP-123",
   notes: "Pago inicial",
   allocations: [{ comprobanteId: "550e8400-e29b-41d4-a716-446655440000", amount: 100 }],
@@ -92,11 +94,18 @@ describe("paymentSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rechaza método fuera del enum", () => {
+  it("rechaza methodId que no es UUID", () => {
     const result = paymentSchema.safeParse({
       ...validPayment(),
-      method: "YAPE",
+      methodId: "YAPE",
     });
     expect(result.success).toBe(false);
+  });
+
+  it("exige cuenta y categoría", () => {
+    const { cashAccountId, categoryId, ...rest } = validPayment();
+    void cashAccountId;
+    void categoryId;
+    expect(paymentSchema.safeParse(rest).success).toBe(false);
   });
 });
