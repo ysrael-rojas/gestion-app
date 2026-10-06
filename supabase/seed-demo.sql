@@ -73,4 +73,44 @@ begin
     (v_cli4, v_owner, 'RUC', '20483456789', 'TEXTILES DEL NORTE SRL',        'Calle Colon 321, Trujillo',      '044-204567', 'Carlos Mendez', 'tesoreria@textilesnorte.pe','', true, false),
     (v_cli5, v_owner, 'RUC', '20484567890', 'BODEGA LA ESPERANZA EIRL',      'Av. America 654, Trujillo',      '044-205678', 'Maria Chavez',  'admin@bodegaesperanza.pe', '', true, false),
     (v_cli6, v_owner, 'RUC', '20485678901', 'CONSTRUCTORA MOCHE SAC',        'Av. Mansiche 987, Trujillo',     '044-206789', 'Jorge Rios',    'compras@constructmoche.pe','', true, false);
+
+  -- Paso 4 — Facturas de venta (14) ------------------------------------
+  -- `subtotal` e `igv` se derivan del total con IGV 18%: subtotal = total / 1.18.
+  -- `due_date` es columna generada (issue_date + credit_days para crédito): no se escribe.
+  -- Las fechas son relativas a hoy (últimos ~75 días) para que la demo siga
+  -- siendo reciente al re-ejecutarla.
+  -- Reparto de estados (los pagos se siembran en el Paso 5):
+  --   PAGADO   -> FF01-00001..00003
+  --   parcial  -> FF01-00004..00007
+  --   sin pago -> FF01-00008..00014
+  insert into public.comprobante (
+    id, owner_id, entity_id, voucher_kind, voucher_type, voucher_number,
+    issue_date, registration_date, subtotal, igv, total,
+    payment_type, credit_days, status
+  )
+  select
+    v.id, v_owner, v.entity_id, 'VENTA', 'FACTURA', v.voucher_number,
+    current_date - v.days_ago, current_date - v.days_ago,
+    round(v.total / 1.18, 2),
+    v.total - round(v.total / 1.18, 2),
+    v.total,
+    v.payment_type,
+    v.credit_days,
+    'PENDIENTE'
+  from (values
+    ('c0000001-0000-4000-8000-000000000001'::uuid, v_cli1, 'FF01-00001', 74, 2500.00::numeric, 'CONTADO'::public.payment_type, null::integer),
+    ('c0000002-0000-4000-8000-000000000002'::uuid, v_cli2, 'FF01-00002', 70, 1180.00::numeric, 'CONTADO'::public.payment_type, null::integer),
+    ('c0000003-0000-4000-8000-000000000003'::uuid, v_cli3, 'FF01-00003', 64, 3540.00::numeric, 'CREDITO'::public.payment_type, 30),
+    ('c0000004-0000-4000-8000-000000000004'::uuid, v_cli4, 'FF01-00004', 57,  826.00::numeric, 'CONTADO'::public.payment_type, null::integer),
+    ('c0000005-0000-4000-8000-000000000005'::uuid, v_cli5, 'FF01-00005', 49, 4720.00::numeric, 'CREDITO'::public.payment_type, 15),
+    ('c0000006-0000-4000-8000-000000000006'::uuid, v_cli6, 'FF01-00006', 42, 1770.00::numeric, 'CREDITO'::public.payment_type, 30),
+    ('c0000007-0000-4000-8000-000000000007'::uuid, v_cli1, 'FF01-00007', 34, 5900.00::numeric, 'CREDITO'::public.payment_type, 30),
+    ('c0000008-0000-4000-8000-000000000008'::uuid, v_cli2, 'FF01-00008', 27,  944.00::numeric, 'CONTADO'::public.payment_type, null::integer),
+    ('c0000009-0000-4000-8000-000000000009'::uuid, v_cli3, 'FF01-00009', 21, 2360.00::numeric, 'CONTADO'::public.payment_type, null::integer),
+    ('c0000010-0000-4000-8000-000000000010'::uuid, v_cli4, 'FF01-00010', 15, 4130.00::numeric, 'CREDITO'::public.payment_type, 30),
+    ('c0000011-0000-4000-8000-000000000011'::uuid, v_cli5, 'FF01-00011',  8, 1475.00::numeric, 'CONTADO'::public.payment_type, null::integer),
+    ('c0000012-0000-4000-8000-000000000012'::uuid, v_cli6, 'FF01-00012',  5, 2950.00::numeric, 'CONTADO'::public.payment_type, null::integer),
+    ('c0000013-0000-4000-8000-000000000013'::uuid, v_cli1, 'FF01-00013',  4, 3540.00::numeric, 'CREDITO'::public.payment_type, 15),
+    ('c0000014-0000-4000-8000-000000000014'::uuid, v_cli2, 'FF01-00014',  1, 1062.00::numeric, 'CONTADO'::public.payment_type, null::integer)
+  ) as v(id, entity_id, voucher_number, days_ago, total, payment_type, credit_days);
 end $$;
