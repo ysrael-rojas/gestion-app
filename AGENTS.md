@@ -33,13 +33,13 @@ Para validar cambios: `npm run lint` + `npm test` + `npm run build`.
   1. El CLI de Playwright con browsers instalados (`npx playwright install chromium` la primera vez).
   2. **El dev server debe estar accesible en `http://localhost:3000`.** El config lo arranca automáticamente con `reuseExistingServer: true`; si ya hay un dev server corriendo, lo reusa.
   3. Credenciales Supabase válidas en `.env` y seed manual en la DB (el e2e `tests/e2e/registrar-pago-y-ver-saldo.spec.ts` documenta el seed exacto en su comentario inicial).
-- **`npm run gen:types`:** regenera `lib/supabase/types.ts` desde el CLI oficial de Supabase. Requiere `supabase` instalado globalmente y `supabase link --project-ref hurattoyvarlfdydvugd`. **Cuidado:** el script actual usa `> lib/supabase/types.ts` que trunca el archivo antes de ejecutar el comando; si `supabase` falla, `types.ts` queda en 0 bytes. Restaurable con `git checkout HEAD -- lib/supabase/types.ts`. SPEC 16 debería cambiar el script a una variante que solo escriba en éxito.
+- **`npm run gen:types`:** regenera `lib/supabase/types.ts` con `scripts/gen-types.mjs` desde el CLI oficial de Supabase. Requiere `supabase` instalado globalmente y `supabase link --project-ref hurattoyvarlfdydvugd`. El script escribe en un temporal y solo reemplaza el archivo si el comando termina bien y la salida no está vacía; si falla, conserva el `types.ts` anterior y sale con código 1.
 
 ## Estructura y alias
 
 - App Router en `app/` (sin carpeta `src/`).
 - Alias `@/*` → raíz del repo (`tsconfig.json`), no `src/`: importar con `@/app/...`, `@/components/...`, etc.
-- `components/` y `lib/` todavía no existen; crearlas si hace falta.
+- `components/` organizada por dominio (`auth/`, `clientes/`, `ventas/`, `comprobantes/`, `pagos/`, `cartera/`, `compras/`, `cajas-bancos/`, `shared/`, `ui/`) y `lib/` por dominio (`auth/`, `caja/`, `clientes/`, `comprobantes/`, `cuentas/`, `data/`, `filters/`, `pagos/`, `schemas/`, `supabase/`, `ventas/`).
 
 ## Stack
 
@@ -51,7 +51,7 @@ Para validar cambios: `npm run lint` + `npm test` + `npm run build`.
 ## Supabase
 
 - Proyecto: `hurattoyvarlfdydvugd` (`https://hurattoyvarlfdydvugd.supabase.co`).
-- MCP `supabase` disponible: inspeccionar tablas, ejecutar SQL, aplicar migraciones, advisors, logs y Edge Functions. La DB aún no tiene tablas.
+- MCP `supabase` disponible: inspeccionar tablas, ejecutar SQL, aplicar migraciones, advisors, logs y Edge Functions. La DB ya tiene esquema aplicado vía specs (clientes, comprobantes/compras, pagos, caja, RLS) y tipos generados en `lib/supabase/types.ts`.
 - Migraciones/DDL siempre con `apply_migration` (snake_case en el nombre); consultas de lectura con `execute_sql`. Nunca leer archivos del servidor ni ejecutar comandos del SO vía SQL.
 - Tras cambios de esquema, revisar advisors de seguridad y rendimiento.
 - Env: `SUPABASE_DB_PASSWORD` en `.env` (ignorado por git). No hardcodear credenciales; usar variables de entorno y `.env.template` para lo que deba versionarse.
@@ -62,7 +62,7 @@ Para validar cambios: `npm run lint` + `npm test` + `npm run build`.
 - Usar siempre shadcn/ui; no crear botones, cards, inputs, etc. desde cero. Importar desde `@/components/ui/[nombre]`.
 - Estilos adicionales con Tailwind. No usar colores hardcodeados; usar las variables de diseño de shadcn.
 - Iconos con `lucide-react`.
-- shadcn aún no está inicializado (no existe `components.json`). Ejecutar `npx shadcn@latest init` antes de `npx shadcn@latest add [componente]`.
+- shadcn ya está inicializado (`components.json` existe y hay componentes en `components/ui/`). Añadir más con `npx shadcn@latest add [componente]`; **no** volver a correr `init`.
 - Antes de instalar un componente nuevo, preguntar.
 
 ## Idioma
@@ -91,6 +91,10 @@ Para validar cambios: `npm run lint` + `npm test` + `npm run build`.
 - `spec-impl` — implementar una spec aprobada (crea rama y avanza por pasos).
 - `supabase` — tareas de Supabase (Database, Auth, Edge Functions, Realtime, Storage, SSR, RLS, CLI/MCP).
 - `supabase-postgres-best-practices` — cargar antes de crear/alterar tablas, RLS, índices o migraciones en Postgres.
+
+## Agentes (`.opencode/agent/`)
+
+- `spec-verifier` — verifica los criterios de aceptación de una spec: revisa el código, contrasta las recomendaciones de Next.js con Context7, prueba las pantallas con Playwright y marca los checks del bloque "Acceptance criteria". Invocarlo para verificar/validar una spec.
 
 ## Flujo de trabajo (specs)
 

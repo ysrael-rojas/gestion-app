@@ -13,7 +13,7 @@
     "test:components": "vitest run tests/components",
     "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage",
-    "gen:types": "supabase gen types typescript --linked > lib/supabase/types.ts"
+    "gen:types": "node scripts/gen-types.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
