@@ -40,7 +40,6 @@ import {
   VOUCHER_TYPES,
 } from "@/lib/data/sale-options";
 import {
-  PAYMENT_METHODS,
   PAYMENT_STATUSES,
 } from "@/lib/data/payment-options";
 import { getPaymentDetail } from "@/lib/pagos/pagos";
@@ -237,8 +236,16 @@ function PaymentDetailContent({
                 />
               </div>
               <DetailField
+                label="Cuenta"
+                value={detail.cashAccountName}
+              />
+              <DetailField
+                label="Categoría"
+                value={detail.categoryName}
+              />
+              <DetailField
                 label="Método"
-                value={getOptionLabel(PAYMENT_METHODS, detail.method)}
+                value={detail.methodName}
               />
               <DetailField label="Referencia" value={detail.reference ?? ""} />
               <DetailField

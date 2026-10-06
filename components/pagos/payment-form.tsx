@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -26,17 +26,22 @@ import {
 } from "@/components/shared/entity-autocomplete";
 import type { Client } from "@/components/clientes/types";
 import { useClientes } from "@/components/clientes/clientes-provider";
+import { useCajasBancos } from "@/components/cajas-bancos/cajas-bancos-provider";
 import { AllocationPicker } from "@/components/pagos/allocation-picker";
 import type {
   AllocationInput,
+  CashReceiptCategory,
   PaymentDirection,
-  PaymentMethod,
+  PaymentMethodRef,
 } from "@/components/pagos/types";
 import { listSuppliers } from "@/lib/clientes/entidades";
 import {
-  DEFAULT_PAYMENT_METHOD,
-  PAYMENT_METHODS,
-} from "@/lib/data/payment-options";
+  ensureCatalogsSeeded,
+  ensureDefaultSettings,
+  listCategories,
+  listPaymentMethods,
+} from "@/lib/caja/caja";
+import { CASH_METHOD_CODE } from "@/lib/caja/defaults";
 import {
   paymentSchema,
   type PaymentFormInput,
@@ -53,11 +58,6 @@ interface PaymentFormProps {
 
 export const PAYMENT_FORM_ID = "payment-form";
 
-const methodItems = PAYMENT_METHODS.map((option) => ({
-  value: option.value,
-  label: option.label,
-}));
-
 function createEmptyValues(
   direction: PaymentDirection,
   entityId?: string
@@ -67,7 +67,9 @@ function createEmptyValues(
     direction,
     paymentDate: getTodayLocalDate(),
     amount: "",
-    method: DEFAULT_PAYMENT_METHOD,
+    methodId: "",
+    cashAccountId: "",
+    categoryId: "",
     reference: "",
     notes: "",
     allocations: [],
@@ -121,8 +123,11 @@ export function PaymentForm({
   initialComprobanteId,
 }: PaymentFormProps) {
   const { clients, isLoading: isClientsLoading } = useClientes();
+  const { accounts } = useCajasBancos();
   const [suppliers, setSuppliers] = useState<Client[]>([]);
   const [isSuppliersLoading, setIsSuppliersLoading] = useState(true);
+  const [methods, setMethods] = useState<PaymentMethodRef[]>([]);
+  const [categories, setCategories] = useState<CashReceiptCategory[]>([]);
 
   const form = useForm<PaymentFormInput, unknown, PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
@@ -166,16 +171,105 @@ export function PaymentForm({
     };
   }, [direction]);
 
+  // Catálogos: siembra perezosa + métodos y categorías de la dirección.
+  useEffect(() => {
+    let isMounted = true;
+
+    void (async () => {
+      try {
+        await ensureDefaultSettings();
+        await ensureCatalogsSeeded();
+        const [methodData, categoryData] = await Promise.all([
+          listPaymentMethods(),
+          listCategories(direction),
+        ]);
+
+        if (isMounted) {
+          setMethods(methodData);
+          setCategories(categoryData);
+        }
+      } catch {
+        if (isMounted) {
+          setMethods([]);
+          setCategories([]);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [direction]);
+
   const entities = direction === "INGRESO" ? clients : suppliers;
   const isEntitiesLoading =
     direction === "INGRESO" ? isClientsLoading : isSuppliersLoading;
 
   const entityId = useWatch({ control: form.control, name: "entityId" });
   const amountValue = useWatch({ control: form.control, name: "amount" });
+  const methodId = useWatch({ control: form.control, name: "methodId" });
   const numericAmount = Number(amountValue);
   const amount = Number.isFinite(numericAmount) ? numericAmount : 0;
 
+  const selectedMethod = methods.find((method) => method.id === methodId);
+  const requiredAccountType =
+    selectedMethod === undefined
+      ? null
+      : selectedMethod.code === CASH_METHOD_CODE
+        ? "CASH_BOX"
+        : "BANK_ACCOUNT";
+
+  const activeAccounts = useMemo(
+    () => accounts.filter((account) => account.isActive),
+    [accounts]
+  );
+
+  const availableAccounts = requiredAccountType
+    ? activeAccounts.filter((account) => account.type === requiredAccountType)
+    : activeAccounts;
+
+  const methodItems = methods.map((method) => ({
+    value: method.id,
+    label: method.name,
+  }));
+  const accountItems = availableAccounts.map((account) => ({
+    value: account.id,
+    label: `${account.name} · ${account.currency}`,
+  }));
+  const categoryItems = categories.map((category) => ({
+    value: category.id,
+    label: category.name,
+  }));
+
   const entityItems = toEntityAutocompleteItems(entities);
+
+  // Precarga la primera opción disponible sin pisar una elección del usuario.
+  const didInitCatalogs = useRef(false);
+  useEffect(() => {
+    if (didInitCatalogs.current || methods.length === 0) {
+      return;
+    }
+
+    didInitCatalogs.current = true;
+
+    if (!form.getValues("methodId")) {
+      form.setValue("methodId", methods[0].id, { shouldValidate: false });
+    }
+  }, [methods, form]);
+
+  useEffect(() => {
+    if (!form.getValues("cashAccountId") && availableAccounts.length > 0) {
+      form.setValue("cashAccountId", availableAccounts[0].id, {
+        shouldValidate: false,
+      });
+    }
+  }, [availableAccounts, form]);
+
+  useEffect(() => {
+    if (!form.getValues("categoryId") && categories.length > 0) {
+      form.setValue("categoryId", categories[0].id, { shouldValidate: false });
+    }
+  }, [categories, form]);
 
   const handleSuggestAmount = useCallback(
     (value: number) => {
@@ -226,29 +320,108 @@ export function PaymentForm({
 
         <Controller
           control={form.control}
-          name="method"
+          name="methodId"
           render={({ field }) => (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="method">Método</Label>
+              <Label htmlFor="methodId">Método</Label>
               <Select
                 value={field.value ? field.value : null}
                 items={methodItems}
-                onValueChange={(value) =>
-                  field.onChange(value ?? ("" as PaymentMethod))
-                }
+                onValueChange={(value) => {
+                  const next = value ?? "";
+                  field.onChange(next);
+
+                  const method = methods.find((item) => item.id === next);
+                  const allowedType =
+                    method && method.code !== CASH_METHOD_CODE
+                      ? "BANK_ACCOUNT"
+                      : "CASH_BOX";
+                  const current = form.getValues("cashAccountId");
+
+                  if (
+                    current &&
+                    !accounts.some(
+                      (account) =>
+                        account.id === current && account.type === allowedType
+                    )
+                  ) {
+                    form.setValue("cashAccountId", "");
+                  }
+                }}
               >
-                <SelectTrigger id="method" className="w-full">
+                <SelectTrigger id="methodId" className="w-full">
                   <SelectValue placeholder="Selecciona un método" />
                 </SelectTrigger>
                 <SelectContent>
-                  {PAYMENT_METHODS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {methods.map((method) => (
+                    <SelectItem key={method.id} value={method.id}>
+                      {method.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <FieldError message={errors.method?.message} />
+              <FieldError message={errors.methodId?.message} />
+            </div>
+          )}
+        />
+
+        <Controller
+          control={form.control}
+          name="cashAccountId"
+          render={({ field }) => (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="cashAccountId">
+                {requiredAccountType === "BANK_ACCOUNT" ? "Banco" : "Caja/Banco"}
+              </Label>
+              <Select
+                value={field.value ? field.value : null}
+                items={accountItems}
+                onValueChange={(value) => field.onChange(value ?? "")}
+              >
+                <SelectTrigger id="cashAccountId" className="w-full">
+                  <SelectValue placeholder="Selecciona una cuenta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableAccounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.name} · {account.currency}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {accounts.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Registra una caja o banco en Configuración.
+                </p>
+              ) : null}
+              <FieldError message={errors.cashAccountId?.message} />
+            </div>
+          )}
+        />
+
+        <Controller
+          control={form.control}
+          name="categoryId"
+          render={({ field }) => (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="categoryId">Categoría</Label>
+              <Select
+                value={field.value ? field.value : null}
+                items={categoryItems}
+                onValueChange={(value) => field.onChange(value ?? "")}
+              >
+                <SelectTrigger id="categoryId" className="w-full">
+                  <SelectValue placeholder="Selecciona una categoría" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FieldError message={errors.categoryId?.message} />
             </div>
           )}
         />

@@ -15,11 +15,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_setting: {
+        Row: {
+          key: string
+          owner_id: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          key: string
+          owner_id?: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          key?: string
+          owner_id?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       cash_account: {
         Row: {
           account_number: string | null
           bank_name: string | null
           cci: string | null
+          closing_periodicity:
+            | Database["public"]["Enums"]["closing_periodicity"]
+            | null
           created_at: string
           currency: string
           deleted_at: string | null
@@ -37,6 +61,9 @@ export type Database = {
           account_number?: string | null
           bank_name?: string | null
           cci?: string | null
+          closing_periodicity?:
+            | Database["public"]["Enums"]["closing_periodicity"]
+            | null
           created_at?: string
           currency?: string
           deleted_at?: string | null
@@ -54,6 +81,9 @@ export type Database = {
           account_number?: string | null
           bank_name?: string | null
           cci?: string | null
+          closing_periodicity?:
+            | Database["public"]["Enums"]["closing_periodicity"]
+            | null
           created_at?: string
           currency?: string
           deleted_at?: string | null
@@ -66,6 +96,95 @@ export type Database = {
           owner_id?: string
           type?: Database["public"]["Enums"]["cash_account_type"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      cash_close: {
+        Row: {
+          cash_account_id: string
+          counted_balance: number | null
+          created_at: string
+          difference: number | null
+          expense_total: number
+          expected_balance: number
+          id: string
+          income_total: number
+          notes: string | null
+          opening_balance: number
+          owner_id: string
+          pen_usd_rate: number | null
+          period_end: string
+          period_start: string
+          periodicity: Database["public"]["Enums"]["closing_periodicity"]
+        }
+        Insert: {
+          cash_account_id: string
+          counted_balance?: number | null
+          created_at?: string
+          difference?: number | null
+          expense_total?: number
+          expected_balance: number
+          id?: string
+          income_total?: number
+          notes?: string | null
+          opening_balance: number
+          owner_id?: string
+          pen_usd_rate?: number | null
+          period_end: string
+          period_start: string
+          periodicity: Database["public"]["Enums"]["closing_periodicity"]
+        }
+        Update: {
+          cash_account_id?: string
+          counted_balance?: number | null
+          created_at?: string
+          difference?: number | null
+          expense_total?: number
+          expected_balance?: number
+          id?: string
+          income_total?: number
+          notes?: string | null
+          opening_balance?: number
+          owner_id?: string
+          pen_usd_rate?: number | null
+          period_end?: string
+          period_start?: string
+          periodicity?: Database["public"]["Enums"]["closing_periodicity"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_close_cash_account_id_fkey"
+            columns: ["cash_account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_receipt_category: {
+        Row: {
+          created_at: string
+          direction: Database["public"]["Enums"]["payment_direction"]
+          id: string
+          is_active: boolean
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          direction: Database["public"]["Enums"]["payment_direction"]
+          id?: string
+          is_active?: boolean
+          name: string
+          owner_id?: string
+        }
+        Update: {
+          created_at?: string
+          direction?: Database["public"]["Enums"]["payment_direction"]
+          id?: string
+          is_active?: boolean
+          name?: string
+          owner_id?: string
         }
         Relationships: []
       }
@@ -197,12 +316,14 @@ export type Database = {
       payment: {
         Row: {
           amount: number
+          cash_account_id: string
+          category_id: string
           created_at: string
           direction: Database["public"]["Enums"]["payment_direction"]
           entity_id: string | null
           id: string
           issue_date: string
-          method: Database["public"]["Enums"]["payment_method"]
+          method_id: string
           notes: string | null
           owner_id: string
           payment_date: string
@@ -216,12 +337,14 @@ export type Database = {
         }
         Insert: {
           amount: number
+          cash_account_id: string
+          category_id: string
           created_at?: string
           direction: Database["public"]["Enums"]["payment_direction"]
           entity_id?: string | null
           id?: string
           issue_date?: string
-          method: Database["public"]["Enums"]["payment_method"]
+          method_id: string
           notes?: string | null
           owner_id?: string
           payment_date: string
@@ -235,12 +358,14 @@ export type Database = {
         }
         Update: {
           amount?: number
+          cash_account_id?: string
+          category_id?: string
           created_at?: string
           direction?: Database["public"]["Enums"]["payment_direction"]
           entity_id?: string | null
           id?: string
           issue_date?: string
-          method?: Database["public"]["Enums"]["payment_method"]
+          method_id?: string
           notes?: string | null
           owner_id?: string
           payment_date?: string
@@ -254,10 +379,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "payment_cash_account_id_fkey"
+            columns: ["cash_account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "cash_receipt_category"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "payment_entity_id_fkey"
             columns: ["entity_id"]
             isOneToOne: false
             referencedRelation: "entidad"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_method_id_fkey"
+            columns: ["method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_method"
             referencedColumns: ["id"]
           },
         ]
@@ -317,6 +463,33 @@ export type Database = {
             referencedColumns: ["payment_id"]
           },
         ]
+      }
+      payment_method: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          owner_id?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          owner_id?: string
+        }
+        Relationships: []
       }
       receipt_sequence: {
         Row: {
@@ -382,26 +555,44 @@ export type Database = {
       }
     }
     Functions: {
+      close_cash_account: {
+        Args: {
+          p_cash_account_id: string
+          p_counted_balance: number
+          p_notes: string
+          p_period_end: string
+        }
+        Returns: string
+      }
       create_payment_with_allocations: {
         Args: {
           p_allocations: Json
           p_amount: number
+          p_cash_account_id: string
+          p_category_id: string
           p_direction: Database["public"]["Enums"]["payment_direction"]
           p_entity_id: string
-          p_method: Database["public"]["Enums"]["payment_method"]
+          p_method_id: string
           p_notes: string
           p_payment_date: string
           p_reference: string
         }
         Returns: string
       }
+      get_cash_position: {
+        Args: {
+          p_as_of?: string
+          p_cash_account_id: string
+        }
+        Returns: number
+      }
     }
     Enums: {
       cash_account_type: "CASH_BOX" | "BANK_ACCOUNT"
+      closing_periodicity: "DAILY" | "WEEKLY" | "MONTHLY"
       comprobante_status: "PAGADO" | "PENDIENTE"
       document_type: "SIN_DOCUMENTO" | "RUC" | "DNI" | "CARNET_EXTRANJERIA"
       payment_direction: "INGRESO" | "EGRESO"
-      payment_method: "EFECTIVO" | "TRANSFERENCIA_BCP" | "TARJETA_CREDITO"
       payment_status: "REGISTRADO" | "ANULADO"
       payment_type: "CONTADO" | "CREDITO"
       voucher_kind: "COMPRA" | "VENTA"
@@ -526,16 +717,18 @@ export type CompositeTypes<
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : never
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
 
 export const Constants = {
   public: {
     Enums: {
       cash_account_type: ["CASH_BOX", "BANK_ACCOUNT"],
+      closing_periodicity: ["DAILY", "WEEKLY", "MONTHLY"],
       comprobante_status: ["PAGADO", "PENDIENTE"],
       document_type: ["SIN_DOCUMENTO", "RUC", "DNI", "CARNET_EXTRANJERIA"],
       payment_direction: ["INGRESO", "EGRESO"],
-      payment_method: ["EFECTIVO", "TRANSFERENCIA_BCP", "TARJETA_CREDITO"],
       payment_status: ["REGISTRADO", "ANULADO"],
       payment_type: ["CONTADO", "CREDITO"],
       voucher_kind: ["COMPRA", "VENTA"],

@@ -24,10 +24,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { Payment } from "@/components/pagos/types";
-import {
-  PAYMENT_METHODS,
-  PAYMENT_STATUSES,
-} from "@/lib/data/payment-options";
+import { PAYMENT_STATUSES } from "@/lib/data/payment-options";
 import { getOptionLabel } from "@/lib/data/sale-options";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -118,22 +115,19 @@ export function getPaymentsColumns({ onView }: PaymentsColumnsActions) {
       ),
       cell: ({ getValue }) => formatCurrency(getValue()),
     }),
-    columnHelper.accessor(
-      (payment) => getOptionLabel(PAYMENT_METHODS, payment.method),
-      {
-        id: "method",
-        header: ({ column }) => (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Método
-            <ArrowUpDown />
-          </Button>
-        ),
-        cell: ({ getValue }) => getValue(),
-      }
-    ),
+    columnHelper.accessor((payment) => payment.methodName, {
+      id: "method",
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Método
+          <ArrowUpDown />
+        </Button>
+      ),
+      cell: ({ getValue }) => getValue(),
+    }),
     columnHelper.accessor(
       (payment) => getOptionLabel(PAYMENT_STATUSES, payment.status),
       {

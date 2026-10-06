@@ -1,3 +1,4 @@
+import type { ClosingPeriodicity } from "@/components/pagos/types";
 import type { CashAccountType } from "@/lib/schemas/cash-account";
 import { supabase } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/supabase/types";
@@ -12,6 +13,7 @@ export interface CashAccount {
   bankName: string | null;
   accountNumber: string | null;
   cci: string | null;
+  closingPeriodicity: ClosingPeriodicity | null;
   openingBalance: number;
   openingBalanceDate: string;
   notes: string | null;
@@ -28,6 +30,7 @@ export interface CashAccountFormMutation {
   bankName?: string;
   accountNumber?: string;
   cci?: string;
+  closingPeriodicity?: ClosingPeriodicity | null;
   openingBalance: number;
   openingBalanceDate: string;
   notes?: string;
@@ -43,6 +46,7 @@ function mapRow(row: CashAccountRow): CashAccount {
     bankName: row.bank_name,
     accountNumber: row.account_number,
     cci: row.cci,
+    closingPeriodicity: row.closing_periodicity,
     openingBalance: row.opening_balance,
     openingBalanceDate: row.opening_balance_date,
     notes: row.notes,
@@ -61,6 +65,7 @@ function mapMutation(values: CashAccountFormMutation) {
     bank_name: values.bankName ?? null,
     account_number: values.accountNumber ?? null,
     cci: values.cci ?? null,
+    closing_periodicity: values.closingPeriodicity ?? null,
     opening_balance: values.openingBalance,
     opening_balance_date: values.openingBalanceDate,
     notes: values.notes ?? null,

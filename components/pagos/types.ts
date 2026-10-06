@@ -1,8 +1,22 @@
 import type { PaymentType, VoucherType } from "@/components/compras/types";
 
 export type PaymentDirection = "INGRESO" | "EGRESO";
-export type PaymentMethod = "EFECTIVO" | "TRANSFERENCIA_BCP" | "TARJETA_CREDITO";
 export type PaymentStatus = "REGISTRADO" | "ANULADO";
+export type ClosingPeriodicity = "DAILY" | "WEEKLY" | "MONTHLY";
+
+export interface PaymentMethodRef {
+  id: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+}
+
+export interface CashReceiptCategory {
+  id: string;
+  direction: PaymentDirection;
+  name: string;
+  isActive: boolean;
+}
 
 export interface Payment {
   id: string;
@@ -12,7 +26,12 @@ export interface Payment {
   paymentDate: string; // "YYYY-MM-DD" — fecha efectiva del pago
   receiptNumber: string; // "RI-000001" | "RE-000001"
   amount: number;
-  method: PaymentMethod;
+  methodId: string;
+  methodName: string;
+  cashAccountId: string;
+  cashAccountName: string;
+  categoryId: string;
+  categoryName: string;
   reference: string | null; // nro de operación BCP / autorización de tarjeta
   status: PaymentStatus;
   voidReason: string | null;
@@ -36,7 +55,9 @@ export interface PaymentHistoryEntry {
   paymentDate: string; // "YYYY-MM-DD" — fecha efectiva del pago
   issueDate: string; // "YYYY-MM-DD" — fecha de emisión del recibo
   direction: PaymentDirection;
-  method: PaymentMethod;
+  methodName: string;
+  cashAccountName: string;
+  categoryName: string;
   reference: string | null;
   paymentAmount: number; // importe total del pago
   amount: number; // importe aplicado a este comprobante (allocation.amount)
@@ -69,4 +90,21 @@ export interface VoucherBalance {
   total: number;
   paidAmount: number;
   balance: number;
+}
+
+export interface CashClose {
+  id: string;
+  cashAccountId: string;
+  periodicity: ClosingPeriodicity;
+  periodStart: string;
+  periodEnd: string;
+  openingBalance: number;
+  incomeTotal: number;
+  expenseTotal: number;
+  expectedBalance: number;
+  countedBalance: number | null;
+  difference: number | null;
+  penUsdRate: number | null;
+  notes: string | null;
+  createdAt: string;
 }
