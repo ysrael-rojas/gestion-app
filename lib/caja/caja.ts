@@ -11,6 +11,7 @@ import type { CashReceiptCategoryFormValues } from "@/lib/schemas/cash-receipt-c
 import type { PaymentMethodFormValues } from "@/lib/schemas/payment-method";
 import { DEFAULT_CATEGORIES, DEFAULT_PAYMENT_METHODS } from "@/lib/caja/defaults";
 import { listAccountStatement } from "@/lib/pagos/pagos";
+import { addDays, suggestedPeriodEnd } from "@/lib/caja/periodo";
 import {
   listCashAccounts,
   type CashAccount,
@@ -53,21 +54,6 @@ function mapError(error: { code?: string; message: string }): Error {
   return new Error(
     "No se pudo completar la operación con la base de datos. Intenta nuevamente."
   );
-}
-
-function toIsoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function parseIsoDate(value: string): Date {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(Date.UTC(year, month - 1, day));
-}
-
-export function addDays(value: string, days: number): string {
-  const date = parseIsoDate(value);
-  date.setUTCDate(date.getUTCDate() + days);
-  return toIsoDate(date);
 }
 
 // ---------------------------------------------------------------------------
@@ -427,7 +413,6 @@ export async function getLastClose(
     .select("*")
     .eq("cash_account_id", accountId)
     .order("period_end", { ascending: false })
-    .limit(1)
     .maybeSingle();
 
   if (error) {
@@ -435,27 +420,6 @@ export async function getLastClose(
   }
 
   return data ? mapCashCloseRow(data as CashCloseRow) : null;
-}
-
-// Fin de período sugerido según la periodicidad (función pura, testeable).
-export function suggestedPeriodEnd(
-  periodicity: ClosingPeriodicity,
-  today: string
-): string {
-  const date = parseIsoDate(today);
-
-  if (periodicity === "DAILY") {
-    date.setUTCDate(date.getUTCDate() - 1);
-  } else if (periodicity === "WEEKLY") {
-    const day = date.getUTCDay(); // 0 = domingo
-    const back = day === 0 ? 7 : day;
-    date.setUTCDate(date.getUTCDate() - back);
-  } else {
-    // MONTHLY: día 0 del mes actual = último día del mes anterior.
-    date.setUTCDate(0);
-  }
-
-  return toIsoDate(date);
 }
 
 export async function getCashAccount(
