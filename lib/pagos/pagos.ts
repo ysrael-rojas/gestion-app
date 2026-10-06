@@ -179,6 +179,26 @@ export async function listPayments(
   return (data as unknown as PaymentRowWithRefs[]).map(mapPaymentRow);
 }
 
+export async function listAccountStatement(
+  cashAccountId: string,
+  from: string,
+  to: string
+): Promise<Payment[]> {
+  const { data, error } = await supabase
+    .from("payment")
+    .select(PAYMENT_SELECT)
+    .eq("cash_account_id", cashAccountId)
+    .gte("payment_date", from)
+    .lte("payment_date", to)
+    .order("payment_date", { ascending: true });
+
+  if (error) {
+    throw mapError(error);
+  }
+
+  return (data as unknown as PaymentRowWithRefs[]).map(mapPaymentRow);
+}
+
 export async function listOpenVouchers(
   direction: PaymentDirection,
   entityId: string

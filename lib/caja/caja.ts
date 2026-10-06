@@ -2,11 +2,15 @@ import type {
   CashClose,
   CashReceiptCategory,
   ClosingPeriodicity,
+  Payment,
   PaymentDirection,
   PaymentMethodRef,
 } from "@/components/pagos/types";
 import type { CashCloseFormValues as CashCloseValues } from "@/lib/schemas/cash-close";
+import type { CashReceiptCategoryFormValues } from "@/lib/schemas/cash-receipt-category";
+import type { PaymentMethodFormValues } from "@/lib/schemas/payment-method";
 import { DEFAULT_CATEGORIES, DEFAULT_PAYMENT_METHODS } from "@/lib/caja/defaults";
+import { listAccountStatement } from "@/lib/pagos/pagos";
 import {
   listCashAccounts,
   type CashAccount,
@@ -170,6 +174,80 @@ export async function ensureCatalogsSeeded(): Promise<void> {
   }
 }
 
+export async function createPaymentMethod(
+  values: PaymentMethodFormValues
+): Promise<void> {
+  const { error } = await supabase.from("payment_method").insert({
+    code: values.code,
+    name: values.name,
+    is_active: values.isActive,
+  });
+
+  if (error) {
+    throw mapError(error);
+  }
+}
+
+export async function updatePaymentMethod(
+  id: string,
+  values: { name?: string; isActive?: boolean }
+): Promise<void> {
+  const patch: { name?: string; is_active?: boolean } = {};
+
+  if (values.name !== undefined) {
+    patch.name = values.name;
+  }
+  if (values.isActive !== undefined) {
+    patch.is_active = values.isActive;
+  }
+
+  const { error } = await supabase
+    .from("payment_method")
+    .update(patch)
+    .eq("id", id);
+
+  if (error) {
+    throw mapError(error);
+  }
+}
+
+export async function createCategory(
+  values: CashReceiptCategoryFormValues
+): Promise<void> {
+  const { error } = await supabase.from("cash_receipt_category").insert({
+    direction: values.direction,
+    name: values.name,
+    is_active: values.isActive,
+  });
+
+  if (error) {
+    throw mapError(error);
+  }
+}
+
+export async function updateCategory(
+  id: string,
+  values: { name?: string; isActive?: boolean }
+): Promise<void> {
+  const patch: { name?: string; is_active?: boolean } = {};
+
+  if (values.name !== undefined) {
+    patch.name = values.name;
+  }
+  if (values.isActive !== undefined) {
+    patch.is_active = values.isActive;
+  }
+
+  const { error } = await supabase
+    .from("cash_receipt_category")
+    .update(patch)
+    .eq("id", id);
+
+  if (error) {
+    throw mapError(error);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Ajustes generales (app_setting)
 // ---------------------------------------------------------------------------
@@ -275,6 +353,14 @@ export async function listCashPositions(
       balance: await getCashPosition(account.id, asOf),
     }))
   );
+}
+
+export async function getCashAccountStatement(
+  accountId: string,
+  from: string,
+  to: string
+): Promise<Payment[]> {
+  return listAccountStatement(accountId, from, to);
 }
 
 // ---------------------------------------------------------------------------
