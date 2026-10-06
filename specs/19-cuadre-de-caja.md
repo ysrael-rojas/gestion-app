@@ -1,6 +1,6 @@
 # SPEC 19 — Cuadre de caja y control de movimientos por cuenta
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 09, SPEC 16, SPEC 17, SPEC 18
 > **Date:** 2026-10-06
 > **Objective:** Vincular cada recibo de ingreso/egreso a una caja o banco y a una categoría, y cerrar caja por cuenta con arqueo opcional y bloqueo de fechas anteriores al último cierre.
@@ -501,21 +501,21 @@ Convenciones:
 
 ## Acceptance criteria
 
-- [ ] Existen `public.app_setting`, `public.payment_method`, `public.cash_receipt_category` y `public.cash_close` con `owner_id NOT NULL DEFAULT auth.uid()`, RLS habilitado y cuatro políticas por tabla (select/insert/update/delete) `to authenticated`.
-- [ ] El tipo `public.payment_method` ya no existe; `payment.method_id` es `uuid NOT NULL` con FK a la tabla.
-- [ ] `payment.cash_account_id` y `payment.category_id` son `NOT NULL` con FK; `payment` y `receipt_sequence` quedan vacíos tras la purga y ningún comprobante queda `PAGADO` sin pagos.
-- [ ] La RPC `create_payment_with_allocations` recibe `p_method_id`, `p_cash_account_id` y `p_category_id`, y solo es ejecutable por `authenticated` y `service_role`.
-- [ ] Registrar un pago exige cuenta y categoría; un pago en efectivo solo ofrece cajas y uno por transferencia/tarjeta solo bancos.
-- [ ] Un recibo con `payment_date` anterior al `opening_balance_date` de su cuenta es rechazado.
-- [ ] `close_cash_account` calcula apertura, ingresos, egresos y saldo esperado; en cajas exige conteo y calcula la diferencia, en bancos deja `counted_balance` y `difference` en null.
-- [ ] No se puede cerrar dos veces el mismo período ni un período anterior al último cierre (la RPC lo rechaza).
-- [ ] Tras un cierre, insertar, editar (incluida la anulación) o asignar sobre un recibo con fecha ≤ `period_end` de esa cuenta falla con el mensaje del trigger; con fecha posterior funciona.
-- [ ] El período sugerido respeta la periodicidad de la cuenta o, si es null, el default global; es editable antes de cerrar.
-- [ ] El reporte del cierre muestra movimientos agrupados por categoría, el arqueo y la diferencia, y exporta a CSV.
-- [ ] En una cuenta en USD, el cierre guarda `pen_usd_rate` y las vistas consolidadas convierten a PEN con el TC de Configuración.
-- [ ] Los métodos y las categorías se pueden crear, editar y desactivar desde Configuración; al abrir el módulo por primera vez aparecen las semillas.
-- [ ] El sidebar muestra MAESTRO → CAJA Y BANCOS con Detalle de Cuentas, Cuadres de Caja y Configuración, y marca el subítem activo.
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan.
+- [x] Existen `public.app_setting`, `public.payment_method`, `public.cash_receipt_category` y `public.cash_close` con `owner_id NOT NULL DEFAULT auth.uid()`, RLS habilitado y cuatro políticas por tabla (select/insert/update/delete) `to authenticated`.
+- [x] El tipo `public.payment_method` ya no existe; `payment.method_id` es `uuid NOT NULL` con FK a la tabla.
+- [x] `payment.cash_account_id` y `payment.category_id` son `NOT NULL` con FK; `payment` y `receipt_sequence` quedan vacíos tras la purga y ningún comprobante queda `PAGADO` sin pagos.
+- [x] La RPC `create_payment_with_allocations` recibe `p_method_id`, `p_cash_account_id` y `p_category_id`, y solo es ejecutable por `authenticated` y `service_role`.
+- [x] Registrar un pago exige cuenta y categoría; un pago en efectivo solo ofrece cajas y uno por transferencia/tarjeta solo bancos.
+- [x] Un recibo con `payment_date` anterior al `opening_balance_date` de su cuenta es rechazado.
+- [x] `close_cash_account` calcula apertura, ingresos, egresos y saldo esperado; en cajas exige conteo y calcula la diferencia, en bancos deja `counted_balance` y `difference` en null.
+- [x] No se puede cerrar dos veces el mismo período ni un período anterior al último cierre (la RPC lo rechaza).
+- [x] Tras un cierre, insertar, editar (incluida la anulación) o asignar sobre un recibo con fecha ≤ `period_end` de esa cuenta falla con el mensaje del trigger; con fecha posterior funciona.
+- [x] El período sugerido respeta la periodicidad de la cuenta o, si es null, el default global; es editable antes de cerrar.
+- [x] El reporte del cierre muestra movimientos agrupados por categoría, el arqueo y la diferencia, y exporta a CSV.
+- [x] En una cuenta en USD, el cierre guarda `pen_usd_rate` y las vistas consolidadas convierten a PEN con el TC de Configuración.
+- [x] Los métodos y las categorías se pueden crear, editar y desactivar desde Configuración; al abrir el módulo por primera vez aparecen las semillas.
+- [x] El sidebar muestra MAESTRO → CAJA Y BANCOS con Detalle de Cuentas, Cuadres de Caja y Configuración, y marca el subítem activo.
+- [x] `npm run lint`, `npm test` y `npm run build` pasan.
 
 ## Decisions
 
