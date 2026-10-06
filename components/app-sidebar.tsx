@@ -72,74 +72,6 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            <Collapsible defaultOpen render={<SidebarMenuItem />}>
-              <CollapsibleTrigger
-                render={<SidebarMenuButton tooltip={menu.group} />}
-              >
-                <Database />
-                <span>{menu.group}</span>
-                <ChevronRight className="ml-auto transition-transform duration-200 [[data-panel-open]_&]:rotate-90" />
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenuSub>
-                  {menu.items.map((item) => (
-                    <SidebarMenuSubItem key={item.href}>
-                      <SidebarMenuSubButton
-                        render={<Link href={item.href} />}
-                        isActive={pathname === item.href}
-                      >
-                        <Users />
-                        <span>{item.label}</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
-                  <Collapsible defaultOpen render={<SidebarMenuSubItem />}>
-                    <CollapsibleTrigger
-                      render={<SidebarMenuSubButton />}
-                    >
-                      <Landmark />
-                      <span>CAJA Y BANCOS</span>
-                      <ChevronRight className="ml-auto transition-transform duration-200 [[data-panel-open]_&]:rotate-90" />
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            render={<Link href="/cajas-bancos/cuentas" />}
-                            isActive={pathname === "/cajas-bancos/cuentas"}
-                          >
-                            <Wallet />
-                            <span>Detalle de Cuentas</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            render={<Link href="/cajas-bancos/cuadres" />}
-                            isActive={pathname === "/cajas-bancos/cuadres"}
-                          >
-                            <Calculator />
-                            <span>Cuadres de Caja</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            render={
-                              <Link href="/cajas-bancos/configuracion" />
-                            }
-                            isActive={
-                              pathname === "/cajas-bancos/configuracion"
-                            }
-                          >
-                            <Settings />
-                            <span>Configuración</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </Collapsible>
-                </SidebarMenuSub>
-              </CollapsibleContent>
-            </Collapsible>
             <SidebarMenuItem>
               <SidebarMenuButton
                 render={<Link href="/ventas/listado" />}
@@ -162,6 +94,32 @@ export function AppSidebar() {
             </SidebarMenuItem>
             <Collapsible defaultOpen render={<SidebarMenuItem />}>
               <CollapsibleTrigger
+                nativeButton={false}
+                render={<SidebarMenuButton tooltip={menu.group} />}
+              >
+                <Database />
+                <span>{menu.group}</span>
+                <ChevronRight className="ml-auto transition-transform duration-200 [[data-panel-open]_&]:rotate-90" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                  {menu.items.map((item) => (
+                    <SidebarMenuSubItem key={item.href}>
+                      <SidebarMenuSubButton
+                        render={<Link href={item.href} />}
+                        isActive={pathname === item.href}
+                      >
+                        <Users />
+                        <span>{item.label}</span>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  ))}
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </Collapsible>
+            <Collapsible defaultOpen render={<SidebarMenuItem />}>
+              <CollapsibleTrigger
+                nativeButton={false}
                 render={<SidebarMenuButton tooltip="PAGOS" />}
               >
                 <Wallet />
@@ -198,6 +156,47 @@ export function AppSidebar() {
                     {showBadge(egresosCount) ? (
                       <SidebarMenuBadge>{egresosCount}</SidebarMenuBadge>
                     ) : null}
+                  </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              </CollapsibleContent>
+            </Collapsible>
+            <Collapsible defaultOpen render={<SidebarMenuItem />}>
+              <CollapsibleTrigger
+                nativeButton={false}
+                render={<SidebarMenuButton tooltip="CAJA Y BANCOS" />}
+              >
+                <Landmark />
+                <span>CAJA Y BANCOS</span>
+                <ChevronRight className="ml-auto transition-transform duration-200 [[data-panel-open]_&]:rotate-90" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarMenuSub>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton
+                      render={<Link href="/cajas-bancos/cuentas" />}
+                      isActive={pathname === "/cajas-bancos/cuentas"}
+                    >
+                      <Wallet />
+                      <span>Detalle de Cuentas</span>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton
+                      render={<Link href="/cajas-bancos/cuadres" />}
+                      isActive={pathname === "/cajas-bancos/cuadres"}
+                    >
+                      <Calculator />
+                      <span>Cuadres de Caja</span>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton
+                      render={<Link href="/cajas-bancos/configuracion" />}
+                      isActive={pathname === "/cajas-bancos/configuracion"}
+                    >
+                      <Settings />
+                      <span>Configuración</span>
+                    </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
                 </SidebarMenuSub>
               </CollapsibleContent>
