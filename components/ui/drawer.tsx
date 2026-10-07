@@ -99,15 +99,20 @@ function DrawerSwipeHandle({
 function DrawerContent({
   className,
   children,
+  showOverlay = true,
   ...props
-}: DrawerPrimitive.Popup.Props) {
+}: DrawerPrimitive.Popup.Props & {
+  // Los drawers anidados no apilan un segundo overlay: el drawer base ya
+  // oscurece el fondo y mantienen su propio foco al seguir siendo modales.
+  showOverlay?: boolean
+}) {
   const { hasSnapPoints, modal, showSwipeHandle, swipeDirection } = useDrawer()
   const swipeAxis =
     swipeDirection === "down" || swipeDirection === "up" ? "y" : "x"
 
   return (
     <DrawerPortal data-slot="drawer-portal">
-      {modal === true && (
+      {showOverlay && modal === true && (
         <DrawerOverlay data-snap-points={hasSnapPoints ? "" : undefined} />
       )}
       <DrawerPrimitive.Viewport
