@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -8,14 +8,33 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Drawer,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import type { PaymentDirection } from "@/components/pagos/types";
+import { useCajasBancos } from "@/components/cajas-bancos/cajas-bancos-provider";
+import type {
+  CashReceiptCategory,
+  PaymentDirection,
+  PaymentMethodRef,
+} from "@/components/pagos/types";
 import type { PaymentType, VoucherType } from "@/components/ventas/types";
+import { CASH_METHOD_CODE, DEFAULT_CATEGORIES } from "@/lib/caja/defaults";
+import {
+  ensureCatalogsSeeded,
+  ensureDefaultSettings,
+  listCategories,
+  listPaymentMethods,
+} from "@/lib/caja/caja";
 import {
   getOptionLabel,
   PAYMENT_TYPES,
@@ -239,6 +258,98 @@ export function NestedPaymentDrawers({
     setDraft((current) => ({ ...current, ...patch }));
   };
 
+  const { accounts } = useCajasBancos();
+  const [methods, setMethods] = useState<PaymentMethodRef[]>([]);
+  const [categories, setCategories] = useState<CashReceiptCategory[]>([]);
+
+  // Catálogos: siembra perezosa + métodos y categorías de la dirección
+  // (mismo patrón que payment-form.tsx).
+  useEffect(() => {
+    let isMounted = true;
+
+    void (async () => {
+      try {
+        await ensureDefaultSettings();
+        await ensureCatalogsSeeded();
+        const [methodData, categoryData] = await Promise.all([
+          listPaymentMethods(),
+          listCategories(direction),
+        ]);
+
+        if (isMounted) {
+          setMethods(methodData);
+          setCategories(categoryData);
+        }
+      } catch {
+        if (isMounted) {
+          setMethods([]);
+          setCategories([]);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [direction]);
+
+  // Categoría fijada por dirección: "Cobranza de venta" / "Pago a proveedor"
+  // (fallback: la primera categoría cargada para esa dirección).
+  const defaultCategoryName = DEFAULT_CATEGORIES[direction][0];
+  const defaultCategory =
+    categories.find((category) => category.name === defaultCategoryName) ??
+    categories[0];
+  const categoryId = draft.categoryId || defaultCategory?.id || "";
+
+  const activeAccounts = useMemo(
+    () => accounts.filter((account) => account.isActive),
+    [accounts]
+  );
+
+  const selectedMethod = methods.find(
+    (method) => method.id === draft.methodId
+  );
+  const requiredAccountType =
+    selectedMethod === undefined
+      ? null
+      : selectedMethod.code === CASH_METHOD_CODE
+        ? "CASH_BOX"
+        : "BANK_ACCOUNT";
+
+  const availableAccounts = requiredAccountType
+    ? activeAccounts.filter((account) => account.type === requiredAccountType)
+    : activeAccounts;
+
+  const methodItems = methods.map((method) => ({
+    value: method.id,
+    label: method.name,
+  }));
+  const accountItems = availableAccounts.map((account) => ({
+    value: account.id,
+    label: `${account.name} · ${account.currency}`,
+  }));
+  const categoryItems = categories.map((category) => ({
+    value: category.id,
+    label: category.name,
+  }));
+
+  const handleMethodChange = (value: string) => {
+    const method = methods.find((item) => item.id === value);
+    const allowedType =
+      method && method.code !== CASH_METHOD_CODE
+        ? "BANK_ACCOUNT"
+        : "CASH_BOX";
+    const current = activeAccounts.find(
+      (account) => account.id === draft.cashAccountId
+    );
+
+    updateDraft({
+      methodId: value,
+      cashAccountId:
+        current && current.type !== allowedType ? "" : draft.cashAccountId,
+    });
+  };
+
   const wasOpen = useRef(open);
   useEffect(() => {
     if (open && !wasOpen.current) {
@@ -313,9 +424,78 @@ export function NestedPaymentDrawers({
         >
           <DrawerContent showOverlay={false} className="sm:mx-auto sm:max-w-xl">
             <PanelBody step={2} onBack={() => setStep(1)} onNext={() => setStep(3)}>
-              <p className="text-sm text-muted-foreground">
-                Panel 2 — método, caja/banco y categoría (paso 4).
-              </p>
+              <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="payment-method">Método</Label>
+                  <Select
+                    value={draft.methodId || null}
+                    items={methodItems}
+                    onValueChange={(value) => handleMethodChange(value ?? "")}
+                  >
+                    <SelectTrigger id="payment-method" className="w-full">
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {methods.map((method) => (
+                        <SelectItem key={method.id} value={method.id}>
+                          {method.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="payment-account">
+                    {requiredAccountType === "BANK_ACCOUNT"
+                      ? "Banco"
+                      : "Caja/Banco"}
+                  </Label>
+                  <Select
+                    value={draft.cashAccountId || null}
+                    items={accountItems}
+                    onValueChange={(value) =>
+                      updateDraft({ cashAccountId: value ?? "" })
+                    }
+                  >
+                    <SelectTrigger id="payment-account" className="w-full">
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableAccounts.map((account) => (
+                        <SelectItem key={account.id} value={account.id}>
+                          {account.name} · {account.currency}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {accounts.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      Registra una caja o banco en Configuración.
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="payment-category">Categoría</Label>
+                  <Select
+                    value={categoryId || null}
+                    items={categoryItems}
+                    disabled
+                  >
+                    <SelectTrigger id="payment-category" className="w-full">
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </PanelBody>
 
             <Drawer
