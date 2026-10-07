@@ -32,7 +32,6 @@ type PaymentHistoryRow = {
   id: string;
   receipt_number: string | null;
   payment_date: string;
-  issue_date: string;
   direction: PaymentRow["direction"];
   method_name: string;
   cash_account_name: string;
@@ -52,7 +51,6 @@ function mapPaymentRow(row: PaymentRowWithRefs): Payment {
     id: row.id,
     entityId: row.entity_id,
     direction: row.direction,
-    issueDate: row.issue_date,
     paymentDate: row.payment_date,
     receiptNumber: row.receipt_number ?? "",
     amount: row.amount,
@@ -106,7 +104,6 @@ function mapPaymentHistoryRow(row: PaymentHistoryRow): PaymentHistoryEntry {
     paymentId: row.id,
     receiptNumber: row.receipt_number ?? "",
     paymentDate: row.payment_date,
-    issueDate: row.issue_date,
     direction: row.direction,
     methodName: row.method_name,
     cashAccountName: row.cash_account_name,
@@ -170,7 +167,7 @@ export async function listPayments(
     .from("payment")
     .select(PAYMENT_SELECT)
     .eq("direction", direction)
-    .order("issue_date", { ascending: false });
+    .order("payment_date", { ascending: false });
 
   if (error) {
     throw mapError(error);
@@ -333,7 +330,6 @@ export async function getPaymentHistory(
       id: payment.id,
       receipt_number: payment.receipt_number,
       payment_date: payment.payment_date,
-      issue_date: payment.issue_date,
       direction: payment.direction,
       method_name: payment.payment_method?.name ?? "",
       cash_account_name: payment.cash_account?.name ?? "",
@@ -350,8 +346,8 @@ export async function getPaymentHistory(
   }
 
   historyRows.sort((a, b) => {
-    if (a.issue_date !== b.issue_date) {
-      return a.issue_date < b.issue_date ? 1 : -1;
+    if (a.payment_date !== b.payment_date) {
+      return a.payment_date < b.payment_date ? 1 : -1;
     }
 
     return b.receipt_serial - a.receipt_serial;

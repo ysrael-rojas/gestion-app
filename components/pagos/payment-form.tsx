@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -243,33 +243,8 @@ export function PaymentForm({
 
   const entityItems = toEntityAutocompleteItems(entities);
 
-  // Precarga la primera opción disponible sin pisar una elección del usuario.
-  const didInitCatalogs = useRef(false);
-  useEffect(() => {
-    if (didInitCatalogs.current || methods.length === 0) {
-      return;
-    }
-
-    didInitCatalogs.current = true;
-
-    if (!form.getValues("methodId")) {
-      form.setValue("methodId", methods[0].id, { shouldValidate: false });
-    }
-  }, [methods, form]);
-
-  useEffect(() => {
-    if (!form.getValues("cashAccountId") && availableAccounts.length > 0) {
-      form.setValue("cashAccountId", availableAccounts[0].id, {
-        shouldValidate: false,
-      });
-    }
-  }, [availableAccounts, form]);
-
-  useEffect(() => {
-    if (!form.getValues("categoryId") && categories.length > 0) {
-      form.setValue("categoryId", categories[0].id, { shouldValidate: false });
-    }
-  }, [categories, form]);
+  // Sin auto-seed (SPEC 26): Método, Caja/Banco y Categoría arrancan vacíos
+  // con placeholder "Seleccionar" y los elige el usuario explícitamente.
 
   const handleSuggestAmount = useCallback(
     (value: number) => {
@@ -350,7 +325,7 @@ export function PaymentForm({
                 }}
               >
                 <SelectTrigger id="methodId" className="w-full">
-                  <SelectValue placeholder="Selecciona un método" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   {methods.map((method) => (
@@ -379,7 +354,7 @@ export function PaymentForm({
                 onValueChange={(value) => field.onChange(value ?? "")}
               >
                 <SelectTrigger id="cashAccountId" className="w-full">
-                  <SelectValue placeholder="Selecciona una cuenta" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableAccounts.map((account) => (
@@ -411,7 +386,7 @@ export function PaymentForm({
                 onValueChange={(value) => field.onChange(value ?? "")}
               >
                 <SelectTrigger id="categoryId" className="w-full">
-                  <SelectValue placeholder="Selecciona una categoría" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((category) => (

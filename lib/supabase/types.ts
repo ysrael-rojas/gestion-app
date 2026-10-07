@@ -322,7 +322,6 @@ export type Database = {
           direction: Database["public"]["Enums"]["payment_direction"]
           entity_id: string | null
           id: string
-          issue_date: string
           method_id: string
           notes: string | null
           owner_id: string
@@ -343,7 +342,6 @@ export type Database = {
           direction: Database["public"]["Enums"]["payment_direction"]
           entity_id?: string | null
           id?: string
-          issue_date?: string
           method_id: string
           notes?: string | null
           owner_id?: string
@@ -364,7 +362,6 @@ export type Database = {
           direction?: Database["public"]["Enums"]["payment_direction"]
           entity_id?: string | null
           id?: string
-          issue_date?: string
           method_id?: string
           notes?: string | null
           owner_id?: string
@@ -593,7 +590,7 @@ export type Database = {
       comprobante_status: "PAGADO" | "PENDIENTE"
       document_type: "SIN_DOCUMENTO" | "RUC" | "DNI" | "CARNET_EXTRANJERIA"
       payment_direction: "INGRESO" | "EGRESO"
-      payment_status: "REGISTRADO" | "ANULADO"
+      payment_status: "EN_REVISION" | "PROCESADO" | "ANULADO"
       payment_type: "CONTADO" | "CREDITO"
       voucher_kind: "COMPRA" | "VENTA"
       voucher_type: "FACTURA" | "BOLETA" | "NOTA_VENTA"
@@ -729,7 +726,7 @@ export const Constants = {
       comprobante_status: ["PAGADO", "PENDIENTE"],
       document_type: ["SIN_DOCUMENTO", "RUC", "DNI", "CARNET_EXTRANJERIA"],
       payment_direction: ["INGRESO", "EGRESO"],
-      payment_status: ["REGISTRADO", "ANULADO"],
+      payment_status: ["EN_REVISION", "PROCESADO", "ANULADO"],
       payment_type: ["CONTADO", "CREDITO"],
       voucher_kind: ["COMPRA", "VENTA"],
       voucher_type: ["FACTURA", "BOLETA", "NOTA_VENTA"],

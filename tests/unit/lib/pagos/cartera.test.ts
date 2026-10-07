@@ -42,7 +42,7 @@ const paymentBalanceRow = (overrides: Record<string, unknown> = {}) => ({
   amount: 50,
   assigned_amount: 30,
   unassigned_amount: 20,
-  status: "REGISTRADO",
+  status: "EN_REVISION",
   ...overrides,
 });
 
@@ -50,7 +50,6 @@ const paymentRow = (overrides: Record<string, unknown> = {}) => ({
   id: "p-1",
   entity_id: "e-1",
   direction: "INGRESO",
-  issue_date: "2026-09-30",
   payment_date: "2026-09-30",
   receipt_serial: 1,
   receipt_number: "RI-000001",
@@ -59,7 +58,7 @@ const paymentRow = (overrides: Record<string, unknown> = {}) => ({
   cash_account_id: "acc-1",
   category_id: "cat-1",
   reference: null,
-  status: "REGISTRADO",
+  status: "EN_REVISION",
   void_reason: null,
   voided_at: null,
   notes: null,

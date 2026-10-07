@@ -1,9 +1,9 @@
 export type PaymentStatusFilter = "TODOS" | "PAGADO" | "PENDIENTE";
 
-export interface ListadoFilters {
+export interface ListadoFilters<TStatus extends string = PaymentStatusFilter> {
   desde: string | null;
   hasta: string | null;
-  estado: PaymentStatusFilter;
+  estado: TStatus;
 }
 
 export const DEFAULT_PAYMENT_STATUS_FILTER: PaymentStatusFilter = "TODOS";
@@ -16,6 +16,8 @@ export const PAYMENT_STATUS_FILTER_OPTIONS: {
   { value: "PAGADO", label: "Pagado" },
   { value: "PENDIENTE", label: "Pendiente" },
 ];
+
+export const PAYMENT_RECEIPT_STATUSES = ["EN_REVISION", "PROCESADO"] as const;
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -39,29 +41,41 @@ function parseDate(value: string | string[] | undefined): string | null {
   return raw;
 }
 
-function parseStatus(
-  value: string | string[] | undefined
-): PaymentStatusFilter {
+function parseStatus<TStatus extends string>(
+  value: string | string[] | undefined,
+  acceptedStatuses: readonly TStatus[],
+  defaultValue: "TODOS" | TStatus = "TODOS"
+): "TODOS" | TStatus {
   const raw = firstValue(value);
 
-  if (raw === "PAGADO" || raw === "PENDIENTE") {
-    return raw;
+  if (raw && acceptedStatuses.includes(raw as TStatus)) {
+    return raw as "TODOS" | TStatus;
   }
 
-  return DEFAULT_PAYMENT_STATUS_FILTER;
+  return defaultValue;
 }
 
 export function parseListadoFilters(
   params: Record<string, string | string[] | undefined>
-): ListadoFilters {
+): ListadoFilters;
+export function parseListadoFilters<TStatus extends string>(
+  params: Record<string, string | string[] | undefined>,
+  acceptedStatuses: readonly TStatus[]
+): ListadoFilters<"TODOS" | TStatus>;
+export function parseListadoFilters(
+  params: Record<string, string | string[] | undefined>,
+  acceptedStatuses: readonly string[] = ["PAGADO", "PENDIENTE"]
+): ListadoFilters<string> {
   return {
     desde: parseDate(params.desde),
     hasta: parseDate(params.hasta),
-    estado: parseStatus(params.estado),
+    estado: parseStatus(params.estado, acceptedStatuses),
   };
 }
 
-export function filtersToSearchParams(filters: ListadoFilters): URLSearchParams {
+export function filtersToSearchParams(
+  filters: ListadoFilters<string>
+): URLSearchParams {
   const searchParams = new URLSearchParams();
 
   if (filters.desde) {
@@ -79,20 +93,35 @@ export function filtersToSearchParams(filters: ListadoFilters): URLSearchParams 
   return searchParams;
 }
 
-export function applyListadoFilters<T extends { issueDate: string; status: string }>(
+export function applyListadoFilters<
+  T extends { issueDate?: string; paymentDate?: string; status: string },
+>(
   rows: T[],
-  filters: ListadoFilters
+  filters: ListadoFilters<string>,
+  options: {
+    dateField?: "issueDate" | "paymentDate";
+    matchesStatus?: (row: T, status: string) => boolean;
+  } = {}
 ): T[] {
+  const dateField = options.dateField ?? "issueDate";
+
   return rows.filter((row) => {
-    if (filters.desde && row.issueDate < filters.desde) {
+    const rowDate = row[dateField] ?? "";
+
+    if (filters.desde && rowDate < filters.desde) {
       return false;
     }
 
-    if (filters.hasta && row.issueDate > filters.hasta) {
+    if (filters.hasta && rowDate > filters.hasta) {
       return false;
     }
 
-    if (filters.estado !== DEFAULT_PAYMENT_STATUS_FILTER && row.status !== filters.estado) {
+    if (
+      filters.estado !== DEFAULT_PAYMENT_STATUS_FILTER &&
+      !(options.matchesStatus
+        ? options.matchesStatus(row, filters.estado)
+        : row.status === filters.estado)
+    ) {
       return false;
     }
 

@@ -21,7 +21,6 @@ function mapPaymentRow(row: PaymentRow): Payment {
     id: row.id,
     entityId: row.entity_id,
     direction: row.direction,
-    issueDate: row.issue_date,
     paymentDate: row.payment_date,
     receiptNumber: row.receipt_number ?? "",
     amount: row.amount,
@@ -109,7 +108,7 @@ export async function getCarteraResumen(): Promise<CarteraResumen> {
     supabase
       .from("payment_balance")
       .select("*")
-      .eq("status", "REGISTRADO")
+      .in("status", ["EN_REVISION", "PROCESADO"])
       .gt("unassigned_amount", 0),
   ]);
 
@@ -166,7 +165,7 @@ export async function listUnassignedPayments(
   const { data: balanceData, error: balanceError } = await supabase
     .from("payment_balance")
     .select("payment_id")
-    .eq("status", "REGISTRADO")
+    .in("status", ["EN_REVISION", "PROCESADO"])
     .eq("direction", direction)
     .gt("unassigned_amount", 0);
 
@@ -186,7 +185,7 @@ export async function listUnassignedPayments(
     .from("payment")
     .select("*")
     .in("id", paymentIds)
-    .order("issue_date", { ascending: false });
+    .order("payment_date", { ascending: false });
 
   if (error) {
     throw new Error(LOAD_ERROR);

@@ -204,7 +204,8 @@ function PaymentDetailContent({
     );
   }
 
-  const isRegistered = detail.status === "REGISTRADO";
+  const isActive =
+    detail.status === "EN_REVISION" || detail.status === "PROCESADO";
   const hasUnassigned = detail.unassignedAmount > 0;
 
   return (
@@ -220,10 +221,6 @@ function PaymentDetailContent({
               <DetailField
                 label="Estado"
                 value={getOptionLabel(PAYMENT_STATUSES, detail.status)}
-              />
-              <DetailField
-                label="Fecha de emisión"
-                value={formatDate(detail.issueDate)}
               />
               <DetailField
                 label="Fecha de pago"
@@ -408,7 +405,7 @@ function PaymentDetailContent({
       {mode === "view" ? (
         <CardFooter className="justify-between gap-2">
           <div className="flex gap-2">
-            {isRegistered && hasUnassigned ? (
+            {isActive && hasUnassigned ? (
               <Button
                 variant="outline"
                 onClick={() => {
@@ -425,7 +422,7 @@ function PaymentDetailContent({
             </Button>
           </div>
           <div className="flex gap-2">
-            {isRegistered ? (
+            {isActive ? (
               <Button variant="destructive" onClick={() => setMode("annul")}>
                 Anular pago
               </Button>

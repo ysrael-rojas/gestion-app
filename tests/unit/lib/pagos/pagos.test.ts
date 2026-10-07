@@ -21,7 +21,6 @@ const paymentRow = (overrides: Record<string, unknown> = {}) => ({
   id: "p-1",
   entity_id: "e-1",
   direction: "INGRESO",
-  issue_date: "2026-09-30",
   payment_date: "2026-09-30",
   receipt_serial: 1,
   receipt_number: "RI-000001",
@@ -30,7 +29,7 @@ const paymentRow = (overrides: Record<string, unknown> = {}) => ({
   cash_account_id: "acc-1",
   category_id: "cat-1",
   reference: null,
-  status: "REGISTRADO",
+  status: "EN_REVISION",
   void_reason: null,
   voided_at: null,
   notes: null,
@@ -52,7 +51,7 @@ const paymentBalanceRow = (overrides: Record<string, unknown> = {}) => ({
   amount: 50,
   assigned_amount: 50,
   unassigned_amount: 0,
-  status: "REGISTRADO",
+  status: "EN_REVISION",
   ...overrides,
 });
 
@@ -77,11 +76,11 @@ describe("pagos.ts", () => {
   });
 
   describe("listPayments", () => {
-    it("mapea pagos y los ordena por issue_date desc (mock devuelve ordenados)", async () => {
+    it("mapea pagos y los ordena por payment_date desc (mock devuelve ordenados)", async () => {
       mock.setTable("payment", {
         data: [
-          paymentRow({ id: "p-1", issue_date: "2026-09-30" }),
-          paymentRow({ id: "p-2", issue_date: "2026-09-29", receipt_serial: 2, receipt_number: "RI-000002" }),
+          paymentRow({ id: "p-1", payment_date: "2026-09-30" }),
+          paymentRow({ id: "p-2", payment_date: "2026-09-29", receipt_serial: 2, receipt_number: "RI-000002" }),
         ],
         error: null,
       });
@@ -202,7 +201,7 @@ describe("pagos.ts", () => {
       expect(history).toEqual([]);
     });
 
-    it("combina allocations con sus payments y ordena por issue_date desc", async () => {
+    it("combina allocations con sus payments y ordena por payment_date desc", async () => {
       mock.queueTable("payment_allocation", {
         data: [
           allocationRow({ id: "a-1", payment_id: "p-1" }),
@@ -212,8 +211,8 @@ describe("pagos.ts", () => {
       });
       mock.queueTable("payment", {
         data: [
-          paymentRow({ id: "p-1", issue_date: "2026-09-30", receipt_serial: 1 }),
-          paymentRow({ id: "p-2", issue_date: "2026-09-25", receipt_serial: 2, receipt_number: "RI-000002" }),
+          paymentRow({ id: "p-1", payment_date: "2026-09-30", receipt_serial: 1 }),
+          paymentRow({ id: "p-2", payment_date: "2026-09-25", receipt_serial: 2, receipt_number: "RI-000002" }),
         ],
         error: null,
       });
