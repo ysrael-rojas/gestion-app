@@ -22,6 +22,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useCajasBancos } from "@/components/cajas-bancos/cajas-bancos-provider";
+import { VoucherAmountsBand } from "@/components/comprobantes/voucher-amounts-band";
 import type {
   CashReceiptCategory,
   PaymentDirection,
@@ -40,7 +41,8 @@ import {
   PAYMENT_TYPES,
   VOUCHER_TYPES,
 } from "@/lib/data/sale-options";
-import { formatDate, getTodayLocalDate } from "@/lib/utils";
+import { formatDate, formatCurrency, getTodayLocalDate } from "@/lib/utils";
+import { cn } from "cn";
 
 type WizardStep = 1 | 2 | 3 | 4;
 
@@ -247,6 +249,8 @@ export function NestedPaymentDrawers({
   dueDate,
   entityId,
   comprobanteId,
+  total,
+  paidAmount,
   balance,
 }: NestedPaymentDrawersProps) {
   const [step, setStep] = useState<WizardStep>(1);
@@ -349,6 +353,10 @@ export function NestedPaymentDrawers({
         current && current.type !== allowedType ? "" : draft.cashAccountId,
     });
   };
+
+  const parsedAmount = Number(draft.amount);
+  const amountValue = Number.isFinite(parsedAmount) ? parsedAmount : 0;
+  const newBalance = Math.max(balance - amountValue, 0);
 
   const wasOpen = useRef(open);
   useEffect(() => {
@@ -511,9 +519,49 @@ export function NestedPaymentDrawers({
                   onBack={() => setStep(2)}
                   onNext={() => setStep(4)}
                 >
-                  <p className="text-sm text-muted-foreground">
-                    Panel 3 — montos e importe a amortizar (paso 5).
-                  </p>
+                  <div className="flex flex-col gap-5">
+                    <VoucherAmountsBand
+                      total={total}
+                      paidAmount={paidAmount}
+                      balance={balance}
+                    />
+
+                    <div className="flex flex-col gap-1.5">
+                      <Label htmlFor="payment-amount">Importe</Label>
+                      <Input
+                        id="payment-amount"
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={draft.amount}
+                        onChange={(event) =>
+                          updateDraft({ amount: event.target.value })
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Precargado con el saldo pendiente. Puedes amortizar todo
+                        o una parte.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-4">
+                      <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                        Nuevo saldo
+                      </span>
+                      <span
+                        className={cn(
+                          "text-lg font-semibold tabular-nums",
+                          newBalance <= 0
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-amber-600 dark:text-amber-400"
+                        )}
+                      >
+                        {formatCurrency(newBalance)}
+                      </span>
+                    </div>
+                  </div>
                 </PanelBody>
 
                 <Drawer
