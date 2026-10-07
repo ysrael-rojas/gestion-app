@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   columnFilteringFeature,
   createColumnHelper,
@@ -56,9 +55,14 @@ const columnHelper = createColumnHelper<PurchasesTableFeatures, PurchasesRow>();
 interface PurchasesColumnsActions {
   onView: (purchase: Purchase) => void;
   onEdit: (purchase: Purchase) => void;
+  onRegisterPayment: (purchase: Purchase) => void;
 }
 
-export function getPurchasesColumns({ onView, onEdit }: PurchasesColumnsActions) {
+export function getPurchasesColumns({
+  onView,
+  onEdit,
+  onRegisterPayment,
+}: PurchasesColumnsActions) {
   return columnHelper.columns([
     columnHelper.accessor("issueDate", {
       header: ({ column }) => (
@@ -196,12 +200,7 @@ export function getPurchasesColumns({ onView, onEdit }: PurchasesColumnsActions)
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        nativeButton={false}
-                        render={
-                          <Link
-                            href={`/pagos/egresos?entityId=${purchase.supplierId}&comprobanteId=${purchase.id}`}
-                          />
-                        }
+                        onClick={() => onRegisterPayment(purchase)}
                       />
                     }
                   >

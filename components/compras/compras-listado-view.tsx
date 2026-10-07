@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { useClientes } from "@/components/clientes/clientes-provider";
+import { NestedPaymentDrawers } from "@/components/comprobantes/nested-payment-drawers";
 import { ListingsToolbar } from "@/components/shared/listings-toolbar";
 import { PurchaseDetailModal } from "@/components/compras/purchase-detail-modal";
 import { PurchaseModal } from "@/components/compras/purchase-modal";
@@ -26,10 +27,12 @@ function getErrorMessage(error: unknown): string {
 
 export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
   const { clients } = useClientes();
-  const { purchases, isLoading, balanceError, addPurchase, updatePurchase } = useCompras();
+  const { purchases, isLoading, balanceError, addPurchase, updatePurchase, refresh } =
+    useCompras();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
   const [viewingPurchase, setViewingPurchase] = useState<Purchase | null>(null);
+  const [paymentPurchase, setPaymentPurchase] = useState<Purchase | null>(null);
 
   function openCreate() {
     setEditingPurchase(null);
@@ -44,6 +47,14 @@ export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
   const openView = useCallback((purchase: Purchase) => {
     setViewingPurchase(purchase);
   }, []);
+
+  const openRegisterPayment = useCallback((purchase: Purchase) => {
+    setPaymentPurchase(purchase);
+  }, []);
+
+  const resolveSupplierName = (supplierId: string) =>
+    clients.find((client) => client.id === supplierId)?.name ??
+    "Proveedor no encontrado";
 
   async function handleSave(values: PurchaseFormValues) {
     try {
@@ -83,6 +94,7 @@ export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
         balanceError={balanceError}
         onView={openView}
         onEdit={openEdit}
+        onRegisterPayment={openRegisterPayment}
       />
 
       <PurchaseModal
@@ -107,6 +119,30 @@ export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
         purchase={viewingPurchase}
         clients={clients}
       />
+
+      {paymentPurchase ? (
+        <NestedPaymentDrawers
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setPaymentPurchase(null);
+            }
+          }}
+          direction="EGRESO"
+          entityName={resolveSupplierName(paymentPurchase.supplierId)}
+          voucherType={paymentPurchase.voucherType}
+          voucherNumber={paymentPurchase.voucherNumber}
+          issueDate={paymentPurchase.issueDate}
+          condition={paymentPurchase.paymentType}
+          dueDate={paymentPurchase.dueDate}
+          entityId={paymentPurchase.supplierId}
+          comprobanteId={paymentPurchase.id}
+          total={paymentPurchase.total}
+          paidAmount={paymentPurchase.paidAmount}
+          balance={paymentPurchase.balance}
+          onRegistered={refresh}
+        />
+      ) : null}
     </main>
   );
 }
