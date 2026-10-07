@@ -51,14 +51,15 @@ Esta spec no crea ni modifica estructuras de datos. Solo elimina tres definicion
 
 ## Acceptance criteria
 
-- [ ] En `/ventas/listado` y `/compras/listado` no existe ninguna columna con encabezado Condición, Pagado ni Saldo.
-- [ ] En ambos listados el orden de columnas es: F. emisión, T. comprobante, Nro comprobante, Cliente/Proveedor, Total, Estado pago, Acciones.
-- [ ] Los títulos y alineaciones de las columnas restantes son los de SPEC 12 (sin cambios visuales).
-- [ ] Los botones de acción siguen siendo Ver, Registrar pago (solo PENDIENTE), Imprimir y Editar.
-- [ ] El botón `Registrar pago` sigue enlazando a `/pagos/ingresos` (ventas) y `/pagos/egresos` (compras) con los query params actuales.
-- [ ] Cada encabezado restante sigue siendo clickeable para ordenar.
+- [x] En `/ventas/listado` y `/compras/listado` no existe ninguna columna con encabezado Condición, Pagado ni Saldo.
+- [x] En ambos listados el orden de columnas es: F. emisión, T. comprobante, Nro comprobante, Cliente/Proveedor, Total, Estado pago, Acciones.
+- [x] Los títulos y alineaciones de las columnas restantes son los de SPEC 12 (sin cambios visuales).
+- [x] Los botones de acción siguen siendo Ver, Registrar pago (solo PENDIENTE), Imprimir y Editar.
+- [x] El botón `Registrar pago` sigue enlazando a `/pagos/ingresos` (ventas) y `/pagos/egresos` (compras) con los query params actuales.
+- [x] Cada encabezado restante sigue siendo clickeable para ordenar.
 - [ ] El modal de detalle de venta y de compra sigue mostrando Condición, Pagado y Saldo.
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan.
+> ❌ El modal de detalle muestra **Condición** (verificado en el DOM), pero **no** muestra campos "Pagado" ni "Saldo": solo tiene Datos del comprobante (sin esos campos), Montos (Subtotal/IGV/Total) e Historial de pagos (Fecha/Recibo/Método/Importe/Estado). La premisa del criterio era incorrecta: el detalle nunca mostró Pagado/Saldo en esta rama, y este spec no modificó `sale-detail-modal.tsx` ni `purchase-detail-modal.tsx` (los commits solo tocan los archivos de columnas). Añadir esos campos contradiría el propio "Out of scope" del spec. Requiere corregir el criterio (p. ej. "sigue mostrando Condición") o abrir un spec aparte si se quieren Pagado/Saldo en el detalle.
+- [x] `npm run lint`, `npm test` y `npm run build` pasan.
 
 ## Decisions
 
