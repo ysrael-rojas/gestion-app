@@ -146,66 +146,6 @@ export function getSalesColumns({ onView, onEdit }: SalesColumnsActions) {
         <div className="text-right">{formatCurrency(getValue())}</div>
       ),
     }),
-    columnHelper.accessor((sale) => sale.paymentType, {
-      id: "paymentType",
-      header: ({ column }) => (
-        <div className="flex w-full justify-center">
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Condición
-            <ArrowUpDown />
-          </Button>
-        </div>
-      ),
-      cell: ({ getValue }) => <div className="text-center">{getValue()}</div>,
-    }),
-    columnHelper.accessor("paidAmount", {
-      id: "paidAmount",
-      header: ({ column }) => (
-        <div className="flex w-full justify-end">
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Pagado
-            <ArrowUpDown />
-          </Button>
-        </div>
-      ),
-      cell: ({ getValue }) => (
-        <div className="text-right">{formatCurrency(getValue())}</div>
-      ),
-    }),
-    columnHelper.accessor("balance", {
-      id: "balance",
-      header: ({ column }) => (
-        <div className="flex w-full justify-end">
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Saldo
-            <ArrowUpDown />
-          </Button>
-        </div>
-      ),
-      cell: ({ getValue }) => {
-        const value = getValue();
-        return (
-          <div
-            className={
-              value === 0
-                ? "text-right text-muted-foreground"
-                : "text-right font-medium"
-            }
-          >
-            {formatCurrency(value)}
-          </div>
-        );
-      },
-    }),
     columnHelper.accessor(
       (sale) => getOptionLabel(SALE_STATUSES, sale.status),
       {
