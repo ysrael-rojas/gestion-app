@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -23,6 +25,7 @@ import {
 } from "@/components/ui/drawer";
 import { useCajasBancos } from "@/components/cajas-bancos/cajas-bancos-provider";
 import { VoucherAmountsBand } from "@/components/comprobantes/voucher-amounts-band";
+import { usePagos } from "@/components/pagos/pagos-provider";
 import type {
   CashReceiptCategory,
   PaymentDirection,
@@ -252,6 +255,7 @@ export function NestedPaymentDrawers({
   total,
   paidAmount,
   balance,
+  onRegistered,
 }: NestedPaymentDrawersProps) {
   const [step, setStep] = useState<WizardStep>(1);
   const [draft, setDraft] = useState<PaymentWizardState>(() =>
@@ -263,8 +267,10 @@ export function NestedPaymentDrawers({
   };
 
   const { accounts } = useCajasBancos();
+  const { addPayment } = usePagos();
   const [methods, setMethods] = useState<PaymentMethodRef[]>([]);
   const [categories, setCategories] = useState<CashReceiptCategory[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Catálogos: siembra perezosa + métodos y categorías de la dirección
   // (mismo patrón que payment-form.tsx).
@@ -357,6 +363,40 @@ export function NestedPaymentDrawers({
   const parsedAmount = Number(draft.amount);
   const amountValue = Number.isFinite(parsedAmount) ? parsedAmount : 0;
   const newBalance = Math.max(balance - amountValue, 0);
+
+  async function handleSubmit() {
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await addPayment({
+        entityId,
+        direction,
+        paymentDate: draft.paymentDate,
+        amount: amountValue,
+        methodId: draft.methodId,
+        cashAccountId: draft.cashAccountId,
+        categoryId,
+        reference: draft.reference.trim() || undefined,
+        notes: draft.notes.trim() || undefined,
+        allocations: [{ comprobanteId, amount: amountValue }],
+      });
+      toast.success("Pago registrado");
+      handleRootOpenChange(false);
+      await onRegistered();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "No se pudo registrar el pago. Intenta nuevamente."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   const wasOpen = useRef(open);
   useEffect(() => {
@@ -575,13 +615,41 @@ export function NestedPaymentDrawers({
                     <PanelBody
                       step={4}
                       onBack={() => setStep(3)}
-                      // TODO(paso 6): conectar con addPayment.
-                      onNext={() => undefined}
+                      onNext={handleSubmit}
                       nextLabel="Registrar pago"
+                      isSubmitting={isSubmitting}
                     >
-                      <p className="text-sm text-muted-foreground">
-                        Panel 4 — referencia y notas (paso 6).
-                      </p>
+                      <div className="flex flex-col gap-5">
+                        <div className="flex flex-col gap-1.5">
+                          <Label htmlFor="payment-reference">
+                            Referencia (opcional)
+                          </Label>
+                          <Input
+                            id="payment-reference"
+                            maxLength={60}
+                            placeholder="Nro de operación / autorización"
+                            value={draft.reference}
+                            onChange={(event) =>
+                              updateDraft({ reference: event.target.value })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <Label htmlFor="payment-notes">
+                            Notas (opcional)
+                          </Label>
+                          <Textarea
+                            id="payment-notes"
+                            maxLength={200}
+                            placeholder="Observaciones del pago"
+                            value={draft.notes}
+                            onChange={(event) =>
+                              updateDraft({ notes: event.target.value })
+                            }
+                          />
+                        </div>
+                      </div>
                     </PanelBody>
                   </DrawerContent>
                 </Drawer>
