@@ -190,6 +190,7 @@ interface PanelBodyProps {
   onNext?: () => void;
   nextLabel?: string;
   isSubmitting?: boolean;
+  error?: string | null;
 }
 
 function PanelBody({
@@ -200,6 +201,7 @@ function PanelBody({
   onNext,
   nextLabel = "Continuar",
   isSubmitting = false,
+  error = null,
 }: PanelBodyProps) {
   const { title, description } = STEP_COPY[step];
 
@@ -210,6 +212,11 @@ function PanelBody({
         <DrawerDescription>{description}</DrawerDescription>
       </DrawerHeader>
       <div className="flex-1 overflow-y-auto p-4">{children}</div>
+      {error ? (
+        <p role="alert" className="px-4 pb-2 text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
       <div className="mt-auto flex shrink-0 flex-row justify-end gap-2 p-4 pt-0">
         {onCancel ? (
           <Button type="button" variant="outline" onClick={onCancel}>
@@ -263,6 +270,7 @@ export function NestedPaymentDrawers({
   );
 
   const updateDraft = (patch: Partial<PaymentWizardState>) => {
+    setFormError(null);
     setDraft((current) => ({ ...current, ...patch }));
   };
 
@@ -271,6 +279,7 @@ export function NestedPaymentDrawers({
   const [methods, setMethods] = useState<PaymentMethodRef[]>([]);
   const [categories, setCategories] = useState<CashReceiptCategory[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Catálogos: siembra perezosa + métodos y categorías de la dirección
   // (mismo patrón que payment-form.tsx).
@@ -364,6 +373,49 @@ export function NestedPaymentDrawers({
   const amountValue = Number.isFinite(parsedAmount) ? parsedAmount : 0;
   const newBalance = Math.max(balance - amountValue, 0);
 
+  // Validación por panel: cada "Continuar" valida solo los campos del panel.
+  const goToStep = (next: WizardStep) => {
+    setFormError(null);
+    setStep(next);
+  };
+
+  const continueFromPanel1 = () => {
+    if (!draft.paymentDate) {
+      setFormError("La fecha de pago es obligatoria.");
+      return;
+    }
+
+    goToStep(2);
+  };
+
+  const continueFromPanel2 = () => {
+    if (!draft.methodId) {
+      setFormError("Selecciona un método de pago.");
+      return;
+    }
+
+    if (!draft.cashAccountId) {
+      setFormError("Selecciona una caja o banco.");
+      return;
+    }
+
+    goToStep(3);
+  };
+
+  const continueFromPanel3 = () => {
+    if (amountValue <= 0) {
+      setFormError("El importe debe ser mayor a 0.");
+      return;
+    }
+
+    if (amountValue > balance) {
+      setFormError("El importe supera el saldo del comprobante.");
+      return;
+    }
+
+    goToStep(4);
+  };
+
   async function handleSubmit() {
     if (isSubmitting) {
       return;
@@ -402,6 +454,7 @@ export function NestedPaymentDrawers({
   useEffect(() => {
     if (open && !wasOpen.current) {
       setStep(1);
+      setFormError(null);
       setDraft(
         createInitialDraft({ entityId, comprobanteId, direction, balance })
       );
@@ -412,6 +465,7 @@ export function NestedPaymentDrawers({
   const handleRootOpenChange = (next: boolean) => {
     if (!next) {
       setStep(1);
+      setFormError(null);
     }
     onOpenChange(next);
   };
@@ -419,7 +473,7 @@ export function NestedPaymentDrawers({
   // Cerrar un drawer anidado (swipe, overlay o "Atrás") vuelve al panel previo.
   const handleNestedOpenChange = (previous: WizardStep) => (next: boolean) => {
     if (!next) {
-      setStep(previous);
+      goToStep(previous);
     }
   };
 
@@ -429,7 +483,8 @@ export function NestedPaymentDrawers({
         <PanelBody
           step={1}
           onCancel={() => handleRootOpenChange(false)}
-          onNext={() => setStep(2)}
+          onNext={continueFromPanel1}
+          error={formError}
         >
           <div className="flex flex-col gap-5">
             <VoucherSummary
@@ -471,7 +526,12 @@ export function NestedPaymentDrawers({
           onOpenChange={handleNestedOpenChange(1)}
         >
           <DrawerContent showOverlay={false} className="sm:mx-auto sm:max-w-xl">
-            <PanelBody step={2} onBack={() => setStep(1)} onNext={() => setStep(3)}>
+            <PanelBody
+              step={2}
+              onBack={() => goToStep(1)}
+              onNext={continueFromPanel2}
+              error={formError}
+            >
               <div className="flex flex-col gap-5">
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="payment-method">Método</Label>
@@ -556,8 +616,9 @@ export function NestedPaymentDrawers({
               >
                 <PanelBody
                   step={3}
-                  onBack={() => setStep(2)}
-                  onNext={() => setStep(4)}
+                  onBack={() => goToStep(2)}
+                  onNext={continueFromPanel3}
+                  error={formError}
                 >
                   <div className="flex flex-col gap-5">
                     <VoucherAmountsBand
@@ -614,10 +675,11 @@ export function NestedPaymentDrawers({
                   >
                     <PanelBody
                       step={4}
-                      onBack={() => setStep(3)}
+                      onBack={() => goToStep(3)}
                       onNext={handleSubmit}
                       nextLabel="Registrar pago"
                       isSubmitting={isSubmitting}
+                      error={formError}
                     >
                       <div className="flex flex-col gap-5">
                         <div className="flex flex-col gap-1.5">
