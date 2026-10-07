@@ -36,6 +36,7 @@ interface SalesDataTableProps {
   balanceError?: BalanceLoadError | null;
   onView: (sale: Sale) => void;
   onEdit: (sale: Sale) => void;
+  onRegisterPayment: (sale: Sale) => void;
 }
 
 const SKELETON_ROWS = 5;
@@ -55,6 +56,7 @@ export function SalesDataTable({
   balanceError,
   onView,
   onEdit,
+  onRegisterPayment,
 }: SalesDataTableProps) {
   useEffect(() => {
     if (balanceError) {
@@ -75,8 +77,8 @@ export function SalesDataTable({
   }, [sales, clients, filters]);
 
   const columns = useMemo(
-    () => getSalesColumns({ onView, onEdit }),
-    [onView, onEdit]
+    () => getSalesColumns({ onView, onEdit, onRegisterPayment }),
+    [onView, onEdit, onRegisterPayment]
   );
 
   const table = useTable({

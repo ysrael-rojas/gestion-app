@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { useClientes } from "@/components/clientes/clientes-provider";
+import { NestedPaymentDrawers } from "@/components/comprobantes/nested-payment-drawers";
 import { ListingsToolbar } from "@/components/shared/listings-toolbar";
 import { SaleDetailModal } from "@/components/ventas/sale-detail-modal";
 import { SaleModal } from "@/components/ventas/sale-modal";
@@ -26,10 +27,12 @@ function getErrorMessage(error: unknown): string {
 
 export function VentasListadoView({ filters }: VentasListadoViewProps) {
   const { clients } = useClientes();
-  const { sales, isLoading, balanceError, addSale, updateSale } = useVentas();
+  const { sales, isLoading, balanceError, addSale, updateSale, refresh } =
+    useVentas();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [viewingSale, setViewingSale] = useState<Sale | null>(null);
+  const [paymentSale, setPaymentSale] = useState<Sale | null>(null);
 
   function openCreate() {
     setEditingSale(null);
@@ -44,6 +47,14 @@ export function VentasListadoView({ filters }: VentasListadoViewProps) {
   const openView = useCallback((sale: Sale) => {
     setViewingSale(sale);
   }, []);
+
+  const openRegisterPayment = useCallback((sale: Sale) => {
+    setPaymentSale(sale);
+  }, []);
+
+  const resolveClientName = (entityId: string) =>
+    clients.find((client) => client.id === entityId)?.name ??
+    "Cliente no encontrado";
 
   async function handleSave(values: SaleFormValues) {
     try {
@@ -83,6 +94,7 @@ export function VentasListadoView({ filters }: VentasListadoViewProps) {
         balanceError={balanceError}
         onView={openView}
         onEdit={openEdit}
+        onRegisterPayment={openRegisterPayment}
       />
 
       <SaleModal
@@ -107,6 +119,30 @@ export function VentasListadoView({ filters }: VentasListadoViewProps) {
         sale={viewingSale}
         clients={clients}
       />
+
+      {paymentSale ? (
+        <NestedPaymentDrawers
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setPaymentSale(null);
+            }
+          }}
+          direction="INGRESO"
+          entityName={resolveClientName(paymentSale.entityId)}
+          voucherType={paymentSale.voucherType}
+          voucherNumber={paymentSale.voucherNumber}
+          issueDate={paymentSale.issueDate}
+          condition={paymentSale.paymentType}
+          dueDate={paymentSale.dueDate}
+          entityId={paymentSale.entityId}
+          comprobanteId={paymentSale.id}
+          total={paymentSale.total}
+          paidAmount={paymentSale.paidAmount}
+          balance={paymentSale.balance}
+          onRegistered={refresh}
+        />
+      ) : null}
     </main>
   );
 }

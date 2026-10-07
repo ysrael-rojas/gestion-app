@@ -36,6 +36,7 @@ interface PurchasesDataTableProps {
   balanceError?: BalanceLoadError | null;
   onView: (purchase: Purchase) => void;
   onEdit: (purchase: Purchase) => void;
+  onRegisterPayment: (purchase: Purchase) => void;
 }
 
 const SKELETON_ROWS = 5;
@@ -55,6 +56,7 @@ export function PurchasesDataTable({
   balanceError,
   onView,
   onEdit,
+  onRegisterPayment,
 }: PurchasesDataTableProps) {
   useEffect(() => {
     if (balanceError) {
@@ -75,8 +77,8 @@ export function PurchasesDataTable({
   }, [purchases, clients, filters]);
 
   const columns = useMemo(
-    () => getPurchasesColumns({ onView, onEdit }),
-    [onView, onEdit]
+    () => getPurchasesColumns({ onView, onEdit, onRegisterPayment }),
+    [onView, onEdit, onRegisterPayment]
   );
 
   const table = useTable({
