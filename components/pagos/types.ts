@@ -1,7 +1,7 @@
 import type { PaymentType, VoucherType } from "@/components/compras/types";
 
 export type PaymentDirection = "INGRESO" | "EGRESO";
-export type PaymentStatus = "REGISTRADO" | "ANULADO";
+export type PaymentStatus = "EN_REVISION" | "PROCESADO" | "ANULADO";
 export type ClosingPeriodicity = "DAILY" | "WEEKLY" | "MONTHLY";
 
 export interface PaymentMethodRef {
@@ -22,8 +22,7 @@ export interface Payment {
   id: string;
   entityId: string | null; // null = anticipo sin entidad asignada aún
   direction: PaymentDirection;
-  issueDate: string; // "YYYY-MM-DD" — fecha de emisión del recibo
-  paymentDate: string; // "YYYY-MM-DD" — fecha efectiva del pago
+  paymentDate: string; // "YYYY-MM-DD" — única fecha del recibo (emisión = pago)
   receiptNumber: string; // "RI-000001" | "RE-000001"
   amount: number;
   methodId: string;
@@ -52,8 +51,7 @@ export interface PaymentHistoryEntry {
   allocationId: string; // payment_allocation.id
   paymentId: string; // payment.id (FK para ReceiptDialog)
   receiptNumber: string; // "RI-000001" | "RE-000001"
-  paymentDate: string; // "YYYY-MM-DD" — fecha efectiva del pago
-  issueDate: string; // "YYYY-MM-DD" — fecha de emisión del recibo
+  paymentDate: string; // "YYYY-MM-DD" — única fecha del recibo
   direction: PaymentDirection;
   methodName: string;
   cashAccountName: string;
@@ -61,7 +59,7 @@ export interface PaymentHistoryEntry {
   reference: string | null;
   paymentAmount: number; // importe total del pago
   amount: number; // importe aplicado a este comprobante (allocation.amount)
-  status: PaymentStatus; // "REGISTRADO" | "ANULADO"
+  status: PaymentStatus; // "EN_REVISION" | "PROCESADO" | "ANULADO"
   voidedAt: string | null;
   voidReason: string | null;
   notes: string | null;

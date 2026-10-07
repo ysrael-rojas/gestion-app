@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { WandSparkles } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +14,9 @@ import type {
   VoucherBalance,
 } from "@/components/pagos/types";
 import { getOptionLabel, VOUCHER_TYPES } from "@/lib/data/sale-options";
+import { distributeOldestFirst } from "@/lib/pagos/auto-distribuir";
 import { listOpenVouchers } from "@/lib/pagos/pagos";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
 interface AllocationPickerProps {
   direction: PaymentDirection;
@@ -105,6 +108,31 @@ export function AllocationPicker({
   );
   const unassigned = Math.max(0, round2(amount - assigned));
 
+  const hasOpenVouchers = vouchers.some((voucher) => voucher.balance > 0);
+  const canAutoDistribute = amount > 0 && hasOpenVouchers;
+
+  // Verde: el monto quedó completamente asignado; ámbar: queda saldo por
+  // asignar; neutro: aún no hay monto que asignar.
+  const unassignedTone =
+    amount <= 0
+      ? "text-muted-foreground"
+      : unassigned > 0
+        ? "text-amber-600 dark:text-amber-400"
+        : "text-emerald-600 dark:text-emerald-400";
+
+  function handleAutoDistribute() {
+    const next: AllocationInput[] = [];
+
+    for (const [comprobanteId, appliedAmount] of distributeOldestFirst(
+      vouchers,
+      amount
+    )) {
+      next.push({ comprobanteId, amount: appliedAmount });
+    }
+
+    onChange(next);
+  }
+
   function getSelectedAmount(comprobanteId: string): number {
     return (
       value.find((item) => item.comprobanteId === comprobanteId)?.amount ?? 0
@@ -145,16 +173,29 @@ export function AllocationPicker({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <Label>Asignar a comprobantes</Label>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Label>Asignar a comprobantes</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleAutoDistribute}
+            disabled={!canAutoDistribute}
+          >
+            <WandSparkles />
+            Auto-distribuir
+          </Button>
+        </div>
         <span className="text-sm text-muted-foreground">
-          Saldo sin asignar: {formatCurrency(unassigned)}
+          Monto a aplicar: {formatCurrency(amount)}
         </span>
       </div>
 
       {!entityId ? (
         <p className="text-sm text-muted-foreground">
-          Selecciona una entidad para ver sus comprobantes con saldo.
+          Debes ingresar el cliente/proveedor para listar los comprobantes
+          pendientes.
         </p>
       ) : isLoading ? (
         <div className="flex flex-col gap-2">
@@ -211,6 +252,14 @@ export function AllocationPicker({
           })}
         </div>
       )}
+
+      <div className="flex items-center justify-end">
+        <span
+          className={cn("text-sm font-medium tabular-nums", unassignedTone)}
+        >
+          Saldo sin asignar: {formatCurrency(unassigned)}
+        </span>
+      </div>
     </div>
   );
 }

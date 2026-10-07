@@ -23,7 +23,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Payment } from "@/components/pagos/types";
+import type { Payment, PaymentDirection } from "@/components/pagos/types";
+import { ReceiptStatusBadge } from "@/components/pagos/receipt-status-badge";
 import { PAYMENT_STATUSES } from "@/lib/data/payment-options";
 import { getOptionLabel } from "@/lib/data/sale-options";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -50,22 +51,14 @@ const columnHelper = createColumnHelper<PaymentsTableFeatures, PaymentsRow>();
 
 interface PaymentsColumnsActions {
   onView: (payment: Payment) => void;
+  direction: PaymentDirection;
 }
 
-export function getPaymentsColumns({ onView }: PaymentsColumnsActions) {
+export function getPaymentsColumns({
+  onView,
+  direction,
+}: PaymentsColumnsActions) {
   return columnHelper.columns([
-    columnHelper.accessor("issueDate", {
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Fecha emisión
-          <ArrowUpDown />
-        </Button>
-      ),
-      cell: ({ getValue }) => formatDate(getValue()),
-    }),
     columnHelper.accessor("receiptNumber", {
       header: ({ column }) => (
         <Button
@@ -90,19 +83,31 @@ export function getPaymentsColumns({ onView }: PaymentsColumnsActions) {
       ),
       cell: ({ getValue }) => formatDate(getValue()),
     }),
-    columnHelper.accessor("entityName", {
-      id: "entity",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Entidad
-          <ArrowUpDown />
-        </Button>
-      ),
-      cell: ({ getValue }) => getValue(),
-    }),
+    columnHelper.accessor(
+      (payment) => `${payment.entityName} ${payment.methodName}`,
+      {
+        id: "entity",
+        header: ({ column }) => (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            {direction === "INGRESO"
+              ? "Método pago/Cliente"
+              : "Método pago/Proveedor"}
+            <ArrowUpDown />
+          </Button>
+        ),
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <span>{row.original.entityName || "Sin entidad asignada"}</span>
+            <span className="text-xs text-muted-foreground">
+              {row.original.methodName}
+            </span>
+          </div>
+        ),
+      }
+    ),
     columnHelper.accessor("amount", {
       header: ({ column }) => (
         <Button
@@ -114,19 +119,6 @@ export function getPaymentsColumns({ onView }: PaymentsColumnsActions) {
         </Button>
       ),
       cell: ({ getValue }) => formatCurrency(getValue()),
-    }),
-    columnHelper.accessor((payment) => payment.methodName, {
-      id: "method",
-      header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Método
-          <ArrowUpDown />
-        </Button>
-      ),
-      cell: ({ getValue }) => getValue(),
     }),
     columnHelper.accessor(
       (payment) => getOptionLabel(PAYMENT_STATUSES, payment.status),
@@ -141,7 +133,7 @@ export function getPaymentsColumns({ onView }: PaymentsColumnsActions) {
             <ArrowUpDown />
           </Button>
         ),
-        cell: ({ getValue }) => getValue(),
+        cell: ({ row }) => <ReceiptStatusBadge status={row.original.status} />,
       }
     ),
     columnHelper.display({

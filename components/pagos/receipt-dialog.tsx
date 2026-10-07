@@ -94,7 +94,6 @@ function ReceiptContent({
       <div className="my-2 border-t border-dashed border-black" />
 
       <ReceiptRow label="Nro" value={detail.receiptNumber} strong />
-      <ReceiptRow label="Emisión" value={formatDate(detail.issueDate)} />
       <ReceiptRow label="Fecha de pago" value={formatDate(detail.paymentDate)} />
       <ReceiptRow label="Entidad" value={entityName} />
       <ReceiptRow label="Cuenta" value={detail.cashAccountName} />

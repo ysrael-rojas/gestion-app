@@ -10,6 +10,7 @@ export const PAYMENT_DIRECTIONS: SelectOption<PaymentDirection>[] = [
 ];
 
 export const PAYMENT_STATUSES: SelectOption<PaymentStatus>[] = [
-  { value: "REGISTRADO", label: "Registrado" },
+  { value: "EN_REVISION", label: "En revisión" },
+  { value: "PROCESADO", label: "Procesado" },
   { value: "ANULADO", label: "Anulado" },
 ];

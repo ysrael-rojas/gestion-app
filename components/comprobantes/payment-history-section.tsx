@@ -47,17 +47,15 @@ interface PaymentHistorySectionProps {
 }
 
 function StatusBadge({ status }: { status: PaymentStatus }) {
-  const isRegistered = status === "REGISTRADO";
+  const className =
+    status === "PROCESADO"
+      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+      : status === "EN_REVISION"
+        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+        : "text-muted-foreground";
 
   return (
-    <Badge
-      variant="outline"
-      className={
-        isRegistered
-          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-          : "text-muted-foreground"
-      }
-    >
+    <Badge variant="outline" className={className}>
       {getOptionLabel(PAYMENT_STATUSES, status)}
     </Badge>
   );

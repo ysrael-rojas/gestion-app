@@ -21,6 +21,7 @@ import { usePagos } from "@/components/pagos/pagos-provider";
 import { PaymentModal } from "@/components/pagos/payment-modal";
 import { PaymentDetailModal } from "@/components/pagos/payment-detail-modal";
 import { ReceiptDialog } from "@/components/pagos/receipt-dialog";
+import { PaymentsListingsToolbar } from "@/components/pagos/payments-listings-toolbar";
 import {
   useEntityNameResolver,
   type EntityNameResolver,
@@ -39,6 +40,10 @@ import { listOpenVouchers, listUnassignedPayments } from "@/lib/pagos/cartera";
 import { isOverdue } from "@/lib/pagos/saldos";
 import type { PaymentFormValues } from "@/lib/schemas/payment";
 import { formatCurrency, formatDate, getTodayLocalDate } from "@/lib/utils";
+import {
+  applyListadoFilters,
+  type ListadoFilters,
+} from "@/lib/filters/listado-filters";
 
 const SKELETON_ROWS = 5;
 
@@ -152,6 +157,7 @@ function VouchersTable({
 
 interface PaymentsViewProps {
   direction: PaymentDirection;
+  filters: ListadoFilters<string>;
   initialEntityId?: string;
   initialComprobanteId?: string;
   initialFilter?: PaymentsFilter;
@@ -159,6 +165,7 @@ interface PaymentsViewProps {
 
 export function PaymentsView({
   direction,
+  filters,
   initialEntityId,
   initialComprobanteId,
   initialFilter,
@@ -241,8 +248,8 @@ export function PaymentsView({
   }
 
   const data = useMemo<PaymentsRow[]>(
-    () =>
-      payments
+    () => {
+      const rows = payments
         .filter((payment) => payment.direction === direction)
         .filter((payment) =>
           filter === "sin-asignar"
@@ -252,8 +259,11 @@ export function PaymentsView({
         .map((payment) => ({
           ...payment,
           entityName: resolveName(payment.entityId),
-        })),
-    [payments, direction, resolveName, filter, unassignedIds]
+        }));
+
+      return applyListadoFilters(rows, filters, { dateField: "paymentDate" });
+    },
+    [payments, direction, resolveName, filter, unassignedIds, filters]
   );
 
   const visibleVouchers = useMemo(() => {
@@ -269,8 +279,8 @@ export function PaymentsView({
   }, [vouchers, filter, today]);
 
   const columns = useMemo(
-    () => getPaymentsColumns({ onView: openView }),
-    [openView]
+    () => getPaymentsColumns({ onView: openView, direction }),
+    [openView, direction]
   );
 
   const table = useTable({
@@ -299,7 +309,7 @@ export function PaymentsView({
       </div>
 
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-4">
+        <PaymentsListingsToolbar>
           <Input
             placeholder={labels.search}
             value={globalFilter}
@@ -307,7 +317,7 @@ export function PaymentsView({
             className="max-w-sm"
           />
           <Button onClick={() => setModalOpen(true)}>Registrar pago</Button>
-        </div>
+        </PaymentsListingsToolbar>
 
         {filter !== "todas" ? (
           <div className="flex items-center gap-2">
