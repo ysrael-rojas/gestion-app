@@ -1,6 +1,6 @@
 # SPEC 26 — Recibos de ingreso/egreso: ciclo de vida, filtros y asignación interactiva
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 09, SPEC 17, SPEC 23, SPEC 25
 > **Date:** 2026-10-07
 > **Objective:** Reestructurar los recibos en BD con un ciclo de vida "En revisión"/"Procesado" (eliminando la fecha de emisión), agregar filtros de fecha y estado a los listados de ingresos/egresos con una columna combinada Método pago/Entidad, y renovar el registro de pagos con defaults "Seleccionar" y una asignación interactiva con Auto-distribuir.
