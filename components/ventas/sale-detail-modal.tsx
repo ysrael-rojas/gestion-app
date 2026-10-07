@@ -10,7 +10,6 @@ import {
   CardContent,
   CardFooter,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -19,8 +18,15 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import type { Client } from "@/components/clientes/types";
 import { PaymentHistorySection } from "@/components/comprobantes/payment-history-section";
+import { VoucherAmountsBand } from "@/components/comprobantes/voucher-amounts-band";
 import { ReceiptDialog } from "@/components/pagos/receipt-dialog";
 import type { Sale } from "@/components/ventas/types";
 import {
@@ -29,7 +35,7 @@ import {
   SALE_STATUSES,
   VOUCHER_TYPES,
 } from "@/lib/data/sale-options";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 interface SaleDetailModalProps {
   open: boolean;
@@ -80,85 +86,83 @@ export function SaleDetailModal({
               </DialogDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <Card className="bg-muted/30 ring-0">
-                <CardHeader>
-                  <CardTitle>Datos del comprobante</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <DetailField
-                      label="Fecha de emisión"
-                      value={formatDate(sale.issueDate)}
-                    />
-                    <DetailField
-                      label="Fecha de registro"
-                      value={formatDate(sale.registrationDate)}
-                    />
-                    <DetailField
-                      label="Tipo de comprobante"
-                      value={getOptionLabel(VOUCHER_TYPES, sale.voucherType)}
-                    />
-                    <DetailField
-                      label="Nro comprobante"
-                      value={sale.voucherNumber}
-                    />
-                    <div className="sm:col-span-2">
-                      <DetailField
-                        label="Cliente"
-                        value={getClientName(clients, sale.entityId)}
-                      />
-                    </div>
-                    <DetailField
-                      label="Condición"
-                      value={getOptionLabel(PAYMENT_TYPES, sale.paymentType)}
-                    />
-                    <DetailField
-                      label="Días de crédito"
-                      value={
-                        sale.creditDays != null ? String(sale.creditDays) : ""
-                      }
-                    />
-                    <DetailField
-                      label="Fecha de vencimiento"
-                      value={sale.dueDate ? formatDate(sale.dueDate) : ""}
-                    />
-                    <DetailField
-                      label="Estado"
-                      value={getOptionLabel(SALE_STATUSES, sale.status)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-muted/30 ring-0">
-                <CardHeader>
-                  <CardTitle>Montos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <DetailField
-                      label="Subtotal"
-                      value={formatCurrency(sale.subtotal)}
-                    />
-                    <DetailField
-                      label="IGV 18 %"
-                      value={formatCurrency(sale.igv)}
-                    />
-                    <div className="sm:col-span-2">
-                      <DetailField
-                        label="Total"
-                        value={formatCurrency(sale.total)}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <PaymentHistorySection
-                comprobanteId={sale.id}
-                direction="INGRESO"
-                onPrint={setPrintingPaymentId}
+              <VoucherAmountsBand
+                total={sale.total}
+                paidAmount={sale.paidAmount}
+                balance={sale.balance}
               />
+
+              <Tabs defaultValue="datos">
+                <TabsList>
+                  <TabsTrigger value="datos">Datos del comprobante</TabsTrigger>
+                  <TabsTrigger value="pagos">Historial de pagos</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="datos">
+                  <Card className="bg-muted/30 ring-0">
+                    <CardContent>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <DetailField
+                          label="Fecha de emisión"
+                          value={formatDate(sale.issueDate)}
+                        />
+                        <DetailField
+                          label="Fecha de registro"
+                          value={formatDate(sale.registrationDate)}
+                        />
+                        <DetailField
+                          label="Tipo de comprobante"
+                          value={getOptionLabel(
+                            VOUCHER_TYPES,
+                            sale.voucherType
+                          )}
+                        />
+                        <DetailField
+                          label="Nro comprobante"
+                          value={sale.voucherNumber}
+                        />
+                        <div className="sm:col-span-2">
+                          <DetailField
+                            label="Cliente"
+                            value={getClientName(clients, sale.entityId)}
+                          />
+                        </div>
+                        <DetailField
+                          label="Condición"
+                          value={getOptionLabel(
+                            PAYMENT_TYPES,
+                            sale.paymentType
+                          )}
+                        />
+                        <DetailField
+                          label="Días de crédito"
+                          value={
+                            sale.creditDays != null
+                              ? String(sale.creditDays)
+                              : ""
+                          }
+                        />
+                        <DetailField
+                          label="Fecha de vencimiento"
+                          value={sale.dueDate ? formatDate(sale.dueDate) : ""}
+                        />
+                        <DetailField
+                          label="Estado"
+                          value={getOptionLabel(SALE_STATUSES, sale.status)}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="pagos">
+                  <PaymentHistorySection
+                    comprobanteId={sale.id}
+                    direction="INGRESO"
+                    onPrint={setPrintingPaymentId}
+                  />
+                </TabsContent>
+              </Tabs>
             </CardContent>
             <CardFooter className="justify-end gap-2">
               {sale.status === "PENDIENTE" ? (

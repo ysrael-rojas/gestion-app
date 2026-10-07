@@ -21,6 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type {
   PaymentDirection,
   PaymentHistoryEntry,
@@ -118,72 +124,81 @@ export function PaymentHistorySection({
   }, [comprobanteId, direction]);
 
   return (
-    <Card className="bg-muted/30 ring-0">
-      <CardHeader>
-        <CardTitle>Historial de pagos</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {error ? (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
-          </p>
-        ) : !isLoading && entries.length === 0 ? (
-          <div className="flex flex-col items-center gap-1 py-6 text-center">
-            <p className="text-sm font-medium">
-              Aún no se han registrado pagos para este comprobante.
+    <TooltipProvider>
+      <Card className="bg-muted/30 ring-0">
+        <CardHeader>
+          <CardTitle>Historial de pagos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {error ? (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
             </p>
-            <p className="text-sm text-muted-foreground">
-              Puedes registrar uno desde el botón Registrar pago de arriba.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-md border bg-background">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha de pago</TableHead>
-                  <TableHead>Recibo</TableHead>
-                  <TableHead>Método</TableHead>
-                  <TableHead className="text-right">Importe asignado</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <LoadingRows />
-                ) : (
-                  entries.map((entry) => (
-                    <TableRow key={entry.allocationId}>
-                      <TableCell>{formatDate(entry.paymentDate)}</TableCell>
-                      <TableCell>{entry.receiptNumber}</TableCell>
-                      <TableCell>
-                        {entry.methodName}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(entry.amount)}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={entry.status} />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onPrint(entry.paymentId)}
-                        >
-                          <Printer />
-                          Imprimir recibo
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          ) : !isLoading && entries.length === 0 ? (
+            <div className="flex flex-col items-center gap-1 py-6 text-center">
+              <p className="text-sm font-medium">
+                Aún no se han registrado pagos para este comprobante.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Puedes registrar uno desde el botón Registrar pago de arriba.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-md border bg-background">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Fecha de pago</TableHead>
+                    <TableHead>Recibo</TableHead>
+                    <TableHead>Método</TableHead>
+                    <TableHead className="text-right">
+                      Importe asignado
+                    </TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <LoadingRows />
+                  ) : (
+                    entries.map((entry) => (
+                      <TableRow key={entry.allocationId}>
+                        <TableCell>{formatDate(entry.paymentDate)}</TableCell>
+                        <TableCell>{entry.receiptNumber}</TableCell>
+                        <TableCell>{entry.methodName}</TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(entry.amount)}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={entry.status} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <Button
+                                  variant="outline"
+                                  size="icon-sm"
+                                  onClick={() => onPrint(entry.paymentId)}
+                                />
+                              }
+                            >
+                              <Printer />
+                              <span className="sr-only">Imprimir recibo</span>
+                            </TooltipTrigger>
+                            <TooltipContent>Imprimir recibo</TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 }
