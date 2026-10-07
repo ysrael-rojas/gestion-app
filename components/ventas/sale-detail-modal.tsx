@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Wallet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -165,19 +163,6 @@ export function SaleDetailModal({
               </Tabs>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-              {sale.status === "PENDIENTE" ? (
-                <Button
-                  nativeButton={false}
-                  render={
-                    <Link
-                      href={`/pagos/ingresos?entityId=${sale.entityId}&comprobanteId=${sale.id}`}
-                    />
-                  }
-                >
-                  <Wallet />
-                  Registrar pago
-                </Button>
-              ) : null}
               <DialogClose render={<Button variant="outline" />}>
                 Cerrar
               </DialogClose>
