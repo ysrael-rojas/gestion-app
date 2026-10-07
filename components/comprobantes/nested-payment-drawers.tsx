@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Drawer,
   DrawerContent,
@@ -13,7 +16,12 @@ import {
 } from "@/components/ui/drawer";
 import type { PaymentDirection } from "@/components/pagos/types";
 import type { PaymentType, VoucherType } from "@/components/ventas/types";
-import { getTodayLocalDate } from "@/lib/utils";
+import {
+  getOptionLabel,
+  PAYMENT_TYPES,
+  VOUCHER_TYPES,
+} from "@/lib/data/sale-options";
+import { formatDate, getTodayLocalDate } from "@/lib/utils";
 
 type WizardStep = 1 | 2 | 3 | 4;
 
@@ -96,6 +104,60 @@ function createInitialDraft({
   };
 }
 
+const ENTITY_LABELS: Record<PaymentDirection, string> = {
+  INGRESO: "Cliente",
+  EGRESO: "Proveedor",
+};
+
+interface VoucherSummaryProps {
+  voucherType: VoucherType;
+  voucherNumber: string;
+  issueDate: string;
+  condition: PaymentType;
+  dueDate: string | null;
+}
+
+/** Cabecera del comprobante: tipo + número destacados y contexto de emisión. */
+function VoucherSummary({
+  voucherType,
+  voucherNumber,
+  issueDate,
+  condition,
+  dueDate,
+}: VoucherSummaryProps) {
+  const items = [
+    { label: "Emisión", value: formatDate(issueDate) },
+    { label: "Condición", value: getOptionLabel(PAYMENT_TYPES, condition) },
+    {
+      label: "Vencimiento",
+      value: dueDate ? formatDate(dueDate) : "—",
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <Badge variant="secondary">
+          {getOptionLabel(VOUCHER_TYPES, voucherType)}
+        </Badge>
+        <span className="text-lg font-semibold tabular-nums">
+          {voucherNumber}
+        </span>
+      </div>
+      <dl className="grid grid-cols-3 gap-2">
+        {items.map((item) => (
+          <div key={item.label} className="flex flex-col gap-0.5">
+            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              {item.label}
+            </dt>
+            <dd className="text-sm font-medium tabular-nums">{item.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 interface PanelBodyProps {
   step: WizardStep;
   children?: React.ReactNode;
@@ -158,6 +220,12 @@ export function NestedPaymentDrawers({
   open,
   onOpenChange,
   direction,
+  entityName,
+  voucherType,
+  voucherNumber,
+  issueDate,
+  condition,
+  dueDate,
   entityId,
   comprobanteId,
   balance,
@@ -166,6 +234,10 @@ export function NestedPaymentDrawers({
   const [draft, setDraft] = useState<PaymentWizardState>(() =>
     createInitialDraft({ entityId, comprobanteId, direction, balance })
   );
+
+  const updateDraft = (patch: Partial<PaymentWizardState>) => {
+    setDraft((current) => ({ ...current, ...patch }));
+  };
 
   const wasOpen = useRef(open);
   useEffect(() => {
@@ -200,10 +272,39 @@ export function NestedPaymentDrawers({
           onCancel={() => handleRootOpenChange(false)}
           onNext={() => setStep(2)}
         >
-          <p className="text-sm text-muted-foreground">
-            Panel 1 — datos del comprobante (paso 3). Fecha de pago actual:{" "}
-            {draft.paymentDate}.
-          </p>
+          <div className="flex flex-col gap-5">
+            <VoucherSummary
+              voucherType={voucherType}
+              voucherNumber={voucherNumber}
+              issueDate={issueDate}
+              condition={condition}
+              dueDate={dueDate}
+            />
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="payment-entity">
+                {ENTITY_LABELS[direction]}
+              </Label>
+              <Input
+                id="payment-entity"
+                value={entityName}
+                readOnly
+                disabled
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="payment-date">Fecha de pago</Label>
+              <Input
+                id="payment-date"
+                type="date"
+                value={draft.paymentDate}
+                onChange={(event) =>
+                  updateDraft({ paymentDate: event.target.value })
+                }
+              />
+            </div>
+          </div>
         </PanelBody>
 
         <Drawer
