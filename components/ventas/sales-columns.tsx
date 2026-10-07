@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   columnFilteringFeature,
   createColumnHelper,
@@ -61,9 +60,14 @@ const columnHelper = createColumnHelper<SalesTableFeatures, SalesRow>();
 interface SalesColumnsActions {
   onView: (sale: Sale) => void;
   onEdit: (sale: Sale) => void;
+  onRegisterPayment: (sale: Sale) => void;
 }
 
-export function getSalesColumns({ onView, onEdit }: SalesColumnsActions) {
+export function getSalesColumns({
+  onView,
+  onEdit,
+  onRegisterPayment,
+}: SalesColumnsActions) {
   return columnHelper.columns([
     columnHelper.accessor("issueDate", {
       header: ({ column }) => (
@@ -201,12 +205,7 @@ export function getSalesColumns({ onView, onEdit }: SalesColumnsActions) {
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        nativeButton={false}
-                        render={
-                          <Link
-                            href={`/pagos/ingresos?entityId=${sale.entityId}&comprobanteId=${sale.id}`}
-                          />
-                        }
+                        onClick={() => onRegisterPayment(sale)}
                       />
                     }
                   >
