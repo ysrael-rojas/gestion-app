@@ -1,6 +1,6 @@
 # SPEC 24 — Rediseño del modal de detalle de comprobantes: banda de montos y pestañas
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 14, SPEC 23
 > **Date:** 2026-10-07
 > **Objective:** Al pulsar "Ver" en ventas y compras, el modal de detalle muestra arriba una banda con Total del comprobante, Monto abonado y Saldo por pagar, y organiza el resto en dos pestañas con Tabs ("Datos del comprobante" e "Historial de pagos"); el botón de acción del historial pasa a solo icono con Tooltip.
@@ -79,17 +79,17 @@ Banda de montos (diseño acordado):
 
 ## Acceptance criteria
 
-- [ ] Al abrir el detalle de una venta o compra, lo primero visible del contenido es la banda con `Total del comprobante`, `Monto abonado` y `Saldo por pagar`, con los valores de `total`, `paidAmount` y `balance` formateados con `formatCurrency`.
-- [ ] `Monto abonado` se muestra en verde y `Saldo por pagar` en ámbar cuando `balance > 0` y en verde cuando `balance === 0`.
-- [ ] La banda vive en un componente compartido (`voucher-amounts-band.tsx`) usado por ambos modales.
-- [ ] El modal tiene dos pestañas con las etiquetas exactas `Datos del comprobante` e `Historial de pagos`, y la pestaña activa por defecto es la primera.
-- [ ] En la pestaña "Datos del comprobante" aparecen los 9 `DetailField` actuales (Fecha de emisión, Fecha de registro, Tipo de comprobante, Nro comprobante, Cliente/Proveedor, Condición, Días de crédito, Fecha de vencimiento, Estado).
-- [ ] El card "Montos" (Subtotal, IGV 18 %, Total) ya no existe en ningún modal de detalle.
-- [ ] En la pestaña "Historial de pagos" se ve el historial con sus columnas actuales y datos cargados.
-- [ ] El botón de acción del historial es solo icono (`Printer`), con tooltip visible "Imprimir recibo", y sigue imprimiendo el recibo correspondiente.
-- [ ] El footer del modal sigue mostrando "Registrar pago" (solo PENDIENTE) con el link a `/pagos/ingresos` o `/pagos/egresos` y "Cerrar".
-- [ ] `components/ui/tabs.tsx` existe (instalado vía shadcn) y no se corrió `shadcn init`.
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan.
+- [x] Al abrir el detalle de una venta o compra, lo primero visible del contenido es la banda con `Total del comprobante`, `Monto abonado` y `Saldo por pagar`, con los valores de `total`, `paidAmount` y `balance` formateados con `formatCurrency`.
+- [x] `Monto abonado` se muestra en verde y `Saldo por pagar` en ámbar cuando `balance > 0` y en verde cuando `balance === 0`.
+- [x] La banda vive en un componente compartido (`voucher-amounts-band.tsx`) usado por ambos modales.
+- [x] El modal tiene dos pestañas con las etiquetas exactas `Datos del comprobante` e `Historial de pagos`, y la pestaña activa por defecto es la primera.
+- [x] En la pestaña "Datos del comprobante" aparecen los 9 `DetailField` actuales (Fecha de emisión, Fecha de registro, Tipo de comprobante, Nro comprobante, Cliente/Proveedor, Condición, Días de crédito, Fecha de vencimiento, Estado).
+- [x] El card "Montos" (Subtotal, IGV 18 %, Total) ya no existe en ningún modal de detalle.
+- [x] En la pestaña "Historial de pagos" se ve el historial con sus columnas actuales y datos cargados.
+- [x] El botón de acción del historial es solo icono (`Printer`), con tooltip visible "Imprimir recibo", y sigue imprimiendo el recibo correspondiente.
+- [x] El footer del modal sigue mostrando "Registrar pago" (solo PENDIENTE) con el link a `/pagos/ingresos` o `/pagos/egresos` y "Cerrar".
+- [x] `components/ui/tabs.tsx` existe (instalado vía shadcn) y no se corrió `shadcn init`.
+- [x] `npm run lint`, `npm test` y `npm run build` pasan.
 
 ## Decisions
 
