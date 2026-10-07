@@ -478,8 +478,12 @@ export function NestedPaymentDrawers({
   };
 
   return (
-    <Drawer open={open} onOpenChange={handleRootOpenChange}>
-      <DrawerContent className="sm:mx-auto sm:max-w-xl">
+    <Drawer
+      open={open}
+      onOpenChange={handleRootOpenChange}
+      swipeDirection="right"
+    >
+      <DrawerContent className="[--drawer-inset:0.75rem] [--bleed:0rem] rounded-xl sm:[--drawer-content-width:30rem]!">
         <PanelBody
           step={1}
           onCancel={() => handleRootOpenChange(false)}
@@ -524,8 +528,12 @@ export function NestedPaymentDrawers({
         <Drawer
           open={step >= 2}
           onOpenChange={handleNestedOpenChange(1)}
+          swipeDirection="right"
         >
-          <DrawerContent showOverlay={false} className="sm:mx-auto sm:max-w-xl">
+          <DrawerContent
+            showOverlay={false}
+            className="[--drawer-inset:0.75rem] [--bleed:0rem] rounded-xl sm:[--drawer-content-width:30rem]!"
+          >
             <PanelBody
               step={2}
               onBack={() => goToStep(1)}
@@ -609,10 +617,11 @@ export function NestedPaymentDrawers({
             <Drawer
               open={step >= 3}
               onOpenChange={handleNestedOpenChange(2)}
+              swipeDirection="right"
             >
               <DrawerContent
                 showOverlay={false}
-                className="sm:mx-auto sm:max-w-xl"
+                className="[--drawer-inset:0.75rem] [--bleed:0rem] rounded-xl sm:[--drawer-content-width:30rem]!"
               >
                 <PanelBody
                   step={3}
@@ -668,10 +677,11 @@ export function NestedPaymentDrawers({
                 <Drawer
                   open={step >= 4}
                   onOpenChange={handleNestedOpenChange(3)}
+                  swipeDirection="right"
                 >
                   <DrawerContent
                     showOverlay={false}
-                    className="sm:mx-auto sm:max-w-xl"
+                    className="[--drawer-inset:0.75rem] [--bleed:0rem] rounded-xl sm:[--drawer-content-width:30rem]!"
                   >
                     <PanelBody
                       step={4}
