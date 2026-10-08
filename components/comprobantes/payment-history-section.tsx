@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  createColumnHelper,
+  createPaginatedRowModel,
+  rowPaginationFeature,
+  tableFeatures,
+  useTable,
+} from "@tanstack/react-table";
 import { Printer } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import {
   Tooltip,
   TooltipContent,
@@ -39,6 +47,17 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 
 const COLUMNS_COUNT = 6;
 const SKELETON_ROWS = 3;
+const DEFAULT_PAGE_SIZE = 10;
+
+const historyTableFeatures = tableFeatures({
+  rowPaginationFeature,
+  paginatedRowModel: createPaginatedRowModel(),
+});
+
+const historyColumnHelper = createColumnHelper<
+  typeof historyTableFeatures,
+  PaymentHistoryEntry
+>();
 
 interface PaymentHistorySectionProps {
   comprobanteId: string;
@@ -85,6 +104,70 @@ export function PaymentHistorySection({
   const [entries, setEntries] = useState<PaymentHistoryEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const columns = useMemo(
+    () =>
+      historyColumnHelper.columns([
+        historyColumnHelper.accessor("paymentDate", {
+          header: "Fecha de pago",
+          cell: ({ getValue }) => formatDate(getValue()),
+        }),
+        historyColumnHelper.accessor("receiptNumber", {
+          header: "Recibo",
+          cell: ({ getValue }) => getValue(),
+        }),
+        historyColumnHelper.accessor("methodName", {
+          header: "Método",
+          cell: ({ getValue }) => getValue(),
+        }),
+        historyColumnHelper.accessor("amount", {
+          header: () => <div className="text-right">Importe asignado</div>,
+          cell: ({ getValue }) => (
+            <div className="text-right">{formatCurrency(getValue())}</div>
+          ),
+        }),
+        historyColumnHelper.accessor("status", {
+          header: "Estado",
+          cell: ({ getValue }) => <StatusBadge status={getValue()} />,
+        }),
+        historyColumnHelper.display({
+          id: "actions",
+          header: () => <div className="text-right">Acciones</div>,
+          cell: ({ row }) => (
+            <div className="text-right">
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      onClick={() => onPrint(row.original.paymentId)}
+                    />
+                  }
+                >
+                  <Printer />
+                  <span className="sr-only">Imprimir recibo</span>
+                </TooltipTrigger>
+                <TooltipContent>Imprimir recibo</TooltipContent>
+              </Tooltip>
+            </div>
+          ),
+        }),
+      ]),
+    [onPrint]
+  );
+
+  const table = useTable({
+    features: historyTableFeatures,
+    data: entries,
+    columns,
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: DEFAULT_PAGE_SIZE,
+      },
+    },
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -142,57 +225,41 @@ export function PaymentHistorySection({
               </p>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-md border bg-background">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Fecha de pago</TableHead>
-                    <TableHead>Recibo</TableHead>
-                    <TableHead>Método</TableHead>
-                    <TableHead className="text-right">
-                      Importe asignado
-                    </TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <LoadingRows />
-                  ) : (
-                    entries.map((entry) => (
-                      <TableRow key={entry.allocationId}>
-                        <TableCell>{formatDate(entry.paymentDate)}</TableCell>
-                        <TableCell>{entry.receiptNumber}</TableCell>
-                        <TableCell>{entry.methodName}</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(entry.amount)}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={entry.status} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Tooltip>
-                            <TooltipTrigger
-                              render={
-                                <Button
-                                  variant="outline"
-                                  size="icon-sm"
-                                  onClick={() => onPrint(entry.paymentId)}
-                                />
-                              }
-                            >
-                              <Printer />
-                              <span className="sr-only">Imprimir recibo</span>
-                            </TooltipTrigger>
-                            <TooltipContent>Imprimir recibo</TooltipContent>
-                          </Tooltip>
-                        </TableCell>
+            <div className="flex flex-col gap-4">
+              <div className="overflow-hidden rounded-md border bg-background">
+                <Table>
+                  <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <TableHead key={header.id}>
+                            {header.isPlaceholder ? null : (
+                              <table.FlexRender header={header} />
+                            )}
+                          </TableHead>
+                        ))}
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading ? (
+                      <LoadingRows />
+                    ) : (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id}>
+                          {row.getAllCells().map((cell) => (
+                            <TableCell key={cell.id}>
+                              <table.FlexRender cell={cell} />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <DataTablePagination table={table} />
             </div>
           )}
         </CardContent>
