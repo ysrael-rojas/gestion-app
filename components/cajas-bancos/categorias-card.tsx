@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check, Pencil, Plus, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
+import { CategoriasDataTable } from "@/components/cajas-bancos/categorias-data-table";
+import { CategoriasModal } from "@/components/cajas-bancos/categorias-modal";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,17 +13,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
-  createCategory,
-  listCategories,
-  updateCategory,
-} from "@/lib/caja/caja";
-import { cashReceiptCategorySchema } from "@/lib/schemas/cash-receipt-category";
-import type {
-  CashReceiptCategory,
-  PaymentDirection,
-} from "@/components/pagos/types";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { CashReceiptCategory } from "@/components/pagos/types";
+import { listCategories, updateCategory } from "@/lib/caja/caja";
+
+type CategoryStatusFilter = "all" | "active" | "inactive";
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error
@@ -31,18 +32,16 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function CategoriasCard() {
-  const [direction, setDirection] = useState<PaymentDirection>("INGRESO");
   const [categories, setCategories] = useState<CashReceiptCategory[]>([]);
+  const [statusFilter, setStatusFilter] =
+    useState<CategoryStatusFilter>("all");
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [name, setName] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  async function reload(current: PaymentDirection) {
-    const data = await listCategories(current, false);
+  const reload = useCallback(async () => {
+    const data = await listCategories(undefined, false);
     setCategories(data);
-  }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -50,7 +49,7 @@ export function CategoriasCard() {
     void (async () => {
       setIsLoading(true);
       try {
-        const data = await listCategories(direction, false);
+        const data = await listCategories(undefined, false);
         if (isMounted) {
           setCategories(data);
         }
@@ -68,58 +67,51 @@ export function CategoriasCard() {
     return () => {
       isMounted = false;
     };
-  }, [direction]);
+  }, []);
 
-  async function handleCreate() {
-    const parsed = cashReceiptCategorySchema.safeParse({
-      direction,
-      name,
-      isActive: true,
-    });
+  const filteredCategories = useMemo(
+    () =>
+      categories.filter((category) => {
+        if (statusFilter === "active") {
+          return category.isActive;
+        }
+        if (statusFilter === "inactive") {
+          return !category.isActive;
+        }
+        return true;
+      }),
+    [categories, statusFilter]
+  );
 
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Datos inválidos.");
-      return;
-    }
+  const handleRename = useCallback(
+    async (category: CashReceiptCategory, name: string) => {
+      if (!name.trim()) {
+        toast.error("El nombre es obligatorio.");
+        return;
+      }
 
-    setIsSaving(true);
-    try {
-      await createCategory(parsed.data);
-      await reload(direction);
-      setName("");
-      toast.success("Categoría agregada");
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    } finally {
-      setIsSaving(false);
-    }
-  }
+      try {
+        await updateCategory(category.id, { name: name.trim() });
+        await reload();
+        toast.success("Categoría actualizada.");
+      } catch (error) {
+        toast.error(getErrorMessage(error));
+      }
+    },
+    [reload]
+  );
 
-  async function handleToggle(category: CashReceiptCategory) {
-    try {
-      await updateCategory(category.id, { isActive: !category.isActive });
-      await reload(direction);
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  }
-
-  async function handleRename(category: CashReceiptCategory) {
-    if (!editingName.trim()) {
-      toast.error("El nombre es obligatorio.");
-      return;
-    }
-
-    try {
-      await updateCategory(category.id, { name: editingName.trim() });
-      await reload(direction);
-      setEditingId(null);
-      setEditingName("");
-      toast.success("Categoría actualizada");
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  }
+  const handleToggle = useCallback(
+    async (category: CashReceiptCategory) => {
+      try {
+        await updateCategory(category.id, { isActive: !category.isActive });
+        await reload();
+      } catch (error) {
+        toast.error(getErrorMessage(error));
+      }
+    },
+    [reload]
+  );
 
   return (
     <Card className="bg-muted/30 ring-0">
@@ -127,117 +119,42 @@ export function CategoriasCard() {
         <CardTitle>Categorías de recibos</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex gap-1">
-          <Button
-            variant={direction === "INGRESO" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setDirection("INGRESO")}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => {
+              if (value === "all" || value === "active" || value === "inactive") {
+                setStatusFilter(value);
+              }
+            }}
           >
-            Ingresos
-          </Button>
-          <Button
-            variant={direction === "EGRESO" ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setDirection("EGRESO")}
-          >
-            Egresos
-          </Button>
-        </div>
-
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground">Cargando…</p>
-        ) : (
-          <div className="flex flex-col divide-y rounded-md border bg-background">
-            {categories.length === 0 ? (
-              <p className="p-3 text-sm text-muted-foreground">
-                No hay categorías registradas.
-              </p>
-            ) : (
-              categories.map((category) => (
-                <div
-                  key={category.id}
-                  className="flex flex-wrap items-center justify-between gap-2 p-3"
-                >
-                  <Badge
-                    variant={category.isActive ? "outline" : "destructive"}
-                  >
-                    {category.isActive ? "Activa" : "Inactiva"}
-                  </Badge>
-
-                  {editingId === category.id ? (
-                    <div className="flex items-center gap-1">
-                      <Input
-                        value={editingName}
-                        onChange={(event) => setEditingName(event.target.value)}
-                        className="h-8 w-48"
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label="Guardar"
-                        onClick={() => void handleRename(category)}
-                      >
-                        <Check />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label="Cancelar"
-                        onClick={() => {
-                          setEditingId(null);
-                          setEditingName("");
-                        }}
-                      >
-                        <X />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium">{category.name}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label="Editar"
-                        onClick={() => {
-                          setEditingId(category.id);
-                          setEditingName(category.name);
-                        }}
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => void handleToggle(category)}
-                      >
-                        {category.isActive ? "Desactivar" : "Activar"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-        <div className="flex flex-wrap items-end gap-2">
-          <div className="flex flex-col gap-1">
-            <label className="text-xs text-muted-foreground" htmlFor="categoryName">
-              Nueva categoría
-            </label>
-            <Input
-              id="categoryName"
-              value={name}
-              placeholder="Cobranza de venta"
-              className="w-64"
-              onChange={(event) => setName(event.target.value)}
-            />
-          </div>
-          <Button onClick={() => void handleCreate()} disabled={isSaving}>
+            <SelectTrigger aria-label="Filtrar por estado" className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="active">Activa</SelectItem>
+              <SelectItem value="inactive">Inactiva</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={() => setIsModalOpen(true)}>
             <Plus />
             Agregar categoría
           </Button>
         </div>
+
+        <CategoriasDataTable
+          categories={filteredCategories}
+          isLoading={isLoading}
+          onRename={(category, name) => void handleRename(category, name)}
+          onToggle={(category) => void handleToggle(category)}
+        />
+
+        <CategoriasModal
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          onCreated={reload}
+        />
       </CardContent>
     </Card>
   );
