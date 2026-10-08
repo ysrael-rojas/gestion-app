@@ -14,6 +14,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useCajasBancos } from "@/components/cajas-bancos/cajas-bancos-provider";
 import { CashAccountModal } from "@/components/cajas-bancos/cash-account-modal";
 import { CashAccountsDataTable } from "@/components/cajas-bancos/cash-accounts-data-table";
@@ -25,6 +32,15 @@ function getErrorMessage(error: unknown): string {
     ? error.message
     : "Ocurrió un error inesperado. Intenta nuevamente.";
 }
+
+type AccountFilterValue = "ALL" | CashAccountType;
+
+// Combobox de filtro de tipo (reemplaza a los toggles Todos/Cajas/Bancos).
+const ACCOUNT_FILTER_ITEMS: { value: AccountFilterValue; label: string }[] = [
+  { value: "ALL", label: "Todos" },
+  { value: "CASH_BOX", label: "Caja" },
+  { value: "BANK_ACCOUNT", label: "Banco" },
+];
 
 interface CajasBancosListadoViewProps {
   defaultType?: CashAccountType;
@@ -38,7 +54,7 @@ export function CajasBancosListadoView({ defaultType }: CajasBancosListadoViewPr
   const [isSaving, setIsSaving] = useState(false);
   const [editing, setEditing] = useState<CashAccount | null>(null);
   const [toDelete, setToDelete] = useState<CashAccount | null>(null);
-  const [filterType, setFilterType] = useState<"ALL" | CashAccountType>("ALL");
+  const [filterType, setFilterType] = useState<AccountFilterValue>("ALL");
 
   const filtered = accounts.filter((a) =>
     filterType === "ALL" ? true : a.type === filterType
@@ -53,10 +69,11 @@ export function CajasBancosListadoView({ defaultType }: CajasBancosListadoViewPr
     ? `Administra tus ${defaultType === "BANK_ACCOUNT" ? "cuentas bancarias" : "cajas de efectivo"}.`
     : "Administra las cajas de efectivo y las cuentas bancarias de tu negocio.";
 
-  function openCreate(type: CashAccountType = "CASH_BOX") {
+  // Abre el modal de registro sin tipo preseleccionado ("Seleccionar") y
+  // sin tocar el filtro del listado.
+  function openCreate() {
     setEditing(null);
     setModalOpen(true);
-    setFilterType(type);
   }
 
   function openEdit(account: CashAccount) {
@@ -99,41 +116,30 @@ export function CajasBancosListadoView({ defaultType }: CajasBancosListadoViewPr
           <h1 className="text-2xl font-semibold">{heading}</h1>
           <p className="text-sm text-muted-foreground">{subtitle}</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-md border">
-            <Button
-              variant={filterType === "ALL" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilterType("ALL")}
-            >
-              Todos
-            </Button>
-            <Button
-              variant={filterType === "CASH_BOX" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilterType("CASH_BOX")}
-            >
-              Cajas
-            </Button>
-            <Button
-              variant={filterType === "BANK_ACCOUNT" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilterType("BANK_ACCOUNT")}
-            >
-              Bancos
-            </Button>
-          </div>
-          {!defaultType || defaultType === "CASH_BOX" ? (
-            <Button onClick={() => openCreate("CASH_BOX")}>
-              Registrar caja
-            </Button>
-          ) : null}
-          {!defaultType || defaultType === "BANK_ACCOUNT" ? (
-            <Button onClick={() => openCreate("BANK_ACCOUNT")}>
-              Registrar banco
-            </Button>
-          ) : null}
-        </div>
+      </div>
+
+      {/* Línea 1: filtro de tipo + registro, fuera y encima del datatable. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Select
+          value={filterType}
+          items={ACCOUNT_FILTER_ITEMS}
+          onValueChange={(value) => {
+            if (value === null) return;
+            setFilterType(value);
+          }}
+        >
+          <SelectTrigger aria-label="Filtrar por tipo">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {ACCOUNT_FILTER_ITEMS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button onClick={openCreate}>Registrar cuenta</Button>
       </div>
 
       <CashAccountsDataTable
@@ -151,7 +157,6 @@ export function CajasBancosListadoView({ defaultType }: CajasBancosListadoViewPr
           if (!open) setEditing(null);
         }}
         account={editing}
-        defaultType={editing ? editing.type : filterType === "ALL" ? (defaultType ?? "CASH_BOX") : filterType}
         onSave={handleSave}
         isSaving={isSaving}
       />

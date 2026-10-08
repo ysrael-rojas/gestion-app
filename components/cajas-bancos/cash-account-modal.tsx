@@ -1,5 +1,7 @@
 "use client";
 
+import { useWatch } from "react-hook-form";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,15 +20,15 @@ import {
 import {
   CASH_ACCOUNT_FORM_ID,
   CashAccountForm,
+  useCashAccountForm,
 } from "@/components/cajas-bancos/cash-account-form";
 import type { CashAccount } from "@/lib/cuentas/entidades";
-import type { CashAccountFormValues, CashAccountType } from "@/lib/schemas/cash-account";
+import type { CashAccountFormValues } from "@/lib/schemas/cash-account";
 
 interface CashAccountModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   account: CashAccount | null;
-  defaultType?: CashAccountType;
   onSave: (values: CashAccountFormValues) => void;
   isSaving?: boolean;
 }
@@ -35,18 +37,18 @@ export function CashAccountModal({
   open,
   onOpenChange,
   account,
-  defaultType = "CASH_BOX",
   onSave,
   isSaving = false,
 }: CashAccountModalProps) {
+  const form = useCashAccountForm({ open, account });
+  // Sin tipo elegido ("Seleccionar") no se puede registrar la cuenta.
+  const type = useWatch({ control: form.control, name: "type" });
   const isEditing = account !== null;
   const title = isEditing
     ? account?.type === "BANK_ACCOUNT"
       ? "Editar banco"
       : "Editar caja"
-    : defaultType === "BANK_ACCOUNT"
-      ? "Registrar banco"
-      : "Registrar caja";
+    : "Registrar cuenta";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -61,11 +63,7 @@ export function CashAccountModal({
             </DialogDescription>
           </CardHeader>
           <CardContent>
-            <CashAccountForm
-              account={account}
-              defaultType={defaultType}
-              onSubmit={onSave}
-            />
+            <CashAccountForm form={form} onSubmit={onSave} />
           </CardContent>
           <CardFooter className="justify-end gap-2">
             <DialogClose render={<Button variant="outline" />}>
@@ -74,7 +72,7 @@ export function CashAccountModal({
             <Button
               type="submit"
               form={CASH_ACCOUNT_FORM_ID}
-              disabled={isSaving}
+              disabled={isSaving || !type}
             >
               {isEditing ? "Guardar cambios" : "Registrar"}
             </Button>

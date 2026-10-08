@@ -65,7 +65,10 @@ export const cashAccountSchema = baseCashAccountSchema
 
 export const cashAccountFormSchema = z
   .object({
-    type: cashAccountTypeSchema,
+    // Opcional para poder abrir el modal sin tipo preseleccionado
+    // ("Seleccionar"); el superRefine de abajo obliga a elegir uno antes
+    // de guardar.
+    type: cashAccountTypeSchema.optional(),
     name: requiredText("Nombre"),
     currency: z
       .string()
@@ -88,6 +91,13 @@ export const cashAccountFormSchema = z
     isActive: z.boolean().default(true),
   })
   .superRefine((data, ctx) => {
+    if (!data.type) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["type"],
+        message: "Selecciona el tipo de cuenta",
+      });
+    }
     if (data.name.trim().length === 0) {
       ctx.addIssue({
         code: "custom",
@@ -145,6 +155,10 @@ export const cashAccountFormSchema = z
   })
   .transform((data) => ({
     ...data,
+    // El superRefine garantiza que `type` esté definido: si falta, el parse
+    // falla y este transform no se ejecuta. El cast asegura que la salida
+    // (`CashAccountFormValues`) siga tipando `type: CashAccountType`.
+    type: data.type as CashAccountType,
     name: data.name.trim(),
     currency: data.currency.trim().toUpperCase() || "PEN",
     bankName: data.bankName?.trim() || undefined,
