@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { useTable, type SortingState } from "@tanstack/react-table";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -14,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import type { Client } from "@/components/clientes/types";
 import {
   clientsTableFeatures,
@@ -124,24 +124,7 @@ export function ClientsDataTable({
         </Table>
       </div>
 
-      <div className="flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          Anterior
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          Siguiente
-        </Button>
-      </div>
+      <DataTablePagination table={table} />
     </div>
   );
 }
