@@ -25,6 +25,12 @@ import { listCategories, updateCategory } from "@/lib/caja/caja";
 
 type CategoryStatusFilter = "all" | "active" | "inactive";
 
+const STATUS_FILTER_ITEMS = [
+  { value: "all", label: "Todos" },
+  { value: "active", label: "Activa" },
+  { value: "inactive", label: "Inactiva" },
+] as const;
+
 function getErrorMessage(error: unknown): string {
   return error instanceof Error
     ? error.message
@@ -122,6 +128,7 @@ export function CategoriasCard() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Select
             value={statusFilter}
+            items={STATUS_FILTER_ITEMS}
             onValueChange={(value) => {
               if (value === "all" || value === "active" || value === "inactive") {
                 setStatusFilter(value);
@@ -132,9 +139,11 @@ export function CategoriasCard() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="active">Activa</SelectItem>
-              <SelectItem value="inactive">Inactiva</SelectItem>
+              {STATUS_FILTER_ITEMS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button onClick={() => setIsModalOpen(true)}>

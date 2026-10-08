@@ -31,6 +31,12 @@ interface CategoriasModalProps {
   onCreated: () => Promise<void>;
 }
 
+const DIRECTION_OPTIONS = [
+  { value: "select", label: "Seleccionar" },
+  { value: "INGRESO", label: "Ingresos" },
+  { value: "EGRESO", label: "Egresos" },
+] as const;
+
 function getErrorMessage(error: unknown): string {
   return error instanceof Error
     ? error.message
@@ -117,6 +123,7 @@ export function CategoriasModal({
             <Label htmlFor="category-direction">Tipo</Label>
             <Select
               value={directionValue}
+              items={DIRECTION_OPTIONS}
               onValueChange={(value) => {
                 if (value === "INGRESO" || value === "EGRESO" || value === "select") {
                   setDirectionValue(value);
@@ -127,9 +134,11 @@ export function CategoriasModal({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="select">Seleccionar</SelectItem>
-                <SelectItem value="INGRESO">Ingresos</SelectItem>
-                <SelectItem value="EGRESO">Egresos</SelectItem>
+                {DIRECTION_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
