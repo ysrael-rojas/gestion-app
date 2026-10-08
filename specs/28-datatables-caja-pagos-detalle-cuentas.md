@@ -1,6 +1,6 @@
 # SPEC 28 — Ordenamiento en datatables de caja/bancos, acciones de pago en el datatable y rediseño del Detalle de Cuentas
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 26, SPEC 27
 > **Fecha:** 2026-10-08
 > **Objetivo:** Agregar ordenamiento por cabecera a los datatables de caja/bancos, mover los botones Imprimir y Anular del modal de detalle de pago al datatable como acciones con icono y tooltip, y enriquecer el Detalle de Cuentas con KPIs, búsqueda/filtro, columnas nuevas y márgenes correctos.
@@ -150,19 +150,19 @@ Convenciones de ordenamiento:
 
 ## Acceptance criteria
 
-- [ ] En Detalle de Cuentas, historial de cierres y las dos tablas del reporte de cuadre, hacer clic en la cabecera ordena y alterna asc/desc con el icono reflejando el estado.
-- [ ] En el tab Cuentas de configuración, las columnas Banco, Nro de cuenta, Moneda y Estado también ordenan.
-- [ ] Los datatables de Métodos de pago y Categorías ordenan al hacer clic en sus cabeceras.
-- [ ] Las columnas numéricas (saldo, % del total, equivalente PEN) ordenan por su valor numérico, no alfabéticamente por el texto formateado.
-- [ ] El Detalle de Cuentas usa el mismo contenedor/márgenes que las demás vistas de caja y bancos (no queda pegado a los lados).
-- [ ] El Detalle de Cuentas muestra las tarjetas KPI: nº de cuentas, saldo en cajas (equiv. PEN) y saldo en bancos (equiv. PEN), además del total consolidado.
-- [ ] El buscador filtra por nombre o banco y el filtro de tipo (Todos/Caja/Banco) filtra el datatable.
-- [ ] El Detalle de Cuentas muestra las columnas % del saldo total, equivalente en PEN y último movimiento; una cuenta sin pagos muestra "—" en último movimiento.
-- [ ] El datatable de pagos (ingresos y egresos) muestra los iconos Imprimir y Anular junto a Ver, cada uno con tooltip.
-- [ ] El icono Imprimir abre el recibo del pago; en un recibo `ANULADO` el icono Anular no está disponible.
-- [ ] El icono Anular abre el modal de detalle en modo "Anular" (con textarea de motivo y "Confirmar anulación"); confirmar anula el pago y refresca la fila.
-- [ ] El footer del modal de detalle de pago ya no muestra "Imprimir recibo" ni "Anular pago"; conserva "Asignar saldo" (si aplica) y "Cerrar".
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan sin errores.
+- [x] En Detalle de Cuentas, historial de cierres y las dos tablas del reporte de cuadre, hacer clic en la cabecera ordena y alterna asc/desc con el icono reflejando el estado.
+- [x] En el tab Cuentas de configuración, las columnas Banco, Nro de cuenta, Moneda y Estado también ordenan.
+- [x] Los datatables de Métodos de pago y Categorías ordenan al hacer clic en sus cabeceras.
+- [x] Las columnas numéricas (saldo, % del total, equivalente PEN) ordenan por su valor numérico, no alfabéticamente por el texto formateado.
+- [x] El Detalle de Cuentas usa el mismo contenedor/márgenes que las demás vistas de caja y bancos (no queda pegado a los lados).
+- [x] El Detalle de Cuentas muestra las tarjetas KPI: nº de cuentas, saldo en cajas (equiv. PEN) y saldo en bancos (equiv. PEN), además del total consolidado.
+- [x] El buscador filtra por nombre o banco y el filtro de tipo (Todos/Caja/Banco) filtra el datatable.
+- [x] El Detalle de Cuentas muestra las columnas % del saldo total, equivalente en PEN y último movimiento; una cuenta sin pagos muestra "—" en último movimiento.
+- [x] El datatable de pagos (ingresos y egresos) muestra los iconos Imprimir y Anular junto a Ver, cada uno con tooltip.
+- [x] El icono Imprimir abre el recibo del pago; en un recibo `ANULADO` el icono Anular no está disponible.
+- [x] El icono Anular abre el modal de detalle en modo "Anular" (con textarea de motivo y "Confirmar anulación"); confirmar anula el pago y refresca la fila.
+- [x] El footer del modal de detalle de pago ya no muestra "Imprimir recibo" ni "Anular pago"; conserva "Asignar saldo" (si aplica) y "Cerrar".
+- [x] `npm run lint`, `npm test` y `npm run build` pasan sin errores.
 
 ## Decisions
 
