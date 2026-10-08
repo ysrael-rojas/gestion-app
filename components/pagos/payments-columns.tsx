@@ -14,7 +14,7 @@ import {
   sortFn_text,
   tableFeatures,
 } from "@tanstack/react-table";
-import { ArrowUpDown, Eye } from "lucide-react";
+import { ArrowUpDown, Ban, Eye, Printer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -51,11 +51,15 @@ const columnHelper = createColumnHelper<PaymentsTableFeatures, PaymentsRow>();
 
 interface PaymentsColumnsActions {
   onView: (payment: Payment) => void;
+  onPrint: (payment: Payment) => void;
+  onAnnul: (payment: Payment) => void;
   direction: PaymentDirection;
 }
 
 export function getPaymentsColumns({
   onView,
+  onPrint,
+  onAnnul,
   direction,
 }: PaymentsColumnsActions) {
   return columnHelper.columns([
@@ -160,6 +164,38 @@ export function getPaymentsColumns({
                 </TooltipTrigger>
                 <TooltipContent>Ver</TooltipContent>
               </Tooltip>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => onPrint(payment)}
+                    />
+                  }
+                >
+                  <Printer />
+                  <span className="sr-only">Imprimir</span>
+                </TooltipTrigger>
+                <TooltipContent>Imprimir</TooltipContent>
+              </Tooltip>
+              {payment.status === "ANULADO" ? null : (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => onAnnul(payment)}
+                      />
+                    }
+                  >
+                    <Ban />
+                    <span className="sr-only">Anular</span>
+                  </TooltipTrigger>
+                  <TooltipContent>Anular</TooltipContent>
+                </Tooltip>
+              )}
             </div>
           </TooltipProvider>
         );
