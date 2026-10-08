@@ -14,8 +14,9 @@ import {
   sortFn_text,
   tableFeatures,
 } from "@tanstack/react-table";
-import { ArrowUpDown, Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 
+import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,13 +74,7 @@ export function getCashAccountsColumns({
   return columnHelper.columns([
     columnHelper.accessor("type", {
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Tipo
-          <ArrowUpDown />
-        </Button>
+        <DataTableColumnHeader column={column} title="Tipo" />
       ),
       cell: ({ getValue }) => {
         const value = getValue();
@@ -92,44 +87,44 @@ export function getCashAccountsColumns({
     }),
     columnHelper.accessor("name", {
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Nombre
-          <ArrowUpDown />
-        </Button>
+        <DataTableColumnHeader column={column} title="Nombre" />
       ),
       cell: ({ getValue }) => getValue(),
     }),
     columnHelper.accessor("bankName", {
-      header: "Banco",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Banco" />
+      ),
       cell: ({ getValue }) => getValue() ?? "—",
     }),
     columnHelper.accessor("accountNumber", {
       id: "accountNumber",
-      header: "Nro de cuenta",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Nro de cuenta" />
+      ),
       cell: ({ getValue }) => getValue() ?? "—",
     }),
     columnHelper.accessor("currency", {
-      header: "Moneda",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Moneda" />
+      ),
       cell: ({ getValue }) => getValue(),
     }),
     columnHelper.accessor("openingBalance", {
       header: ({ column }) => (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Saldo inicial
-          <ArrowUpDown />
-        </Button>
+        <DataTableColumnHeader
+          column={column}
+          title="Saldo inicial"
+          align="right"
+        />
       ),
       cell: ({ getValue, row }) =>
         formatAmount(getValue(), row.original.currency),
     }),
     columnHelper.accessor("isActive", {
-      header: "Estado",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Estado" />
+      ),
       cell: ({ getValue }) =>
         getValue() ? (
           <Badge variant="outline">Activa</Badge>
