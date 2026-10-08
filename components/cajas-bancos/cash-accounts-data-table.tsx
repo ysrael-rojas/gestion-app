@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import type { CashAccount } from "@/lib/cuentas/entidades";
 import {
   cashAccountsTableFeatures,
@@ -122,6 +123,8 @@ export function CashAccountsDataTable({
           </TableBody>
         </Table>
       </div>
+
+      <DataTablePagination table={table} />
     </div>
   );
 }

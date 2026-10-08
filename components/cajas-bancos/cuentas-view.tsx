@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  createColumnHelper,
+  createPaginatedRowModel,
+  rowPaginationFeature,
+  tableFeatures,
+  useTable,
+} from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import {
   getPenUsdRate,
   listCashPositions,
@@ -25,6 +33,29 @@ import {
 } from "@/lib/caja/caja";
 import { getPeriodicityLabel } from "@/lib/data/cash-options";
 import { formatCurrency, getTodayLocalDate } from "@/lib/utils";
+
+const SKELETON_ROWS = 4;
+const DEFAULT_PAGE_SIZE = 10;
+
+const cuentasTableFeatures = tableFeatures({
+  rowPaginationFeature,
+  paginatedRowModel: createPaginatedRowModel(),
+});
+
+interface AccountPositionRow {
+  id: string;
+  isBank: boolean;
+  name: string;
+  bankName: string;
+  currency: string;
+  closing: string;
+  balanceLabel: string;
+}
+
+const cuentasColumnHelper = createColumnHelper<
+  typeof cuentasTableFeatures,
+  AccountPositionRow
+>();
 
 function formatAmount(value: number, currency: string): string {
   try {
@@ -97,6 +128,74 @@ export function CuentasView() {
     return total + position.balance * penUsdRate;
   }, 0);
 
+  const rows = useMemo<AccountPositionRow[]>(
+    () =>
+      positions.map(({ account, balance }) => ({
+        id: account.id,
+        isBank: account.type === "BANK_ACCOUNT",
+        name: account.name,
+        bankName: account.bankName ?? "—",
+        currency: account.currency,
+        closing: account.closingPeriodicity
+          ? getPeriodicityLabel(account.closingPeriodicity)
+          : "Predeterminado",
+        balanceLabel: formatAmount(balance, account.currency),
+      })),
+    [positions]
+  );
+
+  const columns = useMemo(
+    () =>
+      cuentasColumnHelper.columns([
+        cuentasColumnHelper.accessor("isBank", {
+          header: "Tipo",
+          cell: ({ getValue }) =>
+            getValue() ? (
+              <Badge variant="default">Banco</Badge>
+            ) : (
+              <Badge variant="secondary">Caja</Badge>
+            ),
+        }),
+        cuentasColumnHelper.accessor("name", {
+          header: "Nombre",
+          cell: ({ getValue }) => (
+            <span className="font-medium">{getValue()}</span>
+          ),
+        }),
+        cuentasColumnHelper.accessor("bankName", {
+          header: "Banco",
+          cell: ({ getValue }) => getValue(),
+        }),
+        cuentasColumnHelper.accessor("currency", {
+          header: "Moneda",
+          cell: ({ getValue }) => getValue(),
+        }),
+        cuentasColumnHelper.accessor("closing", {
+          header: "Cierre",
+          cell: ({ getValue }) => getValue(),
+        }),
+        cuentasColumnHelper.accessor("balanceLabel", {
+          header: () => <div className="text-right">Saldo a hoy</div>,
+          cell: ({ getValue }) => (
+            <div className="text-right font-medium">{getValue()}</div>
+          ),
+        }),
+      ]),
+    []
+  );
+
+  const table = useTable({
+    features: cuentasTableFeatures,
+    data: rows,
+    columns,
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: DEFAULT_PAGE_SIZE,
+      },
+    },
+  });
+
   return (
     <div className="flex flex-col gap-6">
       <Card className="bg-muted/30 ring-0">
@@ -120,64 +219,58 @@ export function CuentasView() {
         </p>
       ) : null}
 
-      <div className="overflow-hidden rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Banco</TableHead>
-              <TableHead>Moneda</TableHead>
-              <TableHead>Cierre</TableHead>
-              <TableHead className="text-right">Saldo a hoy</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              Array.from({ length: 4 }).map((_, index) => (
-                <TableRow key={`skeleton-${index}`}>
-                  {Array.from({ length: 6 }).map((_, cell) => (
-                    <TableCell key={`skeleton-${index}-${cell}`}>
-                      <Skeleton className="h-5 w-full" />
-                    </TableCell>
+      <div className="flex flex-col gap-4">
+        <div className="overflow-hidden rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id}>
+                      {header.isPlaceholder ? null : (
+                        <table.FlexRender header={header} />
+                      )}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : positions.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="text-center text-sm text-muted-foreground"
-                >
-                  No hay cajas ni bancos registrados.
-                </TableCell>
-              </TableRow>
-            ) : (
-              positions.map(({ account, balance }) => (
-                <TableRow key={account.id}>
-                  <TableCell>
-                    {account.type === "CASH_BOX" ? (
-                      <Badge variant="secondary">Caja</Badge>
-                    ) : (
-                      <Badge variant="default">Banco</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="font-medium">{account.name}</TableCell>
-                  <TableCell>{account.bankName ?? "—"}</TableCell>
-                  <TableCell>{account.currency}</TableCell>
-                  <TableCell>
-                    {account.closingPeriodicity
-                      ? getPeriodicityLabel(account.closingPeriodicity)
-                      : "Predeterminado"}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatAmount(balance, account.currency)}
+              ))}
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                Array.from({ length: SKELETON_ROWS }).map((_, index) => (
+                  <TableRow key={`skeleton-${index}`}>
+                    {Array.from({ length: columns.length }).map((_, cell) => (
+                      <TableCell key={`skeleton-${index}-${cell}`}>
+                        <Skeleton className="h-5 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : table.getRowModel().rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={columns.length}
+                    className="text-center text-sm text-muted-foreground"
+                  >
+                    No hay cajas ni bancos registrados.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getAllCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        <table.FlexRender cell={cell} />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <DataTablePagination table={table} />
       </div>
     </div>
   );

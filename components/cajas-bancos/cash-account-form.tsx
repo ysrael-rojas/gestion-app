@@ -34,6 +34,11 @@ import type { CashAccount } from "@/lib/cuentas/entidades";
 interface CashAccountFormProps {
   account?: CashAccount | null;
   defaultType?: CashAccountType;
+  /**
+   * Instancia externa (p. ej. creada por `CashAccountModal` para conocer el
+   * tipo elegido). Si no se pasa, el componente gestiona su propio formulario.
+   */
+  form?: CashAccountFormInstance;
   onSubmit: (values: CashAccountFormValues) => void;
 }
 
@@ -44,8 +49,9 @@ const TYPE_OPTIONS: { value: CashAccountType; label: string }[] = [
   { value: "BANK_ACCOUNT", label: "Banco (cuenta)" },
 ];
 
-function createEmptyValues(defaultType: CashAccountType): CashAccountFormInput {
+function createEmptyValues(defaultType?: CashAccountType): CashAccountFormInput {
   return {
+    // Sin tipo preseleccionado: el select inicia en "Seleccionar".
     type: defaultType,
     name: "",
     currency: "PEN",
@@ -88,20 +94,28 @@ function FormGroup({
   );
 }
 
-export function CashAccountForm({
+interface UseCashAccountFormOptions {
+  /**
+   * Visibilidad del modal: el formulario se resetea cada vez que se abre,
+   * para no arrastrar valores de una sesión anterior.
+   */
+  open?: boolean;
+  account?: CashAccount | null;
+  defaultType?: CashAccountType;
+}
+
+export function useCashAccountForm({
+  open = true,
   account,
-  defaultType = "CASH_BOX",
-  onSubmit,
-}: CashAccountFormProps) {
+  defaultType,
+}: UseCashAccountFormOptions = {}) {
   const form = useForm<CashAccountFormInput, unknown, CashAccountFormValues>({
     resolver: zodResolver(cashAccountFormSchema),
     defaultValues: createEmptyValues(defaultType),
   });
 
-  const type = useWatch({ control: form.control, name: "type" });
-  const isBank = type === "BANK_ACCOUNT";
-
   useEffect(() => {
+    if (!open) return;
     if (account) {
       form.reset({
         type: account.type,
@@ -119,8 +133,21 @@ export function CashAccountForm({
     } else {
       form.reset(createEmptyValues(defaultType));
     }
-  }, [account, defaultType, form]);
+  }, [open, account, defaultType, form]);
 
+  return form;
+}
+
+export type CashAccountFormInstance = ReturnType<typeof useCashAccountForm>;
+
+interface CashAccountFormFieldsProps {
+  form: CashAccountFormInstance;
+  onSubmit: (values: CashAccountFormValues) => void;
+}
+
+function CashAccountFormFields({ form, onSubmit }: CashAccountFormFieldsProps) {
+  const type = useWatch({ control: form.control, name: "type" });
+  const isBank = type === "BANK_ACCOUNT";
   const errors = form.formState.errors;
 
   return (
@@ -137,7 +164,7 @@ export function CashAccountForm({
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="type">Tipo de cuenta</Label>
               <Select
-                value={field.value}
+                value={field.value ?? null}
                 items={TYPE_OPTIONS}
                 onValueChange={(value) => {
                   if (value === null) return;
@@ -150,7 +177,7 @@ export function CashAccountForm({
                 }}
               >
                 <SelectTrigger id="type" className="w-full">
-                  <SelectValue placeholder="Selecciona un tipo" />
+                  <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
                 <SelectContent>
                   {TYPE_OPTIONS.map((option) => (
@@ -309,5 +336,36 @@ export function CashAccountForm({
         />
       </FormGroup>
     </form>
+  );
+}
+
+/**
+ * Variante auto-gestionada: crea y resetea su propio formulario. Se usa
+ * cuando nadie pasa una instancia externa (p. ej. tests o uso aislado).
+ */
+function SelfManagedCashAccountForm({
+  account,
+  defaultType,
+  onSubmit,
+}: Omit<CashAccountFormProps, "form">) {
+  const form = useCashAccountForm({ account, defaultType });
+  return <CashAccountFormFields form={form} onSubmit={onSubmit} />;
+}
+
+export function CashAccountForm({
+  account,
+  defaultType,
+  form,
+  onSubmit,
+}: CashAccountFormProps) {
+  if (form) {
+    return <CashAccountFormFields form={form} onSubmit={onSubmit} />;
+  }
+  return (
+    <SelfManagedCashAccountForm
+      account={account}
+      defaultType={defaultType}
+      onSubmit={onSubmit}
+    />
   );
 }

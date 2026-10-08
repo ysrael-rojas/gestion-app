@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import { useTable, type SortingState } from "@tanstack/react-table";
 
+import { DataTablePagination } from "@/components/shared/data-table-pagination";
+import { getCategoriasColumns, categoriasTableFeatures } from "@/components/cajas-bancos/categorias-columns";
+import type { CashReceiptCategory } from "@/components/pagos/types";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -13,41 +16,33 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DataTablePagination } from "@/components/shared/data-table-pagination";
-import type { Client } from "@/components/clientes/types";
-import {
-  clientsTableFeatures,
-  getClientsColumns,
-} from "@/components/clientes/clients-columns";
 
-interface ClientsDataTableProps {
-  clients: Client[];
+interface CategoriasDataTableProps {
+  categories: CashReceiptCategory[];
   isLoading?: boolean;
-  onView: (client: Client) => void;
-  onEdit: (client: Client) => void;
-  onDelete: (client: Client) => void;
+  onRename: (category: CashReceiptCategory, name: string) => void;
+  onToggle: (category: CashReceiptCategory) => void;
 }
 
 const SKELETON_ROWS = 5;
 
-export function ClientsDataTable({
-  clients,
+export function CategoriasDataTable({
+  categories,
   isLoading = false,
-  onView,
-  onEdit,
-  onDelete,
-}: ClientsDataTableProps) {
+  onRename,
+  onToggle,
+}: CategoriasDataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
 
   const columns = useMemo(
-    () => getClientsColumns({ onView, onEdit, onDelete }),
-    [onView, onEdit, onDelete]
+    () => getCategoriasColumns({ onRename, onToggle }),
+    [onRename, onToggle]
   );
 
   const table = useTable({
-    features: clientsTableFeatures,
-    data: clients,
+    features: categoriasTableFeatures,
+    data: categories,
     columns,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
@@ -55,6 +50,7 @@ export function ClientsDataTable({
       sorting,
       globalFilter,
     },
+    autoResetPageIndex: true,
     initialState: {
       pagination: {
         pageIndex: 0,
@@ -66,7 +62,8 @@ export function ClientsDataTable({
   return (
     <div className="flex flex-col gap-4">
       <Input
-        placeholder="Buscar clientes..."
+        aria-label="Buscar categorías"
+        placeholder="Buscar categorías…"
         value={globalFilter}
         onChange={(event) => setGlobalFilter(event.target.value)}
         className="max-w-sm"
@@ -100,7 +97,7 @@ export function ClientsDataTable({
                   )}
                 </TableRow>
               ))
-            ) : table.getRowModel().rows.length ? (
+            ) : table.getRowModel().rows.length > 0 ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getAllCells().map((cell) => (
@@ -114,9 +111,9 @@ export function ClientsDataTable({
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
-                  className="h-24 text-center"
+                  className="h-24 text-center text-sm text-muted-foreground"
                 >
-                  No hay clientes registrados
+                  No hay categorías registradas.
                 </TableCell>
               </TableRow>
             )}

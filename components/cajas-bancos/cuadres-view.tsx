@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  createColumnHelper,
+  createPaginatedRowModel,
+  rowPaginationFeature,
+  tableFeatures,
+  useTable,
+} from "@tanstack/react-table";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import { useCajasBancos } from "@/components/cajas-bancos/cajas-bancos-provider";
 import { CashCloseModal } from "@/components/cajas-bancos/cash-close-modal";
 import { CuadreReport } from "@/components/cajas-bancos/cuadre-report";
@@ -38,6 +46,7 @@ import {
   proposeClosePeriod,
 } from "@/lib/caja/caja";
 import { getPeriodicityLabel } from "@/lib/data/cash-options";
+import type { CashAccount } from "@/lib/cuentas/entidades";
 import type { CashClose, Payment } from "@/components/pagos/types";
 import type { CashCloseFormValues } from "@/lib/schemas/cash-close";
 import { formatCurrency, formatDate, getTodayLocalDate } from "@/lib/utils";
@@ -66,6 +75,172 @@ interface AccountState {
   lastClose: CashClose | null;
   proposed: { periodStart: string; periodEnd: string };
   closes: CashClose[];
+}
+
+const closesTableFeatures = tableFeatures({
+  rowPaginationFeature,
+  paginatedRowModel: createPaginatedRowModel(),
+});
+
+const closeColumnHelper = createColumnHelper<
+  typeof closesTableFeatures,
+  CashClose
+>();
+
+interface CashClosesTableProps {
+  closes: CashClose[];
+  isLoading: boolean;
+  account: CashAccount | null;
+  onView: (close: CashClose) => void;
+}
+
+function CashClosesTable({
+  closes,
+  isLoading,
+  account,
+  onView,
+}: CashClosesTableProps) {
+  const columns = useMemo(
+    () =>
+      closeColumnHelper.columns([
+        closeColumnHelper.accessor("periodStart", {
+          id: "period",
+          header: "Período",
+          cell: ({ row }) =>
+            `${formatDate(row.original.periodStart)} — ${formatDate(
+              row.original.periodEnd
+            )}`,
+        }),
+        closeColumnHelper.accessor("periodicity", {
+          header: "Periodicidad",
+          cell: ({ getValue }) => getPeriodicityLabel(getValue()),
+        }),
+        closeColumnHelper.accessor("expectedBalance", {
+          header: () => <div className="text-right">Esperado</div>,
+          cell: ({ getValue }) => (
+            <div className="text-right">
+              {account
+                ? formatAmount(getValue(), account.currency)
+                : getValue()}
+            </div>
+          ),
+        }),
+        closeColumnHelper.accessor("countedBalance", {
+          header: () => <div className="text-right">Conteo</div>,
+          cell: ({ getValue }) => {
+            const value = getValue();
+            return (
+              <div className="text-right">
+                {value !== null
+                  ? account
+                    ? formatAmount(value, account.currency)
+                    : value
+                  : "—"}
+              </div>
+            );
+          },
+        }),
+        closeColumnHelper.accessor("difference", {
+          header: () => <div className="text-right">Diferencia</div>,
+          cell: ({ getValue }) => {
+            const value = getValue();
+            return (
+              <div className="text-right">
+                {value !== null
+                  ? account
+                    ? formatAmount(value, account.currency)
+                    : value
+                  : "—"}
+              </div>
+            );
+          },
+        }),
+        closeColumnHelper.display({
+          id: "actions",
+          header: () => <div className="text-right">Acciones</div>,
+          cell: ({ row }) => (
+            <div className="text-right">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onView(row.original)}
+              >
+                Ver reporte
+              </Button>
+            </div>
+          ),
+        }),
+      ]),
+    [account, onView]
+  );
+
+  const table = useTable({
+    features: closesTableFeatures,
+    data: closes,
+    columns,
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: 10,
+      },
+    },
+  });
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="overflow-hidden rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : (
+                      <table.FlexRender header={header} />
+                    )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              Array.from({ length: 3 }).map((_, index) => (
+                <TableRow key={`skeleton-${index}`}>
+                  {Array.from({ length: columns.length }).map((_, cell) => (
+                    <TableCell key={`skeleton-${index}-${cell}`}>
+                      <Skeleton className="h-5 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center text-sm text-muted-foreground"
+                >
+                  Aún no hay cierres para esta cuenta.
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getAllCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      <table.FlexRender cell={cell} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <DataTablePagination table={table} />
+    </div>
+  );
 }
 
 export function CuadresView() {
@@ -291,82 +466,12 @@ export function CuadresView() {
 
           <div className="flex flex-col gap-2">
             <h2 className="text-lg font-semibold">Historial de cierres</h2>
-            <div className="overflow-hidden rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Período</TableHead>
-                    <TableHead>Periodicidad</TableHead>
-                    <TableHead className="text-right">Esperado</TableHead>
-                    <TableHead className="text-right">Conteo</TableHead>
-                    <TableHead className="text-right">Diferencia</TableHead>
-                    <TableHead className="text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    Array.from({ length: 3 }).map((_, index) => (
-                      <TableRow key={`skeleton-${index}`}>
-                        {Array.from({ length: 6 }).map((_, cell) => (
-                          <TableCell key={`skeleton-${index}-${cell}`}>
-                            <Skeleton className="h-5 w-full" />
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : closes.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="text-center text-sm text-muted-foreground"
-                      >
-                        Aún no hay cierres para esta cuenta.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    closes.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          {formatDate(item.periodStart)} —{" "}
-                          {formatDate(item.periodEnd)}
-                        </TableCell>
-                        <TableCell>
-                          {getPeriodicityLabel(item.periodicity)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {account
-                            ? formatAmount(item.expectedBalance, account.currency)
-                            : item.expectedBalance}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {item.countedBalance !== null
-                            ? account
-                              ? formatAmount(item.countedBalance, account.currency)
-                              : item.countedBalance
-                            : "—"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {item.difference !== null
-                            ? account
-                              ? formatAmount(item.difference, account.currency)
-                              : item.difference
-                            : "—"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedClose(item)}
-                          >
-                            Ver reporte
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <CashClosesTable
+              closes={closes}
+              isLoading={isLoading}
+              account={account}
+              onView={setSelectedClose}
+            />
           </div>
 
           {selectedClose && account ? (
