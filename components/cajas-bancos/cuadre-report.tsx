@@ -1,5 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
+import {
+  createColumnHelper,
+  createPaginatedRowModel,
+  rowPaginationFeature,
+  tableFeatures,
+  useTable,
+} from "@tanstack/react-table";
 import { Download } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import { downloadCsv, toCsv } from "@/lib/caja/csv";
 import type { CashClose, Payment } from "@/components/pagos/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -70,6 +79,216 @@ function groupByCategory(statement: Payment[]): CategoryTotal[] {
     }
     return b.total - a.total;
   });
+}
+
+const reportTableFeatures = tableFeatures({
+  rowPaginationFeature,
+  paginatedRowModel: createPaginatedRowModel(),
+});
+
+const categoryColumnHelper = createColumnHelper<
+  typeof reportTableFeatures,
+  CategoryTotal
+>();
+
+const paymentColumnHelper = createColumnHelper<
+  typeof reportTableFeatures,
+  Payment
+>();
+
+const DEFAULT_PAGE_SIZE = 10;
+
+interface CategoryTotalsTableProps {
+  categories: CategoryTotal[];
+  currency: string;
+}
+
+function CategoryTotalsTable({
+  categories,
+  currency,
+}: CategoryTotalsTableProps) {
+  const columns = useMemo(
+    () =>
+      categoryColumnHelper.columns([
+        categoryColumnHelper.accessor("direction", {
+          header: "Dirección",
+          cell: ({ getValue }) =>
+            getValue() === "INGRESO" ? "Ingreso" : "Egreso",
+        }),
+        categoryColumnHelper.accessor("category", {
+          header: "Categoría",
+          cell: ({ getValue }) => getValue(),
+        }),
+        categoryColumnHelper.accessor("total", {
+          header: () => <div className="text-right">Total</div>,
+          cell: ({ getValue }) => (
+            <div className="text-right">
+              {formatAmount(getValue(), currency)}
+            </div>
+          ),
+        }),
+      ]),
+    [currency]
+  );
+
+  const table = useTable({
+    features: reportTableFeatures,
+    data: categories,
+    columns,
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: DEFAULT_PAGE_SIZE,
+      },
+    },
+  });
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="overflow-hidden rounded-md border bg-background">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : (
+                      <table.FlexRender header={header} />
+                    )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center text-sm text-muted-foreground"
+                >
+                  Sin movimientos en el período.
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getAllCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      <table.FlexRender cell={cell} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <DataTablePagination table={table} />
+    </div>
+  );
+}
+
+interface StatementTableProps {
+  statement: Payment[];
+  currency: string;
+}
+
+function StatementTable({ statement, currency }: StatementTableProps) {
+  const columns = useMemo(
+    () =>
+      paymentColumnHelper.columns([
+        paymentColumnHelper.accessor("paymentDate", {
+          header: "Fecha",
+          cell: ({ getValue }) => formatDate(getValue()),
+        }),
+        paymentColumnHelper.accessor("receiptNumber", {
+          header: "Recibo",
+          cell: ({ getValue }) => getValue(),
+        }),
+        paymentColumnHelper.accessor("direction", {
+          header: "Dirección",
+          cell: ({ getValue }) =>
+            getValue() === "INGRESO" ? "Ingreso" : "Egreso",
+        }),
+        paymentColumnHelper.accessor("categoryName", {
+          header: "Categoría",
+          cell: ({ getValue }) => getValue() || "—",
+        }),
+        paymentColumnHelper.accessor("methodName", {
+          header: "Método",
+          cell: ({ getValue }) => getValue() || "—",
+        }),
+        paymentColumnHelper.accessor("amount", {
+          header: () => <div className="text-right">Importe</div>,
+          cell: ({ getValue }) => (
+            <div className="text-right">
+              {formatAmount(getValue(), currency)}
+            </div>
+          ),
+        }),
+      ]),
+    [currency]
+  );
+
+  const table = useTable({
+    features: reportTableFeatures,
+    data: statement,
+    columns,
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: DEFAULT_PAGE_SIZE,
+      },
+    },
+  });
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="overflow-hidden rounded-md border bg-background">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : (
+                      <table.FlexRender header={header} />
+                    )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="text-center text-sm text-muted-foreground"
+                >
+                  Sin movimientos en el período.
+                </TableCell>
+              </TableRow>
+            ) : (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getAllCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      <table.FlexRender cell={cell} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <DataTablePagination table={table} />
+    </div>
+  );
 }
 
 function SummaryRow({
@@ -186,86 +405,12 @@ export function CuadreReport({
 
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold">Resumen por categoría</h3>
-          <div className="overflow-hidden rounded-md border bg-background">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Dirección</TableHead>
-                  <TableHead>Categoría</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {categories.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={3}
-                      className="text-center text-sm text-muted-foreground"
-                    >
-                      Sin movimientos en el período.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  categories.map((item) => (
-                    <TableRow key={`${item.direction}-${item.category}`}>
-                      <TableCell>
-                        {item.direction === "INGRESO" ? "Ingreso" : "Egreso"}
-                      </TableCell>
-                      <TableCell>{item.category}</TableCell>
-                      <TableCell className="text-right">
-                        {formatAmount(item.total, currency)}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <CategoryTotalsTable categories={categories} currency={currency} />
         </div>
 
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold">Movimientos</h3>
-          <div className="overflow-hidden rounded-md border bg-background">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Recibo</TableHead>
-                  <TableHead>Dirección</TableHead>
-                  <TableHead>Categoría</TableHead>
-                  <TableHead>Método</TableHead>
-                  <TableHead className="text-right">Importe</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {statement.length === 0 ? (
-                  <TableRow>
-                    <TableCell
-                      colSpan={6}
-                      className="text-center text-sm text-muted-foreground"
-                    >
-                      Sin movimientos en el período.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  statement.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell>{formatDate(payment.paymentDate)}</TableCell>
-                      <TableCell>{payment.receiptNumber}</TableCell>
-                      <TableCell>
-                        {payment.direction === "INGRESO" ? "Ingreso" : "Egreso"}
-                      </TableCell>
-                      <TableCell>{payment.categoryName || "—"}</TableCell>
-                      <TableCell>{payment.methodName || "—"}</TableCell>
-                      <TableCell className="text-right">
-                        {formatAmount(payment.amount, currency)}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <StatementTable statement={statement} currency={currency} />
         </div>
       </CardContent>
     </Card>
