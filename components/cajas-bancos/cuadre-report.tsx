@@ -1,12 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   createColumnHelper,
   createPaginatedRowModel,
+  createSortedRowModel,
   rowPaginationFeature,
+  rowSortingFeature,
+  sortFn_alphanumeric,
+  sortFn_text,
   tableFeatures,
   useTable,
+  type SortingState,
 } from "@tanstack/react-table";
 import { Download } from "lucide-react";
 
@@ -26,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/shared/data-table-pagination";
+import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { downloadCsv, toCsv } from "@/lib/caja/csv";
 import type { CashClose, Payment } from "@/components/pagos/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -82,8 +88,11 @@ function groupByCategory(statement: Payment[]): CategoryTotal[] {
 }
 
 const reportTableFeatures = tableFeatures({
+  rowSortingFeature,
   rowPaginationFeature,
+  sortedRowModel: createSortedRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
+  sortFns: { alphanumeric: sortFn_alphanumeric, text: sortFn_text },
 });
 
 const categoryColumnHelper = createColumnHelper<
@@ -107,20 +116,32 @@ function CategoryTotalsTable({
   categories,
   currency,
 }: CategoryTotalsTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+
   const columns = useMemo(
     () =>
       categoryColumnHelper.columns([
         categoryColumnHelper.accessor("direction", {
-          header: "Dirección",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Dirección" />
+          ),
           cell: ({ getValue }) =>
             getValue() === "INGRESO" ? "Ingreso" : "Egreso",
         }),
         categoryColumnHelper.accessor("category", {
-          header: "Categoría",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Categoría" />
+          ),
           cell: ({ getValue }) => getValue(),
         }),
         categoryColumnHelper.accessor("total", {
-          header: () => <div className="text-right">Total</div>,
+          header: ({ column }) => (
+            <DataTableColumnHeader
+              column={column}
+              title="Total"
+              align="right"
+            />
+          ),
           cell: ({ getValue }) => (
             <div className="text-right">
               {formatAmount(getValue(), currency)}
@@ -135,6 +156,8 @@ function CategoryTotalsTable({
     features: reportTableFeatures,
     data: categories,
     columns,
+    onSortingChange: setSorting,
+    state: { sorting },
     initialState: {
       pagination: {
         pageIndex: 0,
@@ -196,32 +219,50 @@ interface StatementTableProps {
 }
 
 function StatementTable({ statement, currency }: StatementTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+
   const columns = useMemo(
     () =>
       paymentColumnHelper.columns([
         paymentColumnHelper.accessor("paymentDate", {
-          header: "Fecha",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Fecha" />
+          ),
           cell: ({ getValue }) => formatDate(getValue()),
         }),
         paymentColumnHelper.accessor("receiptNumber", {
-          header: "Recibo",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Recibo" />
+          ),
           cell: ({ getValue }) => getValue(),
         }),
         paymentColumnHelper.accessor("direction", {
-          header: "Dirección",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Dirección" />
+          ),
           cell: ({ getValue }) =>
             getValue() === "INGRESO" ? "Ingreso" : "Egreso",
         }),
         paymentColumnHelper.accessor("categoryName", {
-          header: "Categoría",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Categoría" />
+          ),
           cell: ({ getValue }) => getValue() || "—",
         }),
         paymentColumnHelper.accessor("methodName", {
-          header: "Método",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Método" />
+          ),
           cell: ({ getValue }) => getValue() || "—",
         }),
         paymentColumnHelper.accessor("amount", {
-          header: () => <div className="text-right">Importe</div>,
+          header: ({ column }) => (
+            <DataTableColumnHeader
+              column={column}
+              title="Importe"
+              align="right"
+            />
+          ),
           cell: ({ getValue }) => (
             <div className="text-right">
               {formatAmount(getValue(), currency)}
@@ -236,6 +277,8 @@ function StatementTable({ statement, currency }: StatementTableProps) {
     features: reportTableFeatures,
     data: statement,
     columns,
+    onSortingChange: setSorting,
+    state: { sorting },
     initialState: {
       pagination: {
         pageIndex: 0,
