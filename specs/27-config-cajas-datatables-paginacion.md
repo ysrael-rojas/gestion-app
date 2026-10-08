@@ -1,6 +1,6 @@
 # SPEC 27 — UI de configuración caja/bancos, datatables homogéneos y layout de pagos
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 25, SPEC 26
 > **Fecha:** 2026-10-08
 > **Objetivo:** Rediseñar el menú de configuración de caja y bancos (tabs Cuentas, Métodos de pago y Categorías según el patrón toolbar + datatable + paginación), alinear los listados de ingresos/egresos al layout de tres líneas de ventas y completar la paginación en todos los datatables del proyecto, convirtiendo las tablas planas a datatables paginados.
