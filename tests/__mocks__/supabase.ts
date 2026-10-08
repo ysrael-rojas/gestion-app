@@ -31,6 +31,7 @@ interface QueryBuilder {
   is: (col: string, val: unknown) => QueryBuilder;
   in: (col: string, vals: unknown[]) => QueryBuilder;
   order: (col: string, opts?: { ascending?: boolean }) => QueryBuilder;
+  limit: (n: number) => QueryBuilder;
   single: () => Promise<SingleResult>;
   maybeSingle: () => Promise<SingleResult>;
   then: <TResult1 = TableResult, TResult2 = never>(
@@ -97,6 +98,7 @@ export function createMockSupabase(): MockSupabase {
       is: () => builder,
       in: () => builder,
       order: () => builder,
+      limit: () => builder,
       single: async () => {
         const result = nextTableResult(table);
         if (result.error !== null) return { data: null, error: result.error };

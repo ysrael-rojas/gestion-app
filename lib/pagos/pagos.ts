@@ -155,6 +155,12 @@ function mapError(error: { code?: string; message: string }): Error {
     );
   }
 
+  if (error.code === "PGRST116") {
+    return new Error(
+      "La consulta devolvió más registros de los esperados."
+    );
+  }
+
   return new Error(
     "No se pudo completar la operación con la base de datos. Intenta nuevamente."
   );
