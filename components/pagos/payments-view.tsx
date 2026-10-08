@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useTable, type SortingState } from "@tanstack/react-table";
+import {
+  createColumnHelper,
+  createPaginatedRowModel,
+  rowPaginationFeature,
+  tableFeatures,
+  useTable,
+  type SortingState,
+} from "@tanstack/react-table";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -17,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import { usePagos } from "@/components/pagos/pagos-provider";
 import { PaymentModal } from "@/components/pagos/payment-modal";
 import { PaymentDetailModal } from "@/components/pagos/payment-detail-modal";
@@ -90,6 +98,16 @@ interface VouchersTableProps {
   emptyLabel: string;
 }
 
+const vouchersTableFeatures = tableFeatures({
+  rowPaginationFeature,
+  paginatedRowModel: createPaginatedRowModel(),
+});
+
+const voucherColumnHelper = createColumnHelper<
+  typeof vouchersTableFeatures,
+  VoucherBalance
+>();
+
 function VouchersTable({
   vouchers,
   resolveName,
@@ -97,18 +115,64 @@ function VouchersTable({
   emptyLabel,
 }: VouchersTableProps) {
   const columnsCount = 5;
+  const columns = useMemo(
+    () =>
+      voucherColumnHelper.columns([
+        voucherColumnHelper.accessor("voucherNumber", {
+          header: "Comprobante",
+        }),
+        voucherColumnHelper.accessor("entityId", {
+          id: "entity",
+          header: "Entidad",
+          cell: ({ getValue }) => resolveName(getValue()),
+        }),
+        voucherColumnHelper.accessor("issueDate", {
+          header: "Emisión",
+          cell: ({ getValue }) => formatDate(getValue()),
+        }),
+        voucherColumnHelper.accessor("effectiveDueDate", {
+          header: "Vencimiento",
+          cell: ({ getValue }) => {
+            const dueDate = getValue();
+            return dueDate ? formatDate(dueDate) : "—";
+          },
+        }),
+        voucherColumnHelper.accessor("balance", {
+          header: () => <div className="text-right">Saldo</div>,
+          cell: ({ getValue }) => (
+            <div className="text-right">{formatCurrency(getValue())}</div>
+          ),
+        }),
+      ]),
+    [resolveName]
+  );
+  const table = useTable({
+    features: vouchersTableFeatures,
+    data: vouchers,
+    columns,
+    initialState: {
+      pagination: {
+        pageIndex: 0,
+        pageSize: 10,
+      },
+    },
+  });
 
   return (
     <div className="overflow-hidden rounded-md border">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Comprobante</TableHead>
-            <TableHead>Entidad</TableHead>
-            <TableHead>Emisión</TableHead>
-            <TableHead>Vencimiento</TableHead>
-            <TableHead className="text-right">Saldo</TableHead>
-          </TableRow>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder ? null : (
+                    <table.FlexRender header={header} />
+                  )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
         </TableHeader>
         <TableBody>
           {isLoading ? (
@@ -121,22 +185,14 @@ function VouchersTable({
                 ))}
               </TableRow>
             ))
-          ) : vouchers.length ? (
-            vouchers.map((voucher) => (
-              <TableRow key={voucher.comprobanteId}>
-                <TableCell>{voucher.voucherNumber}</TableCell>
-                <TableCell>
-                  {resolveName(voucher.entityId)}
-                </TableCell>
-                <TableCell>{formatDate(voucher.issueDate)}</TableCell>
-                <TableCell>
-                  {voucher.effectiveDueDate
-                    ? formatDate(voucher.effectiveDueDate)
-                    : "—"}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(voucher.balance)}
-                </TableCell>
+          ) : table.getRowModel().rows.length ? (
+            table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getAllCells().map((cell) => (
+                  <TableCell key={cell.id}>
+                    <table.FlexRender cell={cell} />
+                  </TableCell>
+                ))}
               </TableRow>
             ))
           ) : (
@@ -151,6 +207,9 @@ function VouchersTable({
           )}
         </TableBody>
       </Table>
+      <div className="p-4">
+        <DataTablePagination table={table} />
+      </div>
     </div>
   );
 }
@@ -310,12 +369,6 @@ export function PaymentsView({
 
       <div className="flex flex-col gap-4">
         <PaymentsListingsToolbar>
-          <Input
-            placeholder={labels.search}
-            value={globalFilter}
-            onChange={(event) => setGlobalFilter(event.target.value)}
-            className="max-w-sm"
-          />
           <Button onClick={() => setModalOpen(true)}>Registrar pago</Button>
         </PaymentsListingsToolbar>
 
@@ -348,7 +401,14 @@ export function PaymentsView({
             }
           />
         ) : (
-          <>
+          <div className="flex flex-col gap-4">
+            <Input
+              placeholder={labels.search}
+              value={globalFilter}
+              onChange={(event) => setGlobalFilter(event.target.value)}
+              className="max-w-sm"
+            />
+
             <div className="overflow-hidden rounded-md border">
               <Table>
                 <TableHeader>
@@ -405,25 +465,8 @@ export function PaymentsView({
               </Table>
             </div>
 
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                Siguiente
-              </Button>
-            </div>
-          </>
+            <DataTablePagination table={table} />
+          </div>
         )}
       </div>
 
