@@ -4,9 +4,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   createColumnHelper,
   createPaginatedRowModel,
+  createSortedRowModel,
   rowPaginationFeature,
+  rowSortingFeature,
+  sortFn_alphanumeric,
+  sortFn_text,
   tableFeatures,
   useTable,
+  type SortingState,
 } from "@tanstack/react-table";
 import { toast } from "sonner";
 
@@ -34,6 +39,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/shared/data-table-pagination";
+import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { useCajasBancos } from "@/components/cajas-bancos/cajas-bancos-provider";
 import { CashCloseModal } from "@/components/cajas-bancos/cash-close-modal";
 import { CuadreReport } from "@/components/cajas-bancos/cuadre-report";
@@ -78,8 +84,11 @@ interface AccountState {
 }
 
 const closesTableFeatures = tableFeatures({
+  rowSortingFeature,
   rowPaginationFeature,
+  sortedRowModel: createSortedRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
+  sortFns: { alphanumeric: sortFn_alphanumeric, text: sortFn_text },
 });
 
 const closeColumnHelper = createColumnHelper<
@@ -100,23 +109,35 @@ function CashClosesTable({
   account,
   onView,
 }: CashClosesTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+
   const columns = useMemo(
     () =>
       closeColumnHelper.columns([
         closeColumnHelper.accessor("periodStart", {
           id: "period",
-          header: "Período",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Período" />
+          ),
           cell: ({ row }) =>
             `${formatDate(row.original.periodStart)} — ${formatDate(
               row.original.periodEnd
             )}`,
         }),
         closeColumnHelper.accessor("periodicity", {
-          header: "Periodicidad",
+          header: ({ column }) => (
+            <DataTableColumnHeader column={column} title="Periodicidad" />
+          ),
           cell: ({ getValue }) => getPeriodicityLabel(getValue()),
         }),
         closeColumnHelper.accessor("expectedBalance", {
-          header: () => <div className="text-right">Esperado</div>,
+          header: ({ column }) => (
+            <DataTableColumnHeader
+              column={column}
+              title="Esperado"
+              align="right"
+            />
+          ),
           cell: ({ getValue }) => (
             <div className="text-right">
               {account
@@ -126,7 +147,13 @@ function CashClosesTable({
           ),
         }),
         closeColumnHelper.accessor("countedBalance", {
-          header: () => <div className="text-right">Conteo</div>,
+          header: ({ column }) => (
+            <DataTableColumnHeader
+              column={column}
+              title="Conteo"
+              align="right"
+            />
+          ),
           cell: ({ getValue }) => {
             const value = getValue();
             return (
@@ -141,7 +168,13 @@ function CashClosesTable({
           },
         }),
         closeColumnHelper.accessor("difference", {
-          header: () => <div className="text-right">Diferencia</div>,
+          header: ({ column }) => (
+            <DataTableColumnHeader
+              column={column}
+              title="Diferencia"
+              align="right"
+            />
+          ),
           cell: ({ getValue }) => {
             const value = getValue();
             return (
@@ -178,6 +211,8 @@ function CashClosesTable({
     features: closesTableFeatures,
     data: closes,
     columns,
+    onSortingChange: setSorting,
+    state: { sorting },
     initialState: {
       pagination: {
         pageIndex: 0,

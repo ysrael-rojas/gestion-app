@@ -17,6 +17,7 @@ import {
 } from "@tanstack/react-table";
 import { Check, Pencil, X } from "lucide-react";
 
+import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,7 +131,9 @@ export function getCategoriasColumns({
 }: CategoriasColumnsActions) {
   return columnHelper.columns([
     columnHelper.accessor("direction", {
-      header: "Tipo",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Tipo" />
+      ),
       cell: ({ getValue }) =>
         getValue() === "INGRESO" ? (
           <Badge variant="secondary">Ingreso</Badge>
@@ -139,7 +142,9 @@ export function getCategoriasColumns({
         ),
     }),
     columnHelper.accessor("isActive", {
-      header: "Estado",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Estado" />
+      ),
       cell: ({ getValue }) =>
         getValue() ? (
           <Badge variant="outline">Activa</Badge>
@@ -148,7 +153,9 @@ export function getCategoriasColumns({
         ),
     }),
     columnHelper.accessor("name", {
-      header: "Nombre",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Nombre" />
+      ),
       cell: ({ getValue }) => getValue(),
     }),
     columnHelper.display({

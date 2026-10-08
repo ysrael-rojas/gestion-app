@@ -349,6 +349,23 @@ export async function getCashAccountStatement(
   return listAccountStatement(accountId, from, to);
 }
 
+export async function getLastMovementDate(
+  cashAccountId: string
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("payment")
+    .select("payment_date")
+    .eq("cash_account_id", cashAccountId)
+    .order("payment_date", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    throw mapError(error);
+  }
+
+  return data?.[0]?.payment_date ?? null;
+}
+
 // ---------------------------------------------------------------------------
 // Cierres de caja
 // ---------------------------------------------------------------------------

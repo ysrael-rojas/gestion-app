@@ -16,6 +16,7 @@ import {
 } from "@tanstack/react-table";
 import { Check, Pencil, X } from "lucide-react";
 
+import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,7 +62,9 @@ export function getPaymentMethodsColumns({
 }: PaymentMethodsColumnsActions) {
   return columnHelper.columns([
     columnHelper.accessor("isActive", {
-      header: "Estado",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Estado" />
+      ),
       cell: ({ getValue }) =>
         getValue() ? (
           <Badge variant="outline">Activo</Badge>
@@ -70,11 +73,15 @@ export function getPaymentMethodsColumns({
         ),
     }),
     columnHelper.accessor("code", {
-      header: "Código",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Código" />
+      ),
       cell: ({ getValue }) => getValue(),
     }),
     columnHelper.accessor("name", {
-      header: "Nombre",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Nombre" />
+      ),
       cell: ({ row }) =>
         editingId === row.original.id ? (
           <Input

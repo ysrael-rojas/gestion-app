@@ -49,10 +49,12 @@ interface PaymentDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   paymentId: string | null;
-  onPrint: (paymentId: string) => void;
+  initialMode?: DetailMode;
 }
 
 type DetailMode = "view" | "assign" | "annul";
+
+const DEFAULT_DETAIL_MODE: DetailMode = "view";
 
 function getErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
@@ -69,16 +71,16 @@ function DetailField({ label, value }: { label: string; value: string }) {
 
 function PaymentDetailContent({
   paymentId,
-  onPrint,
+  initialMode = DEFAULT_DETAIL_MODE,
 }: {
   paymentId: string;
-  onPrint: (paymentId: string) => void;
+  initialMode?: DetailMode;
 }) {
   const { assignAllocations, annulPayment } = usePagos();
   const [detail, setDetail] = useState<PaymentDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<DetailMode>("view");
+  const [mode, setMode] = useState<DetailMode>(initialMode);
   const [assignItems, setAssignItems] = useState<AllocationInput[]>([]);
   const [voidReason, setVoidReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -417,16 +419,8 @@ function PaymentDetailContent({
                 Asignar saldo
               </Button>
             ) : null}
-            <Button variant="outline" onClick={() => onPrint(detail.id)}>
-              Imprimir recibo
-            </Button>
           </div>
           <div className="flex gap-2">
-            {isActive ? (
-              <Button variant="destructive" onClick={() => setMode("annul")}>
-                Anular pago
-              </Button>
-            ) : null}
             <DialogClose render={<Button variant="outline" />}>
               Cerrar
             </DialogClose>
@@ -441,7 +435,7 @@ export function PaymentDetailModal({
   open,
   onOpenChange,
   paymentId,
-  onPrint,
+  initialMode,
 }: PaymentDetailModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -457,7 +451,7 @@ export function PaymentDetailModal({
             <PaymentDetailContent
               key={paymentId}
               paymentId={paymentId}
-              onPrint={onPrint}
+              initialMode={initialMode}
             />
           ) : null}
         </Card>

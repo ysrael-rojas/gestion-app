@@ -237,6 +237,7 @@ export function PaymentsView({
   const [globalFilter, setGlobalFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(Boolean(initialEntityId));
   const [viewingPaymentId, setViewingPaymentId] = useState<string | null>(null);
+  const [detailMode, setDetailMode] = useState<"view" | "annul">("view");
   const [printingPaymentId, setPrintingPaymentId] = useState<string | null>(null);
   const [vouchers, setVouchers] = useState<VoucherBalance[] | null>(null);
   const [unassignedIds, setUnassignedIds] = useState<Set<string> | null>(null);
@@ -284,12 +285,18 @@ export function PaymentsView({
   }, [router, pathname]);
 
   const openView = useCallback((payment: Payment) => {
+    setDetailMode("view");
     setViewingPaymentId(payment.id);
   }, []);
 
-  const openPrint = useCallback((paymentId: string) => {
+  const openPrint = useCallback((payment: Payment) => {
     setViewingPaymentId(null);
-    setPrintingPaymentId(paymentId);
+    setPrintingPaymentId(payment.id);
+  }, []);
+
+  const openAnnul = useCallback((payment: Payment) => {
+    setDetailMode("annul");
+    setViewingPaymentId(payment.id);
   }, []);
 
   async function handleSave(values: PaymentFormValues) {
@@ -338,8 +345,14 @@ export function PaymentsView({
   }, [vouchers, filter, today]);
 
   const columns = useMemo(
-    () => getPaymentsColumns({ onView: openView, direction }),
-    [openView, direction]
+    () =>
+      getPaymentsColumns({
+        onView: openView,
+        onPrint: openPrint,
+        onAnnul: openAnnul,
+        direction,
+      }),
+    [openView, openPrint, openAnnul, direction]
   );
 
   const table = useTable({
@@ -487,7 +500,7 @@ export function PaymentsView({
           }
         }}
         paymentId={viewingPaymentId}
-        onPrint={openPrint}
+        initialMode={detailMode}
       />
 
       <ReceiptDialog
