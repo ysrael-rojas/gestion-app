@@ -89,6 +89,7 @@ Para validar cambios: `npm run lint` + `npm test` + `npm run build`.
 
 - `spec` — diseñar una spec antes de escribir código.
 - `spec-impl` — implementar una spec aprobada (crea rama y avanza por pasos).
+- `spec-multi` — diseñar una spec orquestable multiagente (fases, reparto sin traslape de archivos y asignación de modelos). Invocar con `/spec-multi`.
 - `supabase` — tareas de Supabase (Database, Auth, Edge Functions, Realtime, Storage, SSR, RLS, CLI/MCP).
 - `supabase-postgres-best-practices` — cargar antes de crear/alterar tablas, RLS, índices o migraciones en Postgres.
 
