@@ -1,10 +1,10 @@
 ---
 name: spec-multi
-description: "Trigger: /spec-multi, spec multiagente, spec paralelizable. Diseña specs ejecutables por varios agentes en paralelo: fases A/B..N/Z, matriz de traslape cero de archivos y asignación de modelo mejor + alternativa por tarea."
+description: "Trigger: /spec-multi, spec multiagente, spec paralelizable. Diseña specs ejecutables por varios agentes en paralelo: fases A/B..N/Z, matriz de traslape cero de archivos y asignación de modelo por nivel (premium/intermedio/económico) por tarea."
 license: UNLICENSED
 metadata:
   author: gestion-app
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Skill: spec-multi — specs orquestables por múltiples agentes
@@ -34,6 +34,10 @@ de `/spec` (este skill se autocancela y le cede el trabajo).
 5. Máximo 2–3 unidades paralelas; prompts de subagentes autocontenidos
    (contexto resuelto + archivos prohibidos + criterios de salida).
 6. Este skill solo diseña: implementar es `/spec-impl`.
+7. **Solo modelos del provider `opencode-go`.** No asignar modelos de
+   `opencode` (p. ej. `claude-sonnet-5-5`, `nemotron`) ni de otros providers:
+   no están en la suscripción. Si un tipo de tarea pide un premium que no
+   existe en `references/modelos.md`, usar el premium más alto listado.
 
 ## Decision Gates
 
@@ -41,9 +45,11 @@ de `/spec` (este skill se autocancela y le cede el trabajo).
 | --- | --- |
 | La feature no cabe en una frase | Partir en varias specs (criterio de `/spec`) |
 | Trabajo con BD/dinero/datos irreversibles | Modelo premium y agente orquestador en sesión principal |
-| Presupuesto "calidad absoluta" | Columna "Mejor" en todas las filas de `references/modelos.md` |
-| Presupuesto "costo" (default) | Columna "Mejor" solo donde la fila lo indique como crítico; resto "Alternativa" |
+| Presupuesto "calidad absoluta" | Columna "Premium" en todas las filas críticas de `references/modelos.md` |
+| Presupuesto "equilibrado" | Columna "Intermedio" en lógica/BD/UI; "Económico" en mecánicas y exploración |
+| Presupuesto "costo" (default) | Columna "Económico" salvo donde la fila lo marque como crítico; entonces "Intermedio" |
 | Tarea no encaja en ninguna fila | `opencode-go/gpt-6-luna` (default balanceado) |
+| El modelo sugerido no está en `modelos.md` | No usarlo: solo existe el provider `opencode-go` (ver Hard Rule 7) |
 
 ## Execution Steps
 
@@ -52,14 +58,15 @@ de `/spec` (este skill se autocancela y le cede el trabajo).
 3. **Fase 2 Aclaración:** ejecutar la Fase 2 del `/spec` base + estas 4
    preguntas de orquestación: acoplamiento (¿qué partes son naturalmente
    independientes?), prerrequisitos (¿qué pieza bloquea a las demás?),
-   riesgo (¿qué toca BD/seguridad/dinero?), presupuesto (¿calidad absoluta o
-   costo?).
+   riesgo (¿qué toca BD/seguridad/dinero?), presupuesto (¿calidad absoluta,
+   equilibrado o costo?).
 4. **Fase 3 Descomposición:** presentar al usuario, antes de escribir nada:
    (a) esqueleto de fases `A` (prerrequisito único, un solo agente) → `B..N`
    (unidades paralelas independientes) → `Z` (integración: validación global
    lint+test+build, verificación con navegador, fixes); (b) matriz por unidad
    de archivos permitidos vs. prohibidos; (c) asignación de modelo por unidad
-   según `references/modelos.md` y el presupuesto de la Fase 2.
+   según `references/modelos.md` (nivel Premium, Intermedio o Económico) y el
+   presupuesto de la Fase 2.
 5. **Fase 4 Escritura:** escribir la spec con la Fase 3/4 del `/spec` base,
    insertando la sección `## Orquestación multiagente` (ver Output Contract)
    ANTES del `## Implementation plan`; los pasos del plan van agrupados por
