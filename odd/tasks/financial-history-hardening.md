@@ -15,7 +15,7 @@ Branch: `spec-30-hardening-financial-history` · Delivery: `ask-on-risk` · Fore
 - Acceptance also requires preserving the existing assignment/void flows, changing no business rows, and passing the SPEC 30 test/build checks.
 
 ## Tasks
-- T1 | S1 | inline | partial: dynamic database proof deferred by user; commit authorized; push target/session confirmation pending | commit identity to record after creation.
+- T1 | S1 | inline | partial: dynamic database proof deferred by user; commit `b8753bd` created; native assessment `under_budget`; push destination/session confirmation pending.
 
 ## Log
 - L1: “dale con odd de ahora en adelante”
@@ -45,6 +45,8 @@ Branch: `spec-30-hardening-financial-history` · Delivery: `ask-on-risk` · Fore
 - L25: The user said “la verificacion dinamica queda pendiente, has el commit y el push”; dynamic database guard proof is deferred, and the implementation commit is explicitly authorized. Remote push still requires confirming the exact destination and Git session.
 - L26: Dynamic database proof remains pending by the user's explicit direction; this is a partial ODD result, not a verification pass. The user authorized committing the SPEC30 work unit; push awaits exact remote/session confirmation.
 
-Risk: item 2 (security permissions and financial-history integrity).
-
-Rollback boundary: Remote DDL is forward-only. Restoring broad UPDATE/DELETE access requires a separately authorized GRANT migration; reverting the local code alone does not reverse remote ACLs.
+- L27: The commit scope is limited to the SPEC30 spec/task log, migration, `lib/pagos/pagos.ts`, and its unit tests; the prior point1 task log remains excluded. Push has not been performed and no remote destination was inspected.
+- L28: Risk: item 2 (security permissions and financial-history integrity).
+- L29: Rollback boundary: remote DDL is forward-only. Restoring broad UPDATE/DELETE access requires a separately authorized GRANT migration; reverting local code alone does not reverse remote ACLs.
+- L30: Work-unit commit `b8753bd` (`fix(db): blinda historial financiero de caja`) is on `spec-30-hardening-financial-history`. Native assessment against base `84b2261` returned risk `medium`, `review_due=false`, reason `under_budget`; no reviewer START was required.
+- L31: The user requested push of this feature branch. Remote name, destination, and Git session have not been confirmed; no remote inspection or push has occurred.
