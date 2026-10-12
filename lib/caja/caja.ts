@@ -51,6 +51,11 @@ function mapError(error: { code?: string; message: string }): Error {
       "No tienes permisos para esta operación. Cierra sesión y vuelve a entrar."
     );
   }
+  if (error.code === "PGRST116") {
+    return new Error(
+      "La consulta devolvió más registros de los esperados."
+    );
+  }
   return new Error(
     "No se pudo completar la operación con la base de datos. Intenta nuevamente."
   );
@@ -430,6 +435,7 @@ export async function getLastClose(
     .select("*")
     .eq("cash_account_id", accountId)
     .order("period_end", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) {

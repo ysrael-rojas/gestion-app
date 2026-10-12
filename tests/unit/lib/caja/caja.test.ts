@@ -7,7 +7,11 @@ const { mock } = await vi.hoisted(async () => {
 
 vi.mock("@/lib/supabase/client", () => ({ supabase: mock.client }));
 
-import { closeCashAccount, proposeClosePeriod } from "@/lib/caja/caja";
+import {
+  closeCashAccount,
+  getLastClose,
+  proposeClosePeriod,
+} from "@/lib/caja/caja";
 
 const accountRow = (overrides: Record<string, unknown> = {}) => ({
   id: "acc-1",
@@ -100,6 +104,29 @@ describe("caja.ts", () => {
       await expect(proposeClosePeriod("acc-1", "2026-10-06")).rejects.toThrow(
         "La cuenta no existe."
       );
+    });
+  });
+
+  describe("getLastClose", () => {
+    it("devuelve el cierre más reciente cuando la cuenta tiene varios cierres", async () => {
+      // La query real ordena por period_end desc; el mock devuelve la primera
+      // fila del arreglo, que es el cierre más reciente.
+      const newest = closeRow({ id: "close-new", period_end: "2026-10-09" });
+      const older = closeRow({ id: "close-old", period_end: "2026-10-05" });
+      mock.setTable("cash_close", { data: [newest, older], error: null });
+
+      const result = await getLastClose("acc-1");
+
+      expect(result?.id).toBe("close-new");
+      expect(result?.periodEnd).toBe("2026-10-09");
+    });
+
+    it("devuelve null cuando la cuenta no tiene cierres", async () => {
+      mock.setTable("cash_close", { data: [], error: null });
+
+      const result = await getLastClose("acc-1");
+
+      expect(result).toBeNull();
     });
   });
 
