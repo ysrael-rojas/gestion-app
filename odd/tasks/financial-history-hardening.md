@@ -15,7 +15,7 @@ Branch: `spec-30-hardening-financial-history` · Delivery: `ask-on-risk` · Fore
 - Acceptance also requires preserving the existing assignment/void flows, changing no business rows, and passing the SPEC 30 test/build checks.
 
 ## Tasks
-- T1 | S1 | inline | partial: dynamic database proof deferred by user; commit `b8753bd` created; native assessment `under_budget`; push destination/session confirmation pending.
+- T1 | S1 | inline | partial: dynamic database proof deferred by user; commit `b8753bd` created; push to `origin` confirmed up-to-date.
 
 ## Log
 - L1: “dale con odd de ahora en adelante”
@@ -50,3 +50,4 @@ Branch: `spec-30-hardening-financial-history` · Delivery: `ask-on-risk` · Fore
 - L29: Rollback boundary: remote DDL is forward-only. Restoring broad UPDATE/DELETE access requires a separately authorized GRANT migration; reverting local code alone does not reverse remote ACLs.
 - L30: Work-unit commit `b8753bd` (`fix(db): blinda historial financiero de caja`) is on `spec-30-hardening-financial-history`. Native assessment against base `84b2261` returned risk `medium`, `review_due=false`, reason `under_budget`; no reviewer START was required.
 - L31: The user requested push of this feature branch. Remote name, destination, and Git session have not been confirmed; no remote inspection or push has occurred.
+- L32: With the user's authorization, `git push origin spec-30-hardening-financial-history` returned “Everything up-to-date”; no force-push was used and the remote already contained the branch commits. Dynamic database proof remains deferred by the user.

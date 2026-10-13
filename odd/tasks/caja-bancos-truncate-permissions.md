@@ -10,7 +10,7 @@ Rama: `fix/caja-bancos-truncate-permissions` · Entrega: `ask-on-risk` · Foreca
 - Comprobación: consulta de catálogo antes/después con `has_table_privilege`; comprobar también el ACL predeterminado de `postgres` para nuevas tablas de `public`.
 
 ## Tasks
-- T1 | S1 | inline | Needs your decision: native review preflight cannot collect untracked selection | commit `53aaed2`.
+- T1 | S1 | inline | verified; native assessment `under_budget`; review pending in slice | commit `53aaed2`.
 
 ## Log
 - L1: «dale hagamos el primer punto»
@@ -27,9 +27,10 @@ Rama: `fix/caja-bancos-truncate-permissions` · Entrega: `ask-on-risk` · Foreca
 - L12: prueba funcional enfocada mediante `execute_sql` de Supabase MCP: el inventario reportó 10 tablas base, cero grants efectivos `TRUNCATE` para ambos roles, 80/80 privilegios DML preservados y cero ACL predeterminados de `postgres` que otorguen `TRUNCATE` en el alcance comprobado.
 - L13: commit de unidad de trabajo `53aaed2` (`fix(db): revoca TRUNCATE a roles API`) en la rama `fix/caja-bancos-truncate-permissions`; solo incluyó la migración y este documento. Los cambios previos del usuario permanecen fuera del commit.
 - L14: la evaluación nativa clasificó el commit como high, pero la selección de inventario untracked quedó sin adaptar: STATUS requirió `external.select_intended_untracked` para `.gentle-ai-default-agent.json` y `specs/27-cajas-bancos-remediacion.md` (inventario `sha256:4983ec71eb0e7e95222a50f381f3ddf794260020da4d88bc00fdc904260de251`). La operación de captura no está disponible en este runtime; no se inició START ni se asumió selección.
+- L15: tras la confirmación del usuario para excluir ambos archivos, el inventario cambió y el commit actual de la rama avanzó a `84b2261`, por lo que no se inició review sobre el rango combinado. Se aisló el commit de esta tarea (`53aaed2`) en un worktree limpio y se evaluó contra `79e4e28`: risk `medium`, `review_due=false`, `review_due_reason=under_budget`. No se inició START; el review queda pendiente en la slice hasta que un commit posterior alcance el umbral.
 
 Risk: item 2 (security permissions; removes only `TRUNCATE` from the API roles while preserving their DML grants).
 
 Rollback boundary: forward-only; no `GRANT TRUNCATE` se aplica automáticamente. Restaurar ese permiso requeriría una migración separada y autorización explícita; no se modificaron datos.
 
-Native RDD: pendiente/no disponible; no representa aprobación ni autoriza entrega. No se hizo push.
+Native RDD: `under_budget`; no se inició review, no hay receipt/approval y no se hizo push.
