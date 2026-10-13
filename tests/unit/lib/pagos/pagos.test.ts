@@ -295,18 +295,76 @@ describe("pagos.ts", () => {
         addAllocations("p-1", [{ comprobanteId: "c-1", amount: 50 }]),
       ).rejects.toThrow("La entidad o el comprobante seleccionado no existe.");
     });
+
+    it("asigna la entidad solo al anticipo sin entidad antes de insertar allocations", async () => {
+      const isNull = vi.fn().mockResolvedValue({ error: null });
+      const paymentEq = vi.fn(() => ({ is: isNull }));
+      const updatePayment = vi.fn(() => ({ eq: paymentEq }));
+      const insertAllocations = vi.fn().mockResolvedValue({ data: [], error: null });
+      const from = vi.spyOn(mock.client, "from").mockImplementation((table) =>
+        (table === "payment"
+          ? { update: updatePayment }
+          : { insert: insertAllocations }) as never,
+      );
+
+      try {
+        await addAllocations("p-1", [{ comprobanteId: "c-1", amount: 50 }], "e-1");
+
+        expect(updatePayment).toHaveBeenCalledWith({ entity_id: "e-1" });
+        expect(paymentEq).toHaveBeenCalledWith("id", "p-1");
+        expect(isNull).toHaveBeenCalledWith("entity_id", null);
+        expect(insertAllocations).toHaveBeenCalledWith([
+          { payment_id: "p-1", comprobante_id: "c-1", amount: 50 },
+        ]);
+      } finally {
+        from.mockRestore();
+      }
+    });
   });
 
   describe("voidPayment", () => {
     it("hace update con status ANULADO, void_reason y voided_at", async () => {
-      mock.setTable("payment", {
-        data: [],
+      mock.queueTable("payment", {
+        data: [paymentRow()],
+        error: null,
+      });
+      mock.queueTable("payment", {
+        data: [{ id: "p-1" }],
         error: null,
       });
 
       await voidPayment("p-1", "Error de digitación");
 
-      // El mock no valida el payload, pero verificamos que no lanza.
+      // Successful lookup and update results prove the first void still resolves.
+    });
+
+    it("rechaza volver a anular un pago que ya está anulado", async () => {
+      mock.setTable("payment", {
+        data: [
+          paymentRow({
+            status: "ANULADO",
+            void_reason: "Anulación original",
+            voided_at: "2026-10-12T12:00:00.000Z",
+          }),
+        ],
+        error: null,
+      });
+
+      await expect(voidPayment("p-1", "Nueva razón")).rejects.toThrow(
+        "El pago ya está anulado o no se encuentra disponible.",
+      );
+    });
+
+    it("rechaza el void si el estado cambió antes del update", async () => {
+      mock.queueTable("payment", {
+        data: [paymentRow()],
+        error: null,
+      });
+      mock.queueTable("payment", { data: [], error: null });
+
+      await expect(voidPayment("p-1", "Nueva razón")).rejects.toThrow(
+        "El pago ya está anulado o cambió de estado.",
+      );
     });
 
     it("propaga el error con traducción", async () => {

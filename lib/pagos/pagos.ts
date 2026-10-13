@@ -430,16 +430,37 @@ export async function addAllocations(
 }
 
 export async function voidPayment(id: string, reason: string): Promise<void> {
-  const { error } = await supabase
+  const { data: payment, error: lookupError } = await supabase
+    .from("payment")
+    .select("id, status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (lookupError) {
+    throw mapError(lookupError);
+  }
+
+  if (!payment || payment.status === "ANULADO") {
+    throw new Error("El pago ya está anulado o no se encuentra disponible.");
+  }
+
+  const { data, error } = await supabase
     .from("payment")
     .update({
       status: "ANULADO",
       void_reason: reason,
       voided_at: new Date().toISOString(),
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("status", payment.status)
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     throw mapError(error);
+  }
+
+  if (!data) {
+    throw new Error("El pago ya está anulado o cambió de estado.");
   }
 }
