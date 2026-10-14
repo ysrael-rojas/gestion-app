@@ -73,14 +73,14 @@ El arqueo actual (`cash_close.counted_balance`) guarda **un solo monto total**; 
 
 ## Acceptance criteria
 
-- [ ] El cuadre de una caja captura cantidades por denominación y el total calculado se guarda como `counted_balance`, con detalle en `cash_close_denomination`.
-- [ ] La suma por denominaciones es verificable en la BD (consulta por `cash_close_id`).
-- [ ] El reporte y el CSV del cuadre incluyen la tabla de denominaciones y el fondo de cambio.
-- [ ] Una cuenta `CASH_BOX` puede marcarse caja chica con fondo, límite por gasto y custodio.
-- [ ] Se registran vales prenumerados con monto, concepto y estado; un vale con monto mayor al límite es rechazado por validación.
-- [ ] El arqueo de caja chica muestra efectivo + vales pendientes = fondo total.
-- [ ] "Reponer fondo" crea una transferencia atómica (SPEC 31) y marca los vales como `REPUESTO`.
-- [ ] `npm test`, `npm run lint` y `npm run build` pasan.
+- [x] El cuadre de una caja captura cantidades por denominación y el total calculado se guarda como `counted_balance`, con detalle en `cash_close_denomination`.
+- [x] La suma por denominaciones es verificable en la BD (consulta por `cash_close_id`).
+- [x] El reporte y el CSV del cuadre incluyen la tabla de denominaciones y el fondo de cambio.
+- [x] Una cuenta `CASH_BOX` puede marcarse caja chica con fondo, límite por gasto y custodio.
+- [x] Se registran vales prenumerados con monto, concepto y estado; un vale con monto mayor al límite es rechazado por validación.
+- [x] El arqueo de caja chica muestra efectivo + vales pendientes = fondo total.
+- [x] "Reponer fondo" crea una transferencia atómica (SPEC 31) y marca los vales como `REPUESTO`.
+- [x] `npm test`, `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 

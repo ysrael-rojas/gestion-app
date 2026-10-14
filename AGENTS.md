@@ -65,6 +65,13 @@ Para validar cambios: `npm run lint` + `npm test` + `npm run build`.
 - shadcn ya está inicializado (`components.json` existe y hay componentes en `components/ui/`). Añadir más con `npx shadcn@latest add [componente]`; **no** volver a correr `init`.
 - Antes de instalar un componente nuevo, preguntar.
 
+### Propuestas de diseño — obligatorio pasar por `frontend-design`
+
+- **Toda** propuesta de diseño (UI nueva, rediseño, elección de paleta, tipografía, escala, layout o tratamiento de componentes) **debe** pasar por el skill `frontend-design` **antes** de presentarse al usuario, de pedir una decisión o de escribir código. No se proponen direcciones estéticas sin ese paso.
+- Proceso mínimo a seguir del skill: (1) plan compacto con color (4–6 hex con nombre), tipografías y sus roles, layout con wireframes ASCII y principios de diseño; (2) revisión del plan contra el brief y contra los "tells" de diseño generado que el skill enumera, indicando qué se cambió y por qué; (3) recién entonces proponer o codear.
+- Las propuestas se fundan en el tema real del producto (gestión comercial en español: comprobantes, cobros, caja, cuentas por cobrar, clientes), no en defaults genéricos. Evitar explícitamente los patrones plantilla que el skill marca: eyebrows en MAYÚSCULAS, meta-strings con puntos medios (`A · B · C`), `→` al final de links/botones, monospace para etiquetas de datos, cards idénticas con el mismo radio y la misma sombra, y el par "fondo casi negro + acento verde ácido o bermellón".
+- El motor `ui-ux-pro-max` sigue aportando datos de dominio y reglas de accesibilidad; la **dirección estética** la define `frontend-design`.
+
 ## Idioma
 
 - Comunicación con el usuario, logs y mensajes de commit: español.
@@ -92,6 +99,15 @@ Para validar cambios: `npm run lint` + `npm test` + `npm run build`.
 - `spec-multi` — diseñar una spec orquestable multiagente (fases, reparto sin traslape de archivos y asignación de modelos). Invocar con `/spec-multi`.
 - `supabase` — tareas de Supabase (Database, Auth, Edge Functions, Realtime, Storage, SSR, RLS, CLI/MCP).
 - `supabase-postgres-best-practices` — cargar antes de crear/alterar tablas, RLS, índices o migraciones en Postgres.
+- `caja-bancos-mype` — experto operativo de caja y bancos para MYPE en Perú (arqueo, conciliación bancaria, caja chica, tesorería, ITF, detracciones). **Cargar antes de planear o tocar el módulo de caja y bancos**; actúa como maestro que enseña el procedimiento ideal y recomienda mejoras al sistema, sin asientos contables.
+- `frontend-design` — dirección visual distintiva. **Obligatorio** para toda propuesta de diseño (ver sección UI).
+
+### Skills de diseño instalados (`.opencode/skills/`)
+
+Instalados con `uipro init --ai opencode` (CLI `ui-ux-pro-max-cli`). Aportan datos y reglas, no la dirección estética:
+
+- `ui-ux-pro-max` — base de datos: estilos, paletas por industria, tipografías, iconos, gráficos y guías UX. Motor: `python .opencode/skills/ui-ux-pro-max/scripts/search.py "<consulta>" --design-system -p "gestion-app"` (o `--domain style|color|typography|chart|ux`). Design system persistido en `design-system/gestion-app/MASTER.md`.
+- `ui-styling`, `design-system`, `design`, `brand`, `slides`, `banner-design` — apoyo (shadcn/Tailwind, tokens, marca, slides, banners).
 
 ## Agentes (`.opencode/agent/`)
 
