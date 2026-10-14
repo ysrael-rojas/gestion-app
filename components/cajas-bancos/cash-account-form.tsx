@@ -63,6 +63,10 @@ function createEmptyValues(defaultType?: CashAccountType): CashAccountFormInput 
     openingBalanceDate: getTodayLocalDate(),
     notes: "",
     isActive: true,
+    isPettyCash: false,
+    changeFund: 0,
+    pettyExpenseLimit: "",
+    custodianName: "",
   };
 }
 
@@ -129,6 +133,10 @@ export function useCashAccountForm({
         openingBalanceDate: account.openingBalanceDate,
         notes: account.notes ?? "",
         isActive: account.isActive,
+        isPettyCash: account.isPettyCash,
+        changeFund: account.changeFund,
+        pettyExpenseLimit: account.pettyExpenseLimit ?? "",
+        custodianName: account.custodianName ?? "",
       });
     } else {
       form.reset(createEmptyValues(defaultType));
@@ -148,6 +156,7 @@ interface CashAccountFormFieldsProps {
 function CashAccountFormFields({ form, onSubmit }: CashAccountFormFieldsProps) {
   const type = useWatch({ control: form.control, name: "type" });
   const isBank = type === "BANK_ACCOUNT";
+  const isPettyCash = useWatch({ control: form.control, name: "isPettyCash" });
   const errors = form.formState.errors;
 
   return (
@@ -173,6 +182,12 @@ function CashAccountFormFields({ form, onSubmit }: CashAccountFormFieldsProps) {
                     form.setValue("bankName", "");
                     form.setValue("accountNumber", "");
                     form.setValue("cci", "");
+                  } else {
+                    // Un banco no tiene caja chica ni fondo de cambio.
+                    form.setValue("isPettyCash", false);
+                    form.setValue("changeFund", 0);
+                    form.setValue("pettyExpenseLimit", "");
+                    form.setValue("custodianName", "");
                   }
                 }}
               >
@@ -280,6 +295,82 @@ function CashAccountFormFields({ form, onSubmit }: CashAccountFormFieldsProps) {
             />
             <FieldError message={errors.cci?.message} />
           </div>
+        </FormGroup>
+      ) : null}
+
+      {type === "CASH_BOX" ? (
+        <FormGroup title="Caja chica">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="changeFund">Fondo de cambio (S/)</Label>
+            <Input
+              id="changeFund"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              aria-invalid={!!errors.changeFund}
+              {...form.register("changeFund")}
+            />
+            <FieldError message={errors.changeFund?.message} />
+            <p className="text-xs text-muted-foreground">
+              Base fija para dar vueltos. En el arqueo se resta del total
+              contado para obtener el efectivo neto.
+            </p>
+          </div>
+
+          <Controller
+            control={form.control}
+            name="isPettyCash"
+            render={({ field }) => (
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="isPettyCash"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+                <div className="flex flex-col gap-0.5">
+                  <Label htmlFor="isPettyCash">Es caja chica</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Fondo fijo para gastos menores, con vales prenumerados y
+                    reposición.
+                  </p>
+                </div>
+              </div>
+            )}
+          />
+
+          {isPettyCash ? (
+            <>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="pettyExpenseLimit">Límite por gasto (S/)</Label>
+                <Input
+                  id="pettyExpenseLimit"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Sin límite"
+                  aria-invalid={!!errors.pettyExpenseLimit}
+                  {...form.register("pettyExpenseLimit")}
+                />
+                <FieldError message={errors.pettyExpenseLimit?.message} />
+                <p className="text-xs text-muted-foreground">
+                  Un vale por encima de este monto se rechaza.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="custodianName">Custodio</Label>
+                <Input
+                  id="custodianName"
+                  placeholder="Responsable del fondo"
+                  maxLength={100}
+                  aria-invalid={!!errors.custodianName}
+                  {...form.register("custodianName")}
+                />
+                <FieldError message={errors.custodianName?.message} />
+              </div>
+            </>
+          ) : null}
         </FormGroup>
       ) : null}
 
