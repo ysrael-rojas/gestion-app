@@ -115,6 +115,8 @@ interface StatementTableProps {
   currency: string;
   /** Marca los recibos indicados como verificados (`EN_REVISION` → `PROCESADO`). */
   onMarkVerified?: (paymentIds: string[]) => Promise<void> | void;
+  /** Abre el registro de un cargo bancario (ITF, comisión, detracción). */
+  onRegisterBankCharge?: () => void;
 }
 
 /**
@@ -125,6 +127,7 @@ export function StatementTable({
   rows,
   currency,
   onMarkVerified,
+  onRegisterBankCharge,
 }: StatementTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -301,48 +304,60 @@ export function StatementTable({
 
   return (
     <div className="flex flex-col gap-4">
-      {markableIds.length > 0 ? (
+      {onRegisterBankCharge || markableIds.length > 0 ? (
         <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/30 p-3 text-sm">
-          {isConfirming ? (
-            <>
-              <span className="font-medium">
-                ¿Marcar {selectedIds.length} recibo(s) como verificados? La
-                validación no cambia el saldo.
-              </span>
-              <div className="flex gap-2">
+          {onRegisterBankCharge ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onRegisterBankCharge}
+            >
+              Registrar cargo bancario
+            </Button>
+          ) : null}
+
+          {markableIds.length > 0 ? (
+            isConfirming ? (
+              <>
+                <span className="font-medium">
+                  ¿Marcar {selectedIds.length} recibo(s) como verificados? La
+                  validación no cambia el saldo.
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isSaving}
+                    onClick={() => setIsConfirming(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={isSaving}
+                    onClick={() => void mark(selectedIds)}
+                  >
+                    {isSaving ? "Marcando…" : "Confirmar"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
                 <Button
+                  size="sm"
                   variant="outline"
-                  size="sm"
-                  disabled={isSaving}
-                  onClick={() => setIsConfirming(false)}
+                  disabled={selectedIds.length === 0}
+                  onClick={() => setIsConfirming(true)}
                 >
-                  Cancelar
+                  Marcar verificados ({selectedIds.length})
                 </Button>
-                <Button
-                  size="sm"
-                  disabled={isSaving}
-                  onClick={() => void mark(selectedIds)}
-                >
-                  {isSaving ? "Marcando…" : "Confirmar"}
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={selectedIds.length === 0}
-                onClick={() => setIsConfirming(true)}
-              >
-                Marcar verificados ({selectedIds.length})
-              </Button>
-              <span className="text-muted-foreground">
-                Selecciona los recibos en revisión que ya cuadran con el
-                extracto del banco.
-              </span>
-            </>
-          )}
+                <span className="text-muted-foreground">
+                  Selecciona los recibos en revisión que ya cuadran con el
+                  extracto del banco.
+                </span>
+              </>
+            )
+          ) : null}
         </div>
       ) : null}
 

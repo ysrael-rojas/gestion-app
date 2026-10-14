@@ -63,6 +63,8 @@ interface CuadreReportProps {
   changeFund: number;
   /** Marca recibos como verificados (EN_REVISION → PROCESADO). */
   onMarkVerified?: (paymentIds: string[]) => Promise<void> | void;
+  /** Abre el registro de un cargo bancario del período. */
+  onRegisterBankCharge?: () => void;
 }
 
 function formatAmount(value: number, currency: string): string {
@@ -325,6 +327,7 @@ export function CuadreReport({
   denominations,
   changeFund,
   onMarkVerified,
+  onRegisterBankCharge,
 }: CuadreReportProps) {
   const categories = groupByCategory(statement);
   const statementRows = buildStatementRows(statement, transfers, accountId);
@@ -475,6 +478,7 @@ export function CuadreReport({
             rows={statementRows}
             currency={currency}
             onMarkVerified={onMarkVerified}
+            onRegisterBankCharge={onRegisterBankCharge}
           />
         </div>
       </CardContent>

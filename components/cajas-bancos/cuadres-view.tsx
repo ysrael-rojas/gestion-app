@@ -54,7 +54,9 @@ import {
   type CloseDenomination,
 } from "@/lib/caja/caja";
 import { getPeriodicityLabel } from "@/lib/data/cash-options";
-import { markPaymentsProcessed } from "@/lib/pagos/pagos";
+import { createPayment, markPaymentsProcessed } from "@/lib/pagos/pagos";
+import { BankChargeModal } from "@/components/cajas-bancos/bank-charge-modal";
+import type { BankChargeFormValues } from "@/lib/schemas/bank-charge";
 import type { CashAccount } from "@/lib/cuentas/entidades";
 import type { CashClose, Payment } from "@/components/pagos/types";
 import {
@@ -302,6 +304,8 @@ export function CuadresView() {
   const [transfers, setTransfers] = useState<CashTransfer[]>([]);
   const [denominations, setDenominations] = useState<CloseDenomination[]>([]);
   const [statementRefreshKey, setStatementRefreshKey] = useState(0);
+  const [bankChargeOpen, setBankChargeOpen] = useState(false);
+  const [isSavingBankCharge, setIsSavingBankCharge] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -443,6 +447,32 @@ export function CuadresView() {
     }
   }
 
+  async function handleBankCharge(values: BankChargeFormValues) {
+    setIsSavingBankCharge(true);
+    try {
+      // Un cargo bancario es un egreso sin entidad: no paga una factura.
+      await createPayment({
+        entityId: undefined,
+        direction: "EGRESO",
+        paymentDate: values.chargeDate,
+        amount: values.amount,
+        methodId: values.methodId,
+        cashAccountId: values.cashAccountId,
+        categoryId: values.categoryId,
+        reference: values.reference,
+        notes: values.notes,
+        allocations: [],
+      });
+      toast.success("Cargo bancario registrado");
+      setBankChargeOpen(false);
+      setStatementRefreshKey((key) => key + 1);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsSavingBankCharge(false);
+    }
+  }
+
   return (
     <div className="container mx-auto flex flex-col gap-6 p-6">
       <div>
@@ -556,6 +586,7 @@ export function CuadresView() {
               denominations={denominations}
               changeFund={account.changeFund}
               onMarkVerified={handleMarkVerified}
+              onRegisterBankCharge={() => setBankChargeOpen(true)}
             />
           ) : null}
 
@@ -567,6 +598,16 @@ export function CuadresView() {
             onClose={(values) => void handleClose(values)}
             isSaving={isClosing}
           />
+
+          {account ? (
+            <BankChargeModal
+              open={bankChargeOpen}
+              onOpenChange={setBankChargeOpen}
+              account={account}
+              onDone={(values) => void handleBankCharge(values)}
+              isSaving={isSavingBankCharge}
+            />
+          ) : null}
         </>
       )}
     </div>
