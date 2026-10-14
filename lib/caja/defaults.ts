@@ -16,6 +16,10 @@ export const DEFAULT_CATEGORIES: Record<PaymentDirection, string[]> = {
     "Anticipo a proveedor",
     "Gasto operativo",
     "Retiro del propietario",
+    // Cargos que el banco descuenta de la cuenta (SPEC 33).
+    "ITF",
+    "Comisión bancaria",
+    "Detracción SPOT",
     "Otro egreso",
   ],
 };

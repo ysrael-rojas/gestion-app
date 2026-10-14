@@ -1,6 +1,6 @@
 # SPEC 33 — Conciliación bancaria por validación manual
 
-> **Status:** Draft
+> **Status:** Aprobado
 > **Depends on:** SPEC 09, SPEC 26
 > **Date:** 2026-10-14
 > **Objective:** Validar los movimientos de cada cuenta contra el extracto del banco: statement con columna de estado, acción de marcar `PROCESADO` y registro de cargos bancarios (ITF, comisión, detracción SPOT) como recibos de egreso.

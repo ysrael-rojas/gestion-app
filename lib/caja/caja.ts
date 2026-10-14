@@ -135,11 +135,13 @@ export async function listCategories(
 }
 
 // Siembra perezosa por dueño: el esquema exige owner_id (DEFAULT auth.uid()),
-// así que no se puede sembrar por SQL. Ignora conflictos de unicidad.
+// así que no se puede sembrar por SQL. Inserta solo las semillas que faltan,
+// para que añadir una categoría nueva llegue también a los dueños que ya
+// tenían catálogo (SPEC 33).
 export async function ensureCatalogsSeeded(): Promise<void> {
   const [methods, categories] = await Promise.all([
-    supabase.from("payment_method").select("id").limit(1),
-    supabase.from("cash_receipt_category").select("id").limit(1),
+    supabase.from("payment_method").select("code"),
+    supabase.from("cash_receipt_category").select("direction,name"),
   ]);
 
   if (methods.error) {
@@ -149,9 +151,16 @@ export async function ensureCatalogsSeeded(): Promise<void> {
     throw mapError(categories.error);
   }
 
-  if ((methods.data ?? []).length === 0) {
+  const existingCodes = new Set(
+    (methods.data ?? []).map((row) => row.code)
+  );
+  const missingMethods = DEFAULT_PAYMENT_METHODS.filter(
+    (method) => !existingCodes.has(method.code)
+  );
+
+  if (missingMethods.length > 0) {
     const { error } = await supabase.from("payment_method").insert(
-      DEFAULT_PAYMENT_METHODS.map((method) => ({
+      missingMethods.map((method) => ({
         code: method.code,
         name: method.name,
       }))
@@ -161,15 +170,21 @@ export async function ensureCatalogsSeeded(): Promise<void> {
     }
   }
 
-  if ((categories.data ?? []).length === 0) {
-    const rows = (
-      Object.entries(DEFAULT_CATEGORIES) as [PaymentDirection, string[]][]
-    ).flatMap(([direction, names]) =>
-      names.map((name) => ({ direction, name }))
+  const existingCategories = new Set(
+    (categories.data ?? []).map((row) => `${row.direction}|${row.name}`)
+  );
+  const missingCategories = (
+    Object.entries(DEFAULT_CATEGORIES) as [PaymentDirection, string[]][]
+  )
+    .flatMap(([direction, names]) => names.map((name) => ({ direction, name })))
+    .filter(
+      (row) => !existingCategories.has(`${row.direction}|${row.name}`)
     );
+
+  if (missingCategories.length > 0) {
     const { error } = await supabase
       .from("cash_receipt_category")
-      .insert(rows);
+      .insert(missingCategories);
     if (error && error.code !== "23505") {
       throw mapError(error);
     }
