@@ -37,6 +37,8 @@ import {
   buildStatementRows,
 } from "@/components/cajas-bancos/statement-table";
 import { downloadCsv, toCsv } from "@/lib/caja/csv";
+import { getOptionLabel } from "@/lib/data/sale-options";
+import { PAYMENT_STATUSES } from "@/lib/data/payment-options";
 import {
   denominationKind,
   formatDenomination,
@@ -373,7 +375,16 @@ export function CuadreReport({
       ...categories.map((item) => [item.direction, item.category, item.total]),
       [],
       ["Movimientos"],
-      ["Fecha", "Tipo", "Recibo", "Dirección", "Categoría", "Método", "Importe"],
+      [
+        "Fecha",
+        "Tipo",
+        "Recibo",
+        "Dirección",
+        "Categoría",
+        "Método",
+        "Importe",
+        "Estado",
+      ],
       ...statementRows.map((row) => [
         row.date,
         row.kind === "TRANSFER" ? "Transferencia" : "Recibo",
@@ -382,6 +393,8 @@ export function CuadreReport({
         row.category,
         row.method,
         row.amount,
+        // Las transferencias no son recibos: no tienen estado de conciliación.
+        row.status ? getOptionLabel(PAYMENT_STATUSES, row.status) : "—",
       ]),
     ];
 
