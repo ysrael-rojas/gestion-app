@@ -23,7 +23,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { listCategories, listPaymentMethods } from "@/lib/caja/caja";
+import {
+  ensureCatalogsSeeded,
+  listCategories,
+  listPaymentMethods,
+} from "@/lib/caja/caja";
 import { BANK_CHARGE_CATEGORIES } from "@/lib/caja/defaults";
 import {
   bankChargeSchema,
@@ -95,6 +99,9 @@ export function BankChargeModal({
 
     void (async () => {
       try {
+        // Las categorías de cargo son semillas: si el dueño aún no abrió un
+        // formulario de pago, hay que sembrarlas antes de listarlas.
+        await ensureCatalogsSeeded();
         const [nextMethods, nextCategories] = await Promise.all([
           listPaymentMethods(),
           listCategories("EGRESO"),
