@@ -1,6 +1,6 @@
 # SPEC 33 — Conciliación bancaria por validación manual
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 09, SPEC 26
 > **Date:** 2026-10-14
 > **Objective:** Validar los movimientos de cada cuenta contra el extracto del banco: statement con columna de estado, acción de marcar `PROCESADO` y registro de cargos bancarios (ITF, comisión, detracción SPOT) como recibos de egreso.
@@ -44,14 +44,14 @@ Sin tablas ni columnas nuevas. La conciliación opera sobre `payment.status` exi
 
 ## Acceptance criteria
 
-- [ ] El statement muestra la columna "Estado" distinguiendo `EN_REVISION`, `PROCESADO` y `ANULADO`.
-- [ ] "Marcar verificado" pasa `EN_REVISION → PROCESADO` y persiste tras recargar.
-- [ ] No es posible marcar un pago `ANULADO` ni re-marcar uno ya `PROCESADO` (la RPC rechaza ambos).
-- [ ] La selección múltiple marca varios pagos a la vez de forma consistente.
-- [ ] Las categorías `ITF`, `Comisión bancaria` y `Detracción SPOT` aparecen sembradas para el owner.
-- [ ] "Registrar cargo bancario" crea un recibo de egreso con la categoría elegida y queda visible en el statement.
-- [ ] El reporte y el CSV del cuadre incluyen la columna "Estado".
-- [ ] `npm test`, `npm run lint` y `npm run build` pasan.
+- [x] El statement muestra la columna "Estado" distinguiendo `EN_REVISION`, `PROCESADO` y `ANULADO`.
+- [x] "Marcar verificado" pasa `EN_REVISION → PROCESADO` y persiste tras recargar.
+- [x] No es posible marcar un pago `ANULADO` ni re-marcar uno ya `PROCESADO` (la RPC rechaza ambos).
+- [x] La selección múltiple marca varios pagos a la vez de forma consistente.
+- [x] Las categorías `ITF`, `Comisión bancaria` y `Detracción SPOT` aparecen sembradas para el owner.
+- [x] "Registrar cargo bancario" crea un recibo de egreso con la categoría elegida y queda visible en el statement.
+- [x] El reporte y el CSV del cuadre incluyen la columna "Estado".
+- [x] `npm test`, `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
