@@ -54,6 +54,7 @@ import {
   type CloseDenomination,
 } from "@/lib/caja/caja";
 import { getPeriodicityLabel } from "@/lib/data/cash-options";
+import { markPaymentsProcessed } from "@/lib/pagos/pagos";
 import type { CashAccount } from "@/lib/cuentas/entidades";
 import type { CashClose, Payment } from "@/components/pagos/types";
 import {
@@ -300,6 +301,7 @@ export function CuadresView() {
   const [statement, setStatement] = useState<Payment[]>([]);
   const [transfers, setTransfers] = useState<CashTransfer[]>([]);
   const [denominations, setDenominations] = useState<CloseDenomination[]>([]);
+  const [statementRefreshKey, setStatementRefreshKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -406,7 +408,7 @@ export function CuadresView() {
     return () => {
       isMounted = false;
     };
-  }, [accountId, selectedClose]);
+  }, [accountId, selectedClose, statementRefreshKey]);
 
   async function handleClose(values: CashCloseFormValues) {
     setIsClosing(true);
@@ -424,6 +426,20 @@ export function CuadresView() {
       toast.error(getErrorMessage(error));
     } finally {
       setIsClosing(false);
+    }
+  }
+
+  async function handleMarkVerified(paymentIds: string[]) {
+    try {
+      const count = await markPaymentsProcessed(paymentIds);
+      toast.success(
+        count === 1
+          ? "Recibo marcado como verificado"
+          : `${count} recibos marcados como verificados`
+      );
+      setStatementRefreshKey((key) => key + 1);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
     }
   }
 
@@ -539,6 +555,7 @@ export function CuadresView() {
               currency={account.currency}
               denominations={denominations}
               changeFund={account.changeFund}
+              onMarkVerified={handleMarkVerified}
             />
           ) : null}
 

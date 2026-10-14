@@ -15,7 +15,6 @@ import {
 } from "@tanstack/react-table";
 import { Download } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,6 +32,10 @@ import {
 } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
+import {
+  StatementTable,
+  buildStatementRows,
+} from "@/components/cajas-bancos/statement-table";
 import { downloadCsv, toCsv } from "@/lib/caja/csv";
 import {
   denominationKind,
@@ -56,6 +59,8 @@ interface CuadreReportProps {
   denominations: CloseDenomination[];
   /** Fondo de cambio de la cuenta al momento de ver el reporte. */
   changeFund: number;
+  /** Marca recibos como verificados (EN_REVISION → PROCESADO). */
+  onMarkVerified?: (paymentIds: string[]) => Promise<void> | void;
 }
 
 function formatAmount(value: number, currency: string): string {
@@ -115,57 +120,6 @@ const categoryColumnHelper = createColumnHelper<
   CategoryTotal
 >();
 
-interface StatementRow {
-  id: string;
-  kind: "PAYMENT" | "TRANSFER";
-  date: string;
-  ref: string;
-  direction: "INGRESO" | "EGRESO";
-  category: string;
-  method: string;
-  amount: number;
-}
-
-function buildStatementRows(
-  statement: Payment[],
-  transfers: CashTransfer[],
-  accountId: string
-): StatementRow[] {
-  const paymentRows: StatementRow[] = statement.map((payment) => ({
-    id: payment.id,
-    kind: "PAYMENT",
-    date: payment.paymentDate,
-    ref: payment.receiptNumber,
-    direction: payment.direction,
-    category: payment.categoryName || "Sin categoría",
-    method: payment.methodName || "—",
-    amount: payment.amount,
-  }));
-
-  const transferRows: StatementRow[] = transfers.map((transfer) => {
-    const incoming = transfer.targetAccountId === accountId;
-    return {
-      id: transfer.id,
-      kind: "TRANSFER",
-      date: transfer.transferDate,
-      ref: "Transferencia",
-      direction: incoming ? "INGRESO" : "EGRESO",
-      category: "Transferencia entre cuentas",
-      method: "—",
-      amount: transfer.amount,
-    };
-  });
-
-  return [...paymentRows, ...transferRows].sort((a, b) =>
-    a.date.localeCompare(b.date)
-  );
-}
-
-const statementRowColumnHelper = createColumnHelper<
-  typeof reportTableFeatures,
-  StatementRow
->();
-
 const DEFAULT_PAGE_SIZE = 10;
 
 interface CategoryTotalsTableProps {
@@ -216,136 +170,6 @@ function CategoryTotalsTable({
   const table = useTable({
     features: reportTableFeatures,
     data: categories,
-    columns,
-    onSortingChange: setSorting,
-    state: { sorting },
-    initialState: {
-      pagination: {
-        pageIndex: 0,
-        pageSize: DEFAULT_PAGE_SIZE,
-      },
-    },
-  });
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="overflow-hidden rounded-md border bg-background">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : (
-                      <table.FlexRender header={header} />
-                    )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={columns.length}
-                  className="text-center text-sm text-muted-foreground"
-                >
-                  Sin movimientos en el período.
-                </TableCell>
-              </TableRow>
-            ) : (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id}>
-                  {row.getAllCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      <table.FlexRender cell={cell} />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <DataTablePagination table={table} />
-    </div>
-  );
-}
-
-interface StatementTableProps {
-  rows: StatementRow[];
-  currency: string;
-}
-
-function StatementTable({ rows, currency }: StatementTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-
-  const columns = useMemo(
-    () =>
-      statementRowColumnHelper.columns([
-        statementRowColumnHelper.accessor("kind", {
-          header: () => <span className="sr-only">Tipo</span>,
-          cell: ({ getValue }) =>
-            getValue() === "TRANSFER" ? (
-              <Badge variant="outline">Transferencia</Badge>
-            ) : (
-              <Badge variant="secondary">Recibo</Badge>
-            ),
-        }),
-        statementRowColumnHelper.accessor("date", {
-          header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Fecha" />
-          ),
-          cell: ({ getValue }) => formatDate(getValue()),
-        }),
-        statementRowColumnHelper.accessor("ref", {
-          header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Recibo" />
-          ),
-          cell: ({ getValue }) => getValue(),
-        }),
-        statementRowColumnHelper.accessor("direction", {
-          header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Dirección" />
-          ),
-          cell: ({ getValue }) =>
-            getValue() === "INGRESO" ? "Ingreso" : "Egreso",
-        }),
-        statementRowColumnHelper.accessor("category", {
-          header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Categoría" />
-          ),
-          cell: ({ getValue }) => getValue(),
-        }),
-        statementRowColumnHelper.accessor("method", {
-          header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Método" />
-          ),
-          cell: ({ getValue }) => getValue(),
-        }),
-        statementRowColumnHelper.accessor("amount", {
-          header: ({ column }) => (
-            <DataTableColumnHeader
-              column={column}
-              title="Importe"
-              align="right"
-            />
-          ),
-          cell: ({ getValue }) => (
-            <div className="text-right">
-              {formatAmount(getValue(), currency)}
-            </div>
-          ),
-        }),
-      ]),
-    [currency]
-  );
-
-  const table = useTable({
-    features: reportTableFeatures,
-    data: rows,
     columns,
     onSortingChange: setSorting,
     state: { sorting },
@@ -498,6 +322,7 @@ export function CuadreReport({
   currency,
   denominations,
   changeFund,
+  onMarkVerified,
 }: CuadreReportProps) {
   const categories = groupByCategory(statement);
   const statementRows = buildStatementRows(statement, transfers, accountId);
@@ -633,7 +458,11 @@ export function CuadreReport({
 
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold">Movimientos</h3>
-          <StatementTable rows={statementRows} currency={currency} />
+          <StatementTable
+            rows={statementRows}
+            currency={currency}
+            onMarkVerified={onMarkVerified}
+          />
         </div>
       </CardContent>
     </Card>
