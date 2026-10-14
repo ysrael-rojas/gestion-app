@@ -116,6 +116,8 @@ export type Database = {
           period_end: string
           period_start: string
           periodicity: Database["public"]["Enums"]["closing_periodicity"]
+          transfer_in_total: number
+          transfer_out_total: number
         }
         Insert: {
           cash_account_id: string
@@ -133,6 +135,8 @@ export type Database = {
           period_end: string
           period_start: string
           periodicity: Database["public"]["Enums"]["closing_periodicity"]
+          transfer_in_total?: number
+          transfer_out_total?: number
         }
         Update: {
           cash_account_id?: string
@@ -150,6 +154,8 @@ export type Database = {
           period_end?: string
           period_start?: string
           periodicity?: Database["public"]["Enums"]["closing_periodicity"]
+          transfer_in_total?: number
+          transfer_out_total?: number
         }
         Relationships: [
           {
@@ -187,6 +193,54 @@ export type Database = {
           owner_id?: string
         }
         Relationships: []
+      }
+      cash_transfer: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          owner_id: string
+          source_account_id: string
+          target_account_id: string
+          transfer_date: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          source_account_id: string
+          target_account_id: string
+          transfer_date?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          source_account_id?: string
+          target_account_id?: string
+          transfer_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_transfer_source_account_id_fkey"
+            columns: ["source_account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_transfer_target_account_id_fkey"
+            columns: ["target_account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_account"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comprobante: {
         Row: {
@@ -558,6 +612,16 @@ export type Database = {
           p_counted_balance: number
           p_notes: string
           p_period_end: string
+        }
+        Returns: string
+      }
+      create_cash_transfer: {
+        Args: {
+          p_amount: number
+          p_notes: string
+          p_source_account_id: string
+          p_target_account_id: string
+          p_transfer_date: string
         }
         Returns: string
       }

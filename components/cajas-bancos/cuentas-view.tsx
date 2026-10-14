@@ -48,6 +48,11 @@ import {
 } from "@/lib/caja/caja";
 import { getPeriodicityLabel } from "@/lib/data/cash-options";
 import { formatCurrency, formatDate, getTodayLocalDate } from "@/lib/utils";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { CashTransferModal } from "@/components/cajas-bancos/cash-transfer-modal";
+import { createCashTransfer } from "@/lib/caja/transferencias";
+import type { CashTransferFormValues } from "@/lib/schemas/cash-transfer";
 
 const SKELETON_ROWS = 4;
 const DEFAULT_PAGE_SIZE = 10;
@@ -123,6 +128,9 @@ export function CuentasView() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<AccountFilterValue>("ALL");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -167,7 +175,25 @@ export function CuentasView() {
     return () => {
       isMounted = false;
     };
-  }, [today]);
+  }, [today, refreshKey]);
+
+  async function handleTransfer(values: CashTransferFormValues) {
+    setIsTransferring(true);
+    try {
+      await createCashTransfer(values);
+      setTransferOpen(false);
+      toast.success("Transferencia registrada");
+      setRefreshKey((key) => key + 1);
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "No se pudo registrar la transferencia."
+      );
+    } finally {
+      setIsTransferring(false);
+    }
+  }
 
   const hasForeignCurrency = positions.some(
     (position) => position.account.currency !== "PEN"
@@ -405,6 +431,7 @@ export function CuentasView() {
       <div className="flex flex-col gap-4">
         {/* Línea de controles: búsqueda + filtro de tipo, fuera del datatable. */}
         <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={() => setTransferOpen(true)}>Transferir</Button>
           <Input
             placeholder="Buscar por nombre o banco…"
             value={search}
@@ -487,6 +514,14 @@ export function CuentasView() {
 
         <DataTablePagination table={table} />
       </div>
+
+      <CashTransferModal
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+        accounts={positions.map((position) => position.account)}
+        onDone={(values) => void handleTransfer(values)}
+        isSaving={isTransferring}
+      />
     </main>
   );
 }
