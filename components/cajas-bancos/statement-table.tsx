@@ -176,7 +176,7 @@ export function StatementTable({
         statementRowColumnHelper.display({
           id: "select",
           header: () =>
-            markableIds.length > 0 ? (
+            onMarkVerified && markableIds.length > 0 ? (
               <Checkbox
                 aria-label="Seleccionar todos los recibos en revisión"
                 checked={allSelected}
@@ -186,6 +186,7 @@ export function StatementTable({
               />
             ) : null,
           cell: ({ row }) =>
+            onMarkVerified &&
             row.original.kind === "PAYMENT" &&
             row.original.status === "EN_REVISION" ? (
               <Checkbox

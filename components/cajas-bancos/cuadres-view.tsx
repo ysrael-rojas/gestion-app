@@ -55,6 +55,7 @@ import {
 } from "@/lib/caja/caja";
 import { getPeriodicityLabel } from "@/lib/data/cash-options";
 import { createPayment, markPaymentsProcessed } from "@/lib/pagos/pagos";
+import { bankChargeToPayment } from "@/lib/caja/cargos";
 import { BankChargeModal } from "@/components/cajas-bancos/bank-charge-modal";
 import type { BankChargeFormValues } from "@/lib/schemas/bank-charge";
 import type { CashAccount } from "@/lib/cuentas/entidades";
@@ -451,18 +452,7 @@ export function CuadresView() {
     setIsSavingBankCharge(true);
     try {
       // Un cargo bancario es un egreso sin entidad: no paga una factura.
-      await createPayment({
-        entityId: undefined,
-        direction: "EGRESO",
-        paymentDate: values.chargeDate,
-        amount: values.amount,
-        methodId: values.methodId,
-        cashAccountId: values.cashAccountId,
-        categoryId: values.categoryId,
-        reference: values.reference,
-        notes: values.notes,
-        allocations: [],
-      });
+      await createPayment(bankChargeToPayment(values));
       toast.success("Cargo bancario registrado");
       setBankChargeOpen(false);
       setStatementRefreshKey((key) => key + 1);
