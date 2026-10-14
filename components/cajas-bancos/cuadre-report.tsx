@@ -15,6 +15,7 @@ import {
 } from "@tanstack/react-table";
 import { Download } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -34,11 +35,14 @@ import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { downloadCsv, toCsv } from "@/lib/caja/csv";
 import type { CashClose, Payment } from "@/components/pagos/types";
+import type { CashTransfer } from "@/lib/caja/transferencias";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface CuadreReportProps {
   close: CashClose;
   statement: Payment[];
+  transfers: CashTransfer[];
+  accountId: string;
   accountName: string;
   currency: string;
 }
@@ -100,9 +104,55 @@ const categoryColumnHelper = createColumnHelper<
   CategoryTotal
 >();
 
-const paymentColumnHelper = createColumnHelper<
+interface StatementRow {
+  id: string;
+  kind: "PAYMENT" | "TRANSFER";
+  date: string;
+  ref: string;
+  direction: "INGRESO" | "EGRESO";
+  category: string;
+  method: string;
+  amount: number;
+}
+
+function buildStatementRows(
+  statement: Payment[],
+  transfers: CashTransfer[],
+  accountId: string
+): StatementRow[] {
+  const paymentRows: StatementRow[] = statement.map((payment) => ({
+    id: payment.id,
+    kind: "PAYMENT",
+    date: payment.paymentDate,
+    ref: payment.receiptNumber,
+    direction: payment.direction,
+    category: payment.categoryName || "Sin categoría",
+    method: payment.methodName || "—",
+    amount: payment.amount,
+  }));
+
+  const transferRows: StatementRow[] = transfers.map((transfer) => {
+    const incoming = transfer.targetAccountId === accountId;
+    return {
+      id: transfer.id,
+      kind: "TRANSFER",
+      date: transfer.transferDate,
+      ref: "Transferencia",
+      direction: incoming ? "INGRESO" : "EGRESO",
+      category: "Transferencia entre cuentas",
+      method: "—",
+      amount: transfer.amount,
+    };
+  });
+
+  return [...paymentRows, ...transferRows].sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+}
+
+const statementRowColumnHelper = createColumnHelper<
   typeof reportTableFeatures,
-  Payment
+  StatementRow
 >();
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -214,48 +264,57 @@ function CategoryTotalsTable({
 }
 
 interface StatementTableProps {
-  statement: Payment[];
+  rows: StatementRow[];
   currency: string;
 }
 
-function StatementTable({ statement, currency }: StatementTableProps) {
+function StatementTable({ rows, currency }: StatementTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const columns = useMemo(
     () =>
-      paymentColumnHelper.columns([
-        paymentColumnHelper.accessor("paymentDate", {
+      statementRowColumnHelper.columns([
+        statementRowColumnHelper.accessor("kind", {
+          header: () => <span className="sr-only">Tipo</span>,
+          cell: ({ getValue }) =>
+            getValue() === "TRANSFER" ? (
+              <Badge variant="outline">Transferencia</Badge>
+            ) : (
+              <Badge variant="secondary">Recibo</Badge>
+            ),
+        }),
+        statementRowColumnHelper.accessor("date", {
           header: ({ column }) => (
             <DataTableColumnHeader column={column} title="Fecha" />
           ),
           cell: ({ getValue }) => formatDate(getValue()),
         }),
-        paymentColumnHelper.accessor("receiptNumber", {
+        statementRowColumnHelper.accessor("ref", {
           header: ({ column }) => (
             <DataTableColumnHeader column={column} title="Recibo" />
           ),
           cell: ({ getValue }) => getValue(),
         }),
-        paymentColumnHelper.accessor("direction", {
+        statementRowColumnHelper.accessor("direction", {
           header: ({ column }) => (
             <DataTableColumnHeader column={column} title="Dirección" />
           ),
           cell: ({ getValue }) =>
             getValue() === "INGRESO" ? "Ingreso" : "Egreso",
         }),
-        paymentColumnHelper.accessor("categoryName", {
+        statementRowColumnHelper.accessor("category", {
           header: ({ column }) => (
             <DataTableColumnHeader column={column} title="Categoría" />
           ),
-          cell: ({ getValue }) => getValue() || "—",
+          cell: ({ getValue }) => getValue(),
         }),
-        paymentColumnHelper.accessor("methodName", {
+        statementRowColumnHelper.accessor("method", {
           header: ({ column }) => (
             <DataTableColumnHeader column={column} title="Método" />
           ),
-          cell: ({ getValue }) => getValue() || "—",
+          cell: ({ getValue }) => getValue(),
         }),
-        paymentColumnHelper.accessor("amount", {
+        statementRowColumnHelper.accessor("amount", {
           header: ({ column }) => (
             <DataTableColumnHeader
               column={column}
@@ -275,7 +334,7 @@ function StatementTable({ statement, currency }: StatementTableProps) {
 
   const table = useTable({
     features: reportTableFeatures,
-    data: statement,
+    data: rows,
     columns,
     onSortingChange: setSorting,
     state: { sorting },
@@ -356,10 +415,13 @@ function SummaryRow({
 export function CuadreReport({
   close,
   statement,
+  transfers,
+  accountId,
   accountName,
   currency,
 }: CuadreReportProps) {
   const categories = groupByCategory(statement);
+  const statementRows = buildStatementRows(statement, transfers, accountId);
 
   function handleExport() {
     const rows: (string | number | null)[][] = [
@@ -380,14 +442,15 @@ export function CuadreReport({
       ...categories.map((item) => [item.direction, item.category, item.total]),
       [],
       ["Movimientos"],
-      ["Fecha", "Recibo", "Dirección", "Categoría", "Método", "Importe"],
-      ...statement.map((payment) => [
-        payment.paymentDate,
-        payment.receiptNumber,
-        payment.direction,
-        payment.categoryName,
-        payment.methodName,
-        payment.amount,
+      ["Fecha", "Tipo", "Recibo", "Dirección", "Categoría", "Método", "Importe"],
+      ...statementRows.map((row) => [
+        row.date,
+        row.kind === "TRANSFER" ? "Transferencia" : "Recibo",
+        row.ref,
+        row.direction,
+        row.category,
+        row.method,
+        row.amount,
       ]),
     ];
 
@@ -453,7 +516,7 @@ export function CuadreReport({
 
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold">Movimientos</h3>
-          <StatementTable statement={statement} currency={currency} />
+          <StatementTable rows={statementRows} currency={currency} />
         </div>
       </CardContent>
     </Card>

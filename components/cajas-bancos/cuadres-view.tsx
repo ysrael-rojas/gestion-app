@@ -54,6 +54,10 @@ import {
 import { getPeriodicityLabel } from "@/lib/data/cash-options";
 import type { CashAccount } from "@/lib/cuentas/entidades";
 import type { CashClose, Payment } from "@/components/pagos/types";
+import {
+  listAccountTransfers,
+  type CashTransfer,
+} from "@/lib/caja/transferencias";
 import type { CashCloseFormValues } from "@/lib/schemas/cash-close";
 import { formatCurrency, formatDate, getTodayLocalDate } from "@/lib/utils";
 
@@ -292,6 +296,7 @@ export function CuadresView() {
   const [closes, setCloses] = useState<CashClose[]>([]);
   const [selectedClose, setSelectedClose] = useState<CashClose | null>(null);
   const [statement, setStatement] = useState<Payment[]>([]);
+  const [transfers, setTransfers] = useState<CashTransfer[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -363,18 +368,27 @@ export function CuadresView() {
       if (!accountId || !selectedClose) {
         if (isMounted) {
           setStatement([]);
+          setTransfers([]);
         }
         return;
       }
 
       try {
-        const data = await getCashAccountStatement(
-          accountId,
-          selectedClose.periodStart,
-          selectedClose.periodEnd
-        );
+        const [data, transferData] = await Promise.all([
+          getCashAccountStatement(
+            accountId,
+            selectedClose.periodStart,
+            selectedClose.periodEnd
+          ),
+          listAccountTransfers(
+            accountId,
+            selectedClose.periodStart,
+            selectedClose.periodEnd
+          ),
+        ]);
         if (isMounted) {
           setStatement(data);
+          setTransfers(transferData);
         }
       } catch (error) {
         if (isMounted) {
@@ -513,6 +527,8 @@ export function CuadresView() {
             <CuadreReport
               close={selectedClose}
               statement={statement}
+              transfers={transfers}
+              accountId={account.id}
               accountName={account.name}
               currency={account.currency}
             />
