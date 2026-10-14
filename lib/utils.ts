@@ -26,3 +26,8 @@ export function getTodayLocalDate(): string {
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
+
+/** Redondea a 2 decimales para no arrastrar ruido de punto flotante. */
+export function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}

@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Artefactos generados y material de terceros que no se versiona ni se
+    // mantiene en este repo: cobertura de tests y skills instaladas.
+    "coverage/**",
+    ".opencode/**",
+    ".agents/**",
   ]),
 ]);
 

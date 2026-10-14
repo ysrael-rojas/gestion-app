@@ -122,3 +122,87 @@ describe("cashAccountFormSchema", () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe("cashAccountFormSchema — caja chica y fondo de cambio", () => {
+  it("acepta una caja chica con fondo, límite y custodio", () => {
+    const result = cashAccountFormSchema.parse({
+      type: "CASH_BOX",
+      name: "Caja chica administración",
+      isPettyCash: true,
+      changeFund: 300,
+      pettyExpenseLimit: 50,
+      custodianName: "  Ana Ríos  ",
+    });
+
+    expect(result.isPettyCash).toBe(true);
+    expect(result.changeFund).toBe(300);
+    expect(result.pettyExpenseLimit).toBe(50);
+    expect(result.custodianName).toBe("Ana Ríos");
+  });
+
+  it("deja los campos de caja chica en sus valores por defecto", () => {
+    const result = cashAccountFormSchema.parse({
+      type: "CASH_BOX",
+      name: "Caja principal",
+    });
+
+    expect(result.isPettyCash).toBe(false);
+    expect(result.changeFund).toBe(0);
+    expect(result.pettyExpenseLimit).toBeUndefined();
+    expect(result.custodianName).toBeUndefined();
+  });
+
+  it("rechaza una caja chica sin fondo", () => {
+    const result = cashAccountFormSchema.safeParse({
+      type: "CASH_BOX",
+      name: "Caja chica",
+      isPettyCash: true,
+      changeFund: 0,
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const paths = result.error.issues.map((issue) => issue.path.join("."));
+      expect(paths).toContain("changeFund");
+    }
+  });
+
+  it("rechaza fondo negativo", () => {
+    const result = cashAccountFormSchema.safeParse({
+      type: "CASH_BOX",
+      name: "Caja",
+      changeFund: -1,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rechaza límite por gasto que no sea mayor a cero", () => {
+    const result = cashAccountFormSchema.safeParse({
+      type: "CASH_BOX",
+      name: "Caja chica",
+      isPettyCash: true,
+      changeFund: 100,
+      pettyExpenseLimit: 0,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("rechaza una caja chica en un banco", () => {
+    const result = cashAccountFormSchema.safeParse({
+      type: "BANK_ACCOUNT",
+      name: "Cuenta BCP",
+      bankName: "BCP",
+      isPettyCash: true,
+      changeFund: 500,
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const paths = result.error.issues.map((issue) => issue.path.join("."));
+      expect(paths).toContain("isPettyCash");
+      expect(paths).toContain("changeFund");
+    }
+  });
+});

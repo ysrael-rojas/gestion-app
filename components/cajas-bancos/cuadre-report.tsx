@@ -34,7 +34,14 @@ import {
 import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { downloadCsv, toCsv } from "@/lib/caja/csv";
+import {
+  denominationKind,
+  formatDenomination,
+  netCash,
+  sumDenominationCounts,
+} from "@/lib/caja/denominaciones";
 import type { CashClose, Payment } from "@/components/pagos/types";
+import type { CloseDenomination } from "@/lib/caja/caja";
 import type { CashTransfer } from "@/lib/caja/transferencias";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -45,6 +52,10 @@ interface CuadreReportProps {
   accountId: string;
   accountName: string;
   currency: string;
+  /** Detalle del conteo por denominación (vacío en bancos y cierres previos). */
+  denominations: CloseDenomination[];
+  /** Fondo de cambio de la cuenta al momento de ver el reporte. */
+  changeFund: number;
 }
 
 function formatAmount(value: number, currency: string): string {
@@ -412,6 +423,72 @@ function SummaryRow({
   );
 }
 
+interface DenominationTotals {
+  counted: number;
+  changeFund: number;
+  net: number;
+}
+
+/** Tabla del arqueo: conteo por denominación y cierre del acta (A, B, A−B). */
+function DenominationTable({
+  denominations,
+  totals,
+  currency,
+}: {
+  denominations: CloseDenomination[];
+  totals: DenominationTotals;
+  currency: string;
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="overflow-hidden rounded-md border bg-background">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Denominación</TableHead>
+              <TableHead className="text-right">Cantidad</TableHead>
+              <TableHead className="text-right">Subtotal</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {denominations.map((row) => (
+              <TableRow key={row.denomination}>
+                <TableCell>
+                  <span className="text-muted-foreground">
+                    {denominationKind(row.denomination)}
+                  </span>{" "}
+                  {formatDenomination(row.denomination)}
+                </TableCell>
+                <TableCell className="text-right">{row.quantity}</TableCell>
+                <TableCell className="text-right">
+                  {formatAmount(row.denomination * row.quantity, currency)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex flex-col gap-1 rounded-md border bg-background p-4">
+        <SummaryRow
+          label="Total valores en caja (A)"
+          value={formatAmount(totals.counted, currency)}
+          strong
+        />
+        <SummaryRow
+          label="Menos fondo de cambio (B)"
+          value={formatAmount(totals.changeFund, currency)}
+        />
+        <SummaryRow
+          label="Efectivo neto (A − B)"
+          value={formatAmount(totals.net, currency)}
+          strong
+        />
+      </div>
+    </div>
+  );
+}
+
 export function CuadreReport({
   close,
   statement,
@@ -419,9 +496,23 @@ export function CuadreReport({
   accountId,
   accountName,
   currency,
+  denominations,
+  changeFund,
 }: CuadreReportProps) {
   const categories = groupByCategory(statement);
   const statementRows = buildStatementRows(statement, transfers, accountId);
+  // El detalle manda cuando existe: A = suma del conteo. Si el cierre es previo
+  // al arqueo por denominación, se usa el conteo total guardado.
+  const countedTotal =
+    denominations.length > 0
+      ? sumDenominationCounts(denominations)
+      : (close.countedBalance ?? 0);
+  const totals: DenominationTotals = {
+    counted: countedTotal,
+    changeFund,
+    net: netCash(countedTotal, changeFund),
+  };
+  const hasArqueo = denominations.length > 0 || changeFund > 0;
 
   function handleExport() {
     const rows: (string | number | null)[][] = [
@@ -437,6 +528,21 @@ export function CuadreReport({
       ["Conteo físico", close.countedBalance ?? ""],
       ["Diferencia", close.difference ?? ""],
       [],
+      ...(hasArqueo
+        ? ([
+            ["Arqueo por denominación"],
+            ["Denominación", "Cantidad", "Subtotal"],
+            ...denominations.map((row) => [
+              formatDenomination(row.denomination),
+              row.quantity,
+              row.denomination * row.quantity,
+            ]),
+            ["Total valores en caja (A)", "", totals.counted],
+            ["Menos fondo de cambio (B)", "", totals.changeFund],
+            ["Efectivo neto (A − B)", "", totals.net],
+            [],
+          ] as (string | number | null)[][])
+        : []),
       ["Resumen por categoría"],
       ["Dirección", "Categoría", "Total"],
       ...categories.map((item) => [item.direction, item.category, item.total]),
@@ -508,6 +614,17 @@ export function CuadreReport({
           ) : null}
           {close.notes ? <SummaryRow label="Notas" value={close.notes} /> : null}
         </div>
+
+        {hasArqueo ? (
+          <div className="flex flex-col gap-2">
+            <h3 className="text-sm font-semibold">Arqueo por denominación</h3>
+            <DenominationTable
+              denominations={denominations}
+              totals={totals}
+              currency={currency}
+            />
+          </div>
+        ) : null}
 
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold">Resumen por categoría</h3>

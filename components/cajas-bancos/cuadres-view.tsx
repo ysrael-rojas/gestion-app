@@ -49,7 +49,9 @@ import {
   getCashPosition,
   getLastClose,
   listCashCloses,
+  listCloseDenominations,
   proposeClosePeriod,
+  type CloseDenomination,
 } from "@/lib/caja/caja";
 import { getPeriodicityLabel } from "@/lib/data/cash-options";
 import type { CashAccount } from "@/lib/cuentas/entidades";
@@ -297,6 +299,7 @@ export function CuadresView() {
   const [selectedClose, setSelectedClose] = useState<CashClose | null>(null);
   const [statement, setStatement] = useState<Payment[]>([]);
   const [transfers, setTransfers] = useState<CashTransfer[]>([]);
+  const [denominations, setDenominations] = useState<CloseDenomination[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -369,12 +372,13 @@ export function CuadresView() {
         if (isMounted) {
           setStatement([]);
           setTransfers([]);
+          setDenominations([]);
         }
         return;
       }
 
       try {
-        const [data, transferData] = await Promise.all([
+        const [data, transferData, denominationData] = await Promise.all([
           getCashAccountStatement(
             accountId,
             selectedClose.periodStart,
@@ -385,10 +389,12 @@ export function CuadresView() {
             selectedClose.periodStart,
             selectedClose.periodEnd
           ),
+          listCloseDenominations(selectedClose.id),
         ]);
         if (isMounted) {
           setStatement(data);
           setTransfers(transferData);
+          setDenominations(denominationData);
         }
       } catch (error) {
         if (isMounted) {
@@ -531,6 +537,8 @@ export function CuadresView() {
               accountId={account.id}
               accountName={account.name}
               currency={account.currency}
+              denominations={denominations}
+              changeFund={account.changeFund}
             />
           ) : null}
 

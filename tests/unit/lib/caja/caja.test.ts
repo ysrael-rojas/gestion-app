@@ -10,6 +10,7 @@ vi.mock("@/lib/supabase/client", () => ({ supabase: mock.client }));
 import {
   closeCashAccount,
   getLastClose,
+  listCloseDenominations,
   proposeClosePeriod,
 } from "@/lib/caja/caja";
 
@@ -163,6 +164,89 @@ describe("caja.ts", () => {
           notes: "",
         })
       ).rejects.toThrow("El período ya está cerrado hasta 2026-10-05");
+    });
+  });
+
+  describe("closeCashAccount con arqueo por denominaciones", () => {
+    it("envía el detalle contado y el total calculado como conteo físico", async () => {
+      mock.setRpc("close_cash_account", { data: "close-1", error: null });
+      mock.setTable("cash_close", { data: [closeRow()], error: null });
+
+      await closeCashAccount({
+        cashAccountId: "acc-1",
+        periodEnd: "2026-10-14",
+        countedBalance: undefined,
+        notes: "",
+        denominations: [
+          { denomination: 100, quantity: 3 },
+          { denomination: 50, quantity: 2 },
+          { denomination: 200, quantity: undefined },
+        ],
+      });
+
+      expect(mock.rpcCalls[0]).toMatchObject({
+        name: "close_cash_account",
+        args: {
+          p_counted_balance: 400,
+          p_denominations: [
+            { denomination: 100, quantity: 3 },
+            { denomination: 50, quantity: 2 },
+          ],
+        },
+      });
+    });
+
+    it("no envía detalle cuando el conteo está vacío (banco o cierre simple)", async () => {
+      mock.setRpc("close_cash_account", { data: "close-1", error: null });
+      mock.setTable("cash_close", { data: [closeRow()], error: null });
+
+      await closeCashAccount({
+        cashAccountId: "acc-1",
+        periodEnd: "2026-10-14",
+        countedBalance: 1500,
+        notes: "",
+        denominations: [{ denomination: 100, quantity: undefined }],
+      });
+
+      expect(mock.rpcCalls[0]).toMatchObject({
+        name: "close_cash_account",
+        args: { p_counted_balance: 1500, p_denominations: null },
+      });
+    });
+  });
+
+  describe("listCloseDenominations", () => {
+    it("devuelve el detalle del cierre con denominación y cantidad", async () => {
+      mock.setTable("cash_close_denomination", {
+        data: [
+          {
+            id: "den-1",
+            cash_close_id: "close-1",
+            denomination: 100,
+            quantity: 3,
+          },
+          {
+            id: "den-2",
+            cash_close_id: "close-1",
+            denomination: 0.5,
+            quantity: 1,
+          },
+        ],
+        error: null,
+      });
+
+      const rows = await listCloseDenominations("close-1");
+
+      expect(rows).toEqual([
+        { denomination: 100, quantity: 3 },
+        { denomination: 0.5, quantity: 1 },
+      ]);
+    });
+
+    it("devuelve una lista vacía cuando el cierre no tiene detalle", async () => {
+      mock.setTable("cash_close_denomination", { data: [], error: null });
+
+      expect(await listCloseDenominations("close-1")).toEqual([]);
     });
   });
 });

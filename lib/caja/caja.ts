@@ -10,6 +10,10 @@ import type { CashCloseFormValues as CashCloseValues } from "@/lib/schemas/cash-
 import type { CashReceiptCategoryFormValues } from "@/lib/schemas/cash-receipt-category";
 import type { PaymentMethodFormValues } from "@/lib/schemas/payment-method";
 import { DEFAULT_CATEGORIES, DEFAULT_PAYMENT_METHODS } from "@/lib/caja/defaults";
+import {
+  sumDenominationCounts,
+  toDenominationPayload,
+} from "@/lib/caja/denominaciones";
 import { listAccountStatement } from "@/lib/pagos/pagos";
 import { addDays, suggestedPeriodEnd } from "@/lib/caja/periodo";
 import {
@@ -22,10 +26,17 @@ import type { Tables } from "@/lib/supabase/types";
 type PaymentMethodRow = Tables<"payment_method">;
 type CategoryRow = Tables<"cash_receipt_category">;
 type CashCloseRow = Tables<"cash_close">;
+type CashCloseDenominationRow = Tables<"cash_close_denomination">;
 
 export interface CashAccountPosition {
   account: CashAccount;
   balance: number;
+}
+
+/** Fila del conteo por denominación de un cierre. */
+export interface CloseDenomination {
+  denomination: number;
+  quantity: number;
 }
 
 const DEFAULT_PERIODICITY: ClosingPeriodicity = "DAILY";
@@ -481,12 +492,21 @@ export async function proposeClosePeriod(
 export async function closeCashAccount(
   values: CashCloseValues
 ): Promise<CashClose> {
+  const denominations = toDenominationPayload(values.denominations);
+  // Con conteo por denominación el total lo manda el detalle (la RPC lo vuelve
+  // a sumar); en bancos o cierres sin conteo se usa el saldo contado.
+  const countedBalance =
+    denominations.length > 0
+      ? sumDenominationCounts(denominations)
+      : (values.countedBalance ?? null);
+
   const { data, error } = await supabase.rpc("close_cash_account", {
     p_cash_account_id: values.cashAccountId,
     p_period_end: values.periodEnd,
     // La RPC acepta NULL en bancos; el tipo generado no modela la nulabilidad.
-    p_counted_balance: (values.countedBalance ?? null) as number,
+    p_counted_balance: countedBalance as number,
     p_notes: values.notes || "",
+    p_denominations: denominations.length > 0 ? denominations : null,
   });
 
   if (error) {
@@ -494,4 +514,24 @@ export async function closeCashAccount(
   }
 
   return getCashClose(data as string);
+}
+
+/** Detalle del conteo por denominación de un cierre (vacío en bancos). */
+export async function listCloseDenominations(
+  cashCloseId: string
+): Promise<CloseDenomination[]> {
+  const { data, error } = await supabase
+    .from("cash_close_denomination")
+    .select("*")
+    .eq("cash_close_id", cashCloseId)
+    .order("denomination", { ascending: false });
+
+  if (error) {
+    throw mapError(error);
+  }
+
+  return (data as CashCloseDenominationRow[]).map((row) => ({
+    denomination: row.denomination,
+    quantity: row.quantity,
+  }));
 }

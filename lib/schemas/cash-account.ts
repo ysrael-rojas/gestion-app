@@ -12,6 +12,15 @@ const optionalText = z
   .transform((value) => value.trim())
   .pipe(z.union([z.literal(""), z.string().max(120)]));
 
+// Monto opcional: "" o ausente -> undefined; un valor se coacciona a número.
+const optionalAmount = z.preprocess(
+  (value) =>
+    value === "" || value === null || value === undefined
+      ? undefined
+      : Number(value),
+  z.number().positive("El límite debe ser mayor a cero.").optional()
+);
+
 export const CLOSING_PERIODICITIES = ["DAILY", "WEEKLY", "MONTHLY"] as const;
 export type ClosingPeriodicityValue = (typeof CLOSING_PERIODICITIES)[number];
 
@@ -43,6 +52,14 @@ const baseCashAccountSchema = z.object({
     .default(() => new Date().toISOString().slice(0, 10)),
   notes: z.string().max(500, "Las notas no pueden superar 500 caracteres").optional(),
   isActive: z.boolean().default(true),
+  // Caja chica y fondo de cambio (solo cajas).
+  isPettyCash: z.boolean().default(false),
+  changeFund: z.coerce
+    .number()
+    .nonnegative("El fondo no puede ser negativo")
+    .default(0),
+  pettyExpenseLimit: optionalAmount,
+  custodianName: z.string().optional(),
 });
 
 export const cashAccountSchema = baseCashAccountSchema
@@ -61,6 +78,7 @@ export const cashAccountSchema = baseCashAccountSchema
     accountNumber: data.accountNumber?.trim() || undefined,
     cci: data.cci?.trim() || undefined,
     notes: data.notes?.trim() || undefined,
+    custodianName: data.custodianName?.trim() || undefined,
   }));
 
 export const cashAccountFormSchema = z
@@ -89,6 +107,14 @@ export const cashAccountFormSchema = z
       .default(() => new Date().toISOString().slice(0, 10)),
     notes: z.string().optional(),
     isActive: z.boolean().default(true),
+    // Caja chica y fondo de cambio: solo tienen sentido en una caja.
+    isPettyCash: z.boolean().default(false),
+    changeFund: z.coerce
+      .number()
+      .nonnegative("El fondo no puede ser negativo")
+      .default(0),
+    pettyExpenseLimit: optionalAmount,
+    custodianName: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (!data.type) {
@@ -128,6 +154,27 @@ export const cashAccountFormSchema = z
           message: "La CCI debe tener 20 dígitos",
         });
       }
+      if (data.isPettyCash) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["isPettyCash"],
+          message: "Un banco no puede ser caja chica",
+        });
+      }
+      if (data.changeFund > 0) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["changeFund"],
+          message: "Un banco no tiene fondo de cambio",
+        });
+      }
+      if (data.pettyExpenseLimit !== undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["pettyExpenseLimit"],
+          message: "Un banco no tiene límite de gasto por vale",
+        });
+      }
     } else if (data.type === "CASH_BOX") {
       // Para cajas no debe haber datos bancarios
       if (data.bankName && data.bankName.trim().length > 0) {
@@ -151,6 +198,14 @@ export const cashAccountFormSchema = z
           message: "Una caja no tiene CCI",
         });
       }
+      // Caja chica y fondo de cambio solo aplican a cajas.
+      if (data.isPettyCash && data.changeFund <= 0) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["changeFund"],
+          message: "Una caja chica necesita un fondo mayor a cero.",
+        });
+      }
     }
   })
   .transform((data) => ({
@@ -165,6 +220,7 @@ export const cashAccountFormSchema = z
     accountNumber: data.accountNumber?.trim() || undefined,
     cci: data.cci?.trim() || undefined,
     notes: data.notes?.trim() || undefined,
+    custodianName: data.custodianName?.trim() || undefined,
   }));
 
 export type CashAccountFormInput = z.input<typeof cashAccountFormSchema>;

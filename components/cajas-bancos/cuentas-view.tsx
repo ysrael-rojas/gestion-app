@@ -51,6 +51,7 @@ import { formatCurrency, formatDate, getTodayLocalDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CashTransferModal } from "@/components/cajas-bancos/cash-transfer-modal";
+import { PettyCashPanel } from "@/components/cajas-bancos/petty-cash-panel";
 import { createCashTransfer } from "@/lib/caja/transferencias";
 import type { CashTransferFormValues } from "@/lib/schemas/cash-transfer";
 
@@ -68,6 +69,7 @@ const cuentasTableFeatures = tableFeatures({
 interface AccountPositionRow {
   id: string;
   isBank: boolean;
+  isPettyCash: boolean;
   name: string;
   bankName: string;
   currency: string;
@@ -131,6 +133,9 @@ export function CuentasView() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [transferOpen, setTransferOpen] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
+  const [pettyCashAccountId, setPettyCashAccountId] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -228,6 +233,7 @@ export function CuentasView() {
         return {
           id: account.id,
           isBank: account.type === "BANK_ACCOUNT",
+          isPettyCash: account.isPettyCash,
           name: account.name,
           bankName: account.bankName ?? "—",
           currency: account.currency,
@@ -356,6 +362,22 @@ export function CuentasView() {
             return value ? formatDate(value) : "—";
           },
         }),
+        cuentasColumnHelper.display({
+          id: "actions",
+          header: () => <div className="text-right">Acciones</div>,
+          cell: ({ row }) =>
+            row.original.isPettyCash ? (
+              <div className="text-right">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPettyCashAccountId(row.original.id)}
+                >
+                  Vales
+                </Button>
+              </div>
+            ) : null,
+        }),
       ]),
     []
   );
@@ -375,6 +397,10 @@ export function CuentasView() {
   });
 
   const hasFilters = search.trim() !== "" || filterType !== "ALL";
+
+  const pettyCashAccount =
+    positions.find((position) => position.account.id === pettyCashAccountId)
+      ?.account ?? null;
 
   return (
     <main className="container mx-auto flex flex-col gap-6 p-6">
@@ -522,6 +548,18 @@ export function CuentasView() {
         onDone={(values) => void handleTransfer(values)}
         isSaving={isTransferring}
       />
+
+      {pettyCashAccount ? (
+        <PettyCashPanel
+          open
+          onOpenChange={(next) => {
+            if (!next) setPettyCashAccountId(null);
+          }}
+          account={pettyCashAccount}
+          accounts={positions.map((position) => position.account)}
+          onChanged={() => setRefreshKey((key) => key + 1)}
+        />
+      ) : null}
     </main>
   );
 }
