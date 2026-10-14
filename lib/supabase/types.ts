@@ -41,19 +41,23 @@ export type Database = {
           account_number: string | null
           bank_name: string | null
           cci: string | null
+          change_fund: number
           closing_periodicity:
             | Database["public"]["Enums"]["closing_periodicity"]
             | null
           created_at: string
           currency: string
+          custodian_name: string | null
           deleted_at: string | null
           id: string
           is_active: boolean
+          is_petty_cash: boolean
           name: string
           notes: string | null
           opening_balance: number
           opening_balance_date: string
           owner_id: string
+          petty_expense_limit: number | null
           type: Database["public"]["Enums"]["cash_account_type"]
           updated_at: string
         }
@@ -61,19 +65,23 @@ export type Database = {
           account_number?: string | null
           bank_name?: string | null
           cci?: string | null
+          change_fund?: number
           closing_periodicity?:
             | Database["public"]["Enums"]["closing_periodicity"]
             | null
           created_at?: string
           currency?: string
+          custodian_name?: string | null
           deleted_at?: string | null
           id?: string
           is_active?: boolean
+          is_petty_cash?: boolean
           name: string
           notes?: string | null
           opening_balance?: number
           opening_balance_date?: string
           owner_id?: string
+          petty_expense_limit?: number | null
           type: Database["public"]["Enums"]["cash_account_type"]
           updated_at?: string
         }
@@ -81,19 +89,23 @@ export type Database = {
           account_number?: string | null
           bank_name?: string | null
           cci?: string | null
+          change_fund?: number
           closing_periodicity?:
             | Database["public"]["Enums"]["closing_periodicity"]
             | null
           created_at?: string
           currency?: string
+          custodian_name?: string | null
           deleted_at?: string | null
           id?: string
           is_active?: boolean
+          is_petty_cash?: boolean
           name?: string
           notes?: string | null
           opening_balance?: number
           opening_balance_date?: string
           owner_id?: string
+          petty_expense_limit?: number | null
           type?: Database["public"]["Enums"]["cash_account_type"]
           updated_at?: string
         }
@@ -163,6 +175,35 @@ export type Database = {
             columns: ["cash_account_id"]
             isOneToOne: false
             referencedRelation: "cash_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_close_denomination: {
+        Row: {
+          cash_close_id: string
+          denomination: number
+          id: string
+          quantity: number
+        }
+        Insert: {
+          cash_close_id: string
+          denomination: number
+          id?: string
+          quantity: number
+        }
+        Update: {
+          cash_close_id?: string
+          denomination?: number
+          id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_close_denomination_cash_close_id_fkey"
+            columns: ["cash_close_id"]
+            isOneToOne: false
+            referencedRelation: "cash_close"
             referencedColumns: ["id"]
           },
         ]
@@ -542,6 +583,56 @@ export type Database = {
         }
         Relationships: []
       }
+      petty_cash_vale: {
+        Row: {
+          account_id: string
+          amount: number
+          concept: string
+          created_at: string
+          has_receipt: boolean
+          id: string
+          owner_id: string
+          paid_to: string
+          serial: number
+          status: Database["public"]["Enums"]["vale_status"]
+          vale_date: string
+        }
+        Insert: {
+          account_id: string
+          amount: number
+          concept: string
+          created_at?: string
+          has_receipt?: boolean
+          id?: string
+          owner_id?: string
+          paid_to: string
+          serial: number
+          status?: Database["public"]["Enums"]["vale_status"]
+          vale_date?: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          concept?: string
+          created_at?: string
+          has_receipt?: boolean
+          id?: string
+          owner_id?: string
+          paid_to?: string
+          serial?: number
+          status?: Database["public"]["Enums"]["vale_status"]
+          vale_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "petty_cash_vale_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       receipt_sequence: {
         Row: {
           direction: Database["public"]["Enums"]["payment_direction"]
@@ -610,6 +701,7 @@ export type Database = {
         Args: {
           p_cash_account_id: string
           p_counted_balance: number
+          p_denominations?: Json
           p_notes: string
           p_period_end: string
         }
@@ -640,12 +732,37 @@ export type Database = {
         }
         Returns: string
       }
+      create_petty_cash_vale: {
+        Args: {
+          p_account_id: string
+          p_amount: number
+          p_concept: string
+          p_has_receipt: boolean
+          p_paid_to: string
+          p_vale_date: string
+        }
+        Returns: string
+      }
       get_cash_position: {
         Args: {
           p_as_of?: string
           p_cash_account_id: string
         }
         Returns: number
+      }
+      replenish_petty_cash: {
+        Args: {
+          p_account_id: string
+          p_source_account_id: string
+          p_vale_ids: string[]
+        }
+        Returns: string
+      }
+      void_petty_cash_vale: {
+        Args: {
+          p_vale_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
@@ -656,6 +773,7 @@ export type Database = {
       payment_direction: "INGRESO" | "EGRESO"
       payment_status: "EN_REVISION" | "PROCESADO" | "ANULADO"
       payment_type: "CONTADO" | "CREDITO"
+      vale_status: "PENDIENTE" | "REPUESTO" | "ANULADO"
       voucher_kind: "COMPRA" | "VENTA"
       voucher_type: "FACTURA" | "BOLETA" | "NOTA_VENTA"
     }
@@ -792,6 +910,7 @@ export const Constants = {
       payment_direction: ["INGRESO", "EGRESO"],
       payment_status: ["EN_REVISION", "PROCESADO", "ANULADO"],
       payment_type: ["CONTADO", "CREDITO"],
+      vale_status: ["PENDIENTE", "REPUESTO", "ANULADO"],
       voucher_kind: ["COMPRA", "VENTA"],
       voucher_type: ["FACTURA", "BOLETA", "NOTA_VENTA"],
     },
