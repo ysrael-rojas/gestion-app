@@ -13,7 +13,7 @@ import { PettyCashPanel } from "@/components/cajas-bancos/petty-cash-panel";
 import type { CashAccount } from "@/lib/cuentas/entidades";
 
 const account = (overrides: Partial<CashAccount> = {}): CashAccount => ({
-  id: "acc-chica",
+  id: "11111111-1111-4111-8111-111111111111",
   type: "CASH_BOX",
   name: "Caja chica administración",
   currency: "PEN",
@@ -38,7 +38,7 @@ const account = (overrides: Partial<CashAccount> = {}): CashAccount => ({
 const valeRow = (overrides: Record<string, unknown> = {}) => ({
   id: "vale-1",
   owner_id: "owner-1",
-  account_id: "acc-chica",
+  account_id: "11111111-1111-4111-8111-111111111111",
   serial: 1,
   vale_date: "2026-10-14",
   paid_to: "Juan Pérez",
@@ -51,7 +51,7 @@ const valeRow = (overrides: Record<string, unknown> = {}) => ({
 });
 
 const otherAccount = account({
-  id: "acc-banco",
+  id: "22222222-2222-4222-8222-222222222222",
   type: "BANK_ACCOUNT",
   name: "Cuenta BCP",
   isPettyCash: false,
@@ -81,16 +81,16 @@ describe("PettyCashPanel", () => {
   it("lista los vales con su estado", async () => {
     mock.setTable("petty_cash_vale", {
       data: [
-        valeRow({ id: "v-1", serial: 1, amount: 30 }),
+        valeRow({ id: "33333333-3333-4333-8333-333333333333", serial: 1, amount: 30 }),
         valeRow({
-          id: "v-2",
+          id: "44444444-4444-4444-8444-444444444444",
           serial: 2,
           amount: 20,
           paid_to: "Rosa Díaz",
           status: "REPUESTO",
         }),
         valeRow({
-          id: "v-3",
+          id: "55555555-5555-4555-8555-555555555555",
           serial: 3,
           amount: 10,
           paid_to: "Luis Gómez",
@@ -121,8 +121,8 @@ describe("PettyCashPanel", () => {
     const user = userEvent.setup();
     mock.setTable("petty_cash_vale", {
       data: [
-        valeRow({ id: "v-1", amount: 30 }),
-        valeRow({ id: "v-2", serial: 2, amount: 20, status: "REPUESTO" }),
+        valeRow({ id: "33333333-3333-4333-8333-333333333333", amount: 30 }),
+        valeRow({ id: "44444444-4444-4444-8444-444444444444", serial: 2, amount: 20, status: "REPUESTO" }),
       ],
       error: null,
     });
@@ -151,7 +151,7 @@ describe("PettyCashPanel", () => {
   it("señala el faltante cuando el arqueo no llega al fondo", async () => {
     const user = userEvent.setup();
     mock.setTable("petty_cash_vale", {
-      data: [valeRow({ id: "v-1", amount: 30 })],
+      data: [valeRow({ id: "33333333-3333-4333-8333-333333333333", amount: 30 })],
       error: null,
     });
 
@@ -169,7 +169,7 @@ describe("PettyCashPanel", () => {
   it("anula un vale pendiente y recarga la lista", async () => {
     const user = userEvent.setup();
     mock.queueTable("petty_cash_vale", {
-      data: [valeRow({ id: "v-1", serial: 7 })],
+      data: [valeRow({ id: "33333333-3333-4333-8333-333333333333", serial: 7 })],
       error: null,
     });
     mock.queueTable("petty_cash_vale", { data: [], error: null });
@@ -182,7 +182,7 @@ describe("PettyCashPanel", () => {
     await waitFor(() =>
       expect(mock.rpcCalls[0]).toEqual({
         name: "void_petty_cash_vale",
-        args: { p_vale_id: "v-1" },
+        args: { p_vale_id: "33333333-3333-4333-8333-333333333333" },
       })
     );
     // Tras anular se recarga la lista: queda vacía.
@@ -195,8 +195,8 @@ describe("PettyCashPanel", () => {
     const user = userEvent.setup();
     mock.setTable("petty_cash_vale", {
       data: [
-        valeRow({ id: "v-1", serial: 1, amount: 30 }),
-        valeRow({ id: "v-2", serial: 2, amount: 20, status: "REPUESTO" }),
+        valeRow({ id: "33333333-3333-4333-8333-333333333333", serial: 1, amount: 30 }),
+        valeRow({ id: "44444444-4444-4444-8444-444444444444", serial: 2, amount: 20, status: "REPUESTO" }),
       ],
       error: null,
     });
@@ -218,9 +218,44 @@ describe("PettyCashPanel", () => {
     ).toHaveTextContent("S/ 30.00");
   });
 
+  it("repone el fondo con la transferencia atómica", async () => {
+    const user = userEvent.setup();
+    mock.setTable("petty_cash_vale", {
+      data: [valeRow({ id: "33333333-3333-4333-8333-333333333333", serial: 1, amount: 30 })],
+      error: null,
+    });
+    mock.setRpc("replenish_petty_cash", { data: "transfer-1", error: null });
+
+    renderPanel();
+
+    await user.click(
+      await screen.findByRole("button", { name: "Reponer fondo" })
+    );
+
+    const dialog = await screen.findByRole("dialog", {
+      name: /Reponer fondo de caja chica/,
+    });
+
+    // Con una sola cuenta candidata, el origen ya viene preseleccionado.
+    await user.click(
+      within(dialog).getByRole("button", { name: "Reponer fondo" })
+    );
+
+    await waitFor(() =>
+      expect(mock.rpcCalls[0]).toMatchObject({
+        name: "replenish_petty_cash",
+        args: {
+          p_account_id: "11111111-1111-4111-8111-111111111111",
+          p_source_account_id: "22222222-2222-4222-8222-222222222222",
+          p_vale_ids: ["33333333-3333-4333-8333-333333333333"],
+        },
+      })
+    );
+  });
+
   it("deshabilita la reposición cuando no hay vales pendientes", async () => {
     mock.setTable("petty_cash_vale", {
-      data: [valeRow({ id: "v-2", serial: 2, status: "REPUESTO" })],
+      data: [valeRow({ id: "44444444-4444-4444-8444-444444444444", serial: 2, status: "REPUESTO" })],
       error: null,
     });
 

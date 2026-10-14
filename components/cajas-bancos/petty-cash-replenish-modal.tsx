@@ -47,24 +47,30 @@ export function PettyCashReplenishModal({
   onDone,
   isSaving = false,
 }: PettyCashReplenishModalProps) {
-  const [sourceAccountId, setSourceAccountId] = useState("");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
   const sourceAccounts = useMemo(
     () => accounts.filter((item) => item.id !== account.id),
     [accounts, account.id]
   );
 
+  // Con una sola cuenta candidata no hay nada que elegir: se preselecciona.
+  const defaultSourceAccountId =
+    sourceAccounts.length === 1 ? sourceAccounts[0].id : "";
+
+  const [sourceAccountId, setSourceAccountId] = useState(defaultSourceAccountId);
+  // Al abrir se propone reponer todo lo pendiente: es el caso habitual.
+  const [selectedIds, setSelectedIds] = useState<string[]>(() =>
+    pendingVales.map((vale) => vale.id)
+  );
+  const [error, setError] = useState<string | null>(null);
+
   const [wasOpen, setWasOpen] = useState(open);
 
-  // Al abrir se reinicia la selección: se propone reponer todo lo pendiente,
-  // que es el caso habitual. Patrón de React para reaccionar a una prop sin
-  // effect.
+  // Al reabrir se reinicia la selección. Patrón de React para reaccionar a un
+  // cambio de prop sin effect.
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setSourceAccountId("");
+      setSourceAccountId(defaultSourceAccountId);
       setSelectedIds(pendingVales.map((vale) => vale.id));
       setError(null);
     }
