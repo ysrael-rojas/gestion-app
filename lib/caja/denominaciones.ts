@@ -3,16 +3,18 @@
 // El orden sigue el formato estándar de arqueo: de la denominación mayor a la
 // menor. Es la única fuente de verdad en el cliente; la base de datos valida el
 // mismo conjunto en `cash_close_denomination`.
+import { round2 } from "@/lib/utils";
+
 export const PEN_DENOMINATIONS = [
   200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1,
 ] as const;
 
 export type PenDenomination = (typeof PEN_DENOMINATIONS)[number];
 
-export interface DenominationCount {
+export type DenominationCount = {
   denomination: number;
   quantity: number;
-}
+};
 
 export function isPenDenomination(value: number): value is PenDenomination {
   return (PEN_DENOMINATIONS as readonly number[]).includes(value);
@@ -26,10 +28,6 @@ export function formatDenomination(denomination: number): string {
 /** Billetes desde S/ 2; monedas por debajo. */
 export function denominationKind(denomination: number): "Billete" | "Moneda" {
   return denomination >= 2 ? "Billete" : "Moneda";
-}
-
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
 }
 
 /**

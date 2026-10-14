@@ -18,6 +18,14 @@ export interface CashAccount {
   openingBalanceDate: string;
   notes: string | null;
   isActive: boolean;
+  /** Caja chica: fondo fijo para gastos menores con vales prenumerados. */
+  isPettyCash: boolean;
+  /** Fondo de cambio del arqueo (y fondo fijo si es caja chica). */
+  changeFund: number;
+  /** Tope por vale de caja chica; null = sin límite. */
+  pettyExpenseLimit: number | null;
+  /** Responsable único del fondo. */
+  custodianName: string | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -35,6 +43,10 @@ export interface CashAccountFormMutation {
   openingBalanceDate: string;
   notes?: string;
   isActive: boolean;
+  isPettyCash?: boolean;
+  changeFund?: number;
+  pettyExpenseLimit?: number;
+  custodianName?: string;
 }
 
 function mapRow(row: CashAccountRow): CashAccount {
@@ -51,6 +63,10 @@ function mapRow(row: CashAccountRow): CashAccount {
     openingBalanceDate: row.opening_balance_date,
     notes: row.notes,
     isActive: row.is_active,
+    isPettyCash: row.is_petty_cash,
+    changeFund: row.change_fund,
+    pettyExpenseLimit: row.petty_expense_limit,
+    custodianName: row.custodian_name,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
@@ -70,6 +86,10 @@ function mapMutation(values: CashAccountFormMutation) {
     opening_balance_date: values.openingBalanceDate,
     notes: values.notes ?? null,
     is_active: values.isActive,
+    is_petty_cash: values.isPettyCash ?? false,
+    change_fund: values.changeFund ?? 0,
+    petty_expense_limit: values.pettyExpenseLimit ?? null,
+    custodian_name: values.custodianName ?? null,
   };
 }
 

@@ -51,6 +51,8 @@ export interface MockSupabase {
   queueTable: (table: string, result: TableResult) => void;
   /** Queue a one-shot result for the next call to the given RPC; consumed in FIFO order. */
   queueRpc: (name: string, result: RpcResult) => void;
+  /** RPC calls in order, with the arguments they received. */
+  rpcCalls: { name: string; args?: Record<string, unknown> }[];
   reset: () => void;
 }
 
@@ -67,6 +69,7 @@ export function createMockSupabase(): MockSupabase {
   const rpcs = new Map<string, RpcResult>();
   const tableQueues = new Map<string, TableResult[]>();
   const rpcQueues = new Map<string, RpcResult[]>();
+  const rpcCalls: { name: string; args?: Record<string, unknown> }[] = [];
 
   function nextTableResult(table: string): TableResult {
     const queue = tableQueues.get(table);
@@ -121,8 +124,12 @@ export function createMockSupabase(): MockSupabase {
   return {
     client: {
       from: (table) => makeBuilder(table),
-      rpc: async (name) => nextRpcResult(name),
+      rpc: async (name, args) => {
+        rpcCalls.push({ name, args });
+        return nextRpcResult(name);
+      },
     },
+    rpcCalls,
     setTable(table, result) {
       tables.set(table, result);
     },
@@ -144,6 +151,7 @@ export function createMockSupabase(): MockSupabase {
       rpcs.clear();
       tableQueues.clear();
       rpcQueues.clear();
+      rpcCalls.length = 0;
     },
   };
 }
