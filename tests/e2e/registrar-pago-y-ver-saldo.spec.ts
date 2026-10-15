@@ -1,70 +1,129 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 /**
- * E2E: registrar un pago parcial sobre una venta y verificar que el saldo
- * del comprobante y el historial de pagos se actualizan en la UI.
+ * E2E: registrar el pago total de una venta desde el asistente de drawers
+ * (SPEC 25) y verificar que el comprobante queda PAGADO con saldo 0.
  *
- * Seed requerido (creado a mano en la DB de desarrollo antes de correr este test):
- *   - 1 entidad/cliente con RUC válido y nombre reconocible, p.ej.:
- *       { document_type: "RUC", document_number: "20512345678", name: "ACME S.A." }
- *   - 1 comprobante (voucher_kind = "VENTA") con saldo pendiente > 0 y entity_id = la entidad anterior.
- *     Total recomendado: 1000, paid_amount: 0, status: "PENDIENTE".
+ * Seed requerido en la DB de desarrollo antes de correr este test:
+ *   - 1 usuario con credenciales válidas en `.env`: `USUARIO` y `PASSWORD`.
+ *   - 1 venta (voucher_kind = "VENTA") con status "PENDIENTE" y saldo > 0,
+ *     visible en la primera página de `/ventas/listado`. El test elige la
+ *     primera fila con botón "Registrar pago" (Wallet), así que no exige un
+ *     número concreto.
+ *   - 1 caja activa (tipo CASH_BOX) — por defecto se elige "Caja General" —
+ *     sin cierres de caja cuyo periodo cubra la fecha de hoy
+ *     (`assert_payment_account_open` rechazaría el pago).
+ *   - Catálogo de métodos y categorías semilla: la app los siembra sola al
+ *     abrir el módulo (ensureCatalogsSeeded).
  *
- * Variables de entorno necesarias:
- *   - NEXT_PUBLIC_SUPABASE_URL
- *   - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+ * Variables de entorno (se cargan desde `.env` con process.loadEnvFile):
+ *   - USUARIO / PASSWORD: credenciales de la app.
+ *   - E2E_METHOD_NAME (opcional): método de pago a elegir (default "Efectivo").
+ *   - E2E_ACCOUNT_NAME (opcional): cuenta del asistente (default "Caja General").
  *
  * Para correrlo localmente:
- *   1) Cargar el seed en Supabase (con `apply_migration` o insertando filas).
- *   2) Asegurar que `npm run dev` pueda arrancar (Next.js 16.3.6, Node 20+).
- *   3) `npm run test:e2e`
+ *   1) Cargar el seed descrito arriba.
+ *   2) `npm run test:e2e` (playwright.config levanta `npm run dev`).
  *
- * Si el seed no existe, este test falla con un selector que no aparece; ese
- * es el comportamiento esperado y no es un bug del flujo.
+ * OJO: el test paga el saldo completo del comprobante elegido, que queda
+ * PAGADO. Para re-correrlo hace falta otra venta PENDIENTE con saldo.
  */
 
-const SALE_NUMBER_FRAGMENT = "F001-000001"; // número del comprobante seed
-const PAYMENT_AMOUNT = 250;
+try {
+  process.loadEnvFile();
+} catch {
+  // Sin .env (CI): los tests se saltan por falta de credenciales.
+}
+
+const METHOD_NAME = process.env.E2E_METHOD_NAME ?? "Efectivo";
+const ACCOUNT_NAME = process.env.E2E_ACCOUNT_NAME ?? "Caja General";
+
+async function login(page: Page): Promise<void> {
+  await page.goto("/login");
+  await page.getByLabel("Correo").fill(process.env.USUARIO ?? "");
+  await page.getByLabel("Contraseña").fill(process.env.PASSWORD ?? "");
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 20_000 });
+}
+
+// Elige una opción de un Select de base-ui por su texto visible (coincidencia
+// parcial: las cuentas muestran "Nombre · MONEDA").
+async function selectOption(
+  page: Page,
+  triggerSelector: string,
+  optionName: string
+): Promise<void> {
+  await page.locator(triggerSelector).click();
+  await page.getByRole("option", { name: optionName }).click();
+}
 
 test.describe.serial("registrar pago y ver saldo", () => {
-  test("flujo completo: ver → registrar pago → ver saldo actualizado → ver historial", async ({
+  test("flujo completo: ventas → Wallet → asistente de drawers → PAGADO con saldo 0", async ({
     page,
   }) => {
-    // 1. Ir al listado de ventas y abrir el comprobante de seed.
+    test.skip(
+      !process.env.USUARIO || !process.env.PASSWORD,
+      "Faltan USUARIO/PASSWORD en .env: el e2e necesita credenciales válidas."
+    );
+
+    // 1. Iniciar sesión e ir al listado de ventas.
+    await login(page);
     await page.goto("/ventas/listado");
 
-    const verBtn = page.getByRole("button", { name: "Ver" }).first();
-    await expect(verBtn).toBeVisible({ timeout: 15_000 });
-    await verBtn.click();
+    // 2. Tomar la primera venta PENDIENTE (fila con botón Wallet "Registrar pago").
+    const row = page
+      .getByRole("row")
+      .filter({ has: page.getByRole("button", { name: "Registrar pago" }) })
+      .first();
+    await expect(row).toBeVisible({ timeout: 15_000 });
+    await expect(row).toContainText("Pendiente");
 
-    // El modal muestra el número del comprobante de seed.
-    await expect(page.getByText(SALE_NUMBER_FRAGMENT)).toBeVisible();
+    const cells = await row.locator("td").allInnerTexts();
+    const voucherNumber =
+      cells.find((text) => /[A-Z0-9]+-\d+/.test(text)) ?? cells[0] ?? "";
 
-    // 2. Click en "Registrar pago" → navega a /pagos/ingresos con comprobanteId.
-    await page.getByRole("link", { name: "Registrar pago" }).first().click();
+    // 3. Abrir el asistente de drawers y completar sus 4 paneles.
+    await row.getByRole("button", { name: "Registrar pago" }).click();
 
-    await expect(page).toHaveURL(/\/pagos\/ingresos/);
+    // Panel 1: comprobante + fecha (viene precargada con hoy).
+    await expect(page.getByText(voucherNumber).first()).toBeVisible();
+    await page.getByRole("button", { name: "Continuar" }).last().click();
 
-    // 3. Abrir el formulario de pago y registrar uno parcial.
-    await page.getByRole("button", { name: "Registrar pago" }).first().click();
+    // Panel 2: método y cuenta (la categoría viene fijada por código).
+    await selectOption(page, "#payment-method", METHOD_NAME);
+    await selectOption(page, "#payment-account", ACCOUNT_NAME);
+    await page.getByRole("button", { name: "Continuar" }).last().click();
 
-    const amountInput = page.getByLabel(/importe/i);
-    await expect(amountInput).toBeVisible();
-    await amountInput.fill(String(PAYMENT_AMOUNT));
+    // Panel 3: importe precargado con el saldo → se paga completo.
+    const amountInput = page.locator("#payment-amount");
+    await expect(amountInput).not.toHaveValue("");
+    await page.getByRole("button", { name: "Continuar" }).last().click();
 
-    await page.getByRole("button", { name: /^registrar$/i }).click();
+    // Panel 4: referencia/notas opcionales → registrar.
+    await page
+      .getByRole("button", { name: "Registrar pago" })
+      .last()
+      .click();
+    await expect(page.getByText("Pago registrado")).toBeVisible({
+      timeout: 15_000,
+    });
 
-    // 4. Volver al listado y verificar que el saldo refleja el pago parcial.
+    // 4. Volver al listado y verificar que el comprobante quedó PAGADO.
     await page.goto("/ventas/listado");
+    const rowAfter = page.getByRole("row", { name: new RegExp(voucherNumber) });
+    await expect(rowAfter).toBeVisible({ timeout: 15_000 });
+    await expect(rowAfter).toContainText("Pagado");
 
-    // El saldo debería ser 1000 - 250 = 750 (asume total=1000).
-    await expect(page.getByText("750")).toBeVisible({ timeout: 10_000 });
+    // 5. Abrir el detalle: la banda de montos muestra saldo 0 y el
+    //    historial de pagos registra el recibo recién creado.
+    await rowAfter.getByRole("button", { name: "Ver" }).click();
+    const saldoBand = page.getByText("Saldo por pagar").locator("..");
+    await expect(saldoBand).toBeVisible({ timeout: 15_000 });
+    await expect(saldoBand).toContainText("0.00");
 
-    // 5. Reabrir el detalle y verificar que el historial muestra el pago recién creado.
-    await page.getByRole("button", { name: "Ver" }).first().click();
-    await expect(page.getByText("Historial de pagos")).toBeVisible();
-
-    // La fila del pago aparece con su número de recibo (RI-NNNNNN).
-    await expect(page.locator("text=/RI-\\d{6}/")).toBeVisible();
+    await page.getByRole("tab", { name: "Historial de pagos" }).click();
+    await expect(page.locator("text=/RI-\\d{6}/").first()).toBeVisible({
+      timeout: 10_000,
+    });
   });
 });
