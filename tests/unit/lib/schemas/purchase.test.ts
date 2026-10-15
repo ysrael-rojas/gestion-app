@@ -57,4 +57,42 @@ describe("purchaseSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rechaza un número que no calza el formato serie-correlativo", () => {
+    const result = purchaseSchema.safeParse({
+      ...validPurchase(),
+      voucherNumber: "factura uno",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find(
+        (i) => i.path[0] === "voucherNumber"
+      );
+      expect(issue?.message).toBe(
+        "Usa el formato serie-correlativo, por ejemplo F001-000001"
+      );
+    }
+  });
+
+  it("acepta series cortas, recorta espacios y rechaza correlativo no numérico", () => {
+    expect(
+      purchaseSchema.safeParse({ ...validPurchase(), voucherNumber: "B001-1" })
+        .success
+    ).toBe(true);
+
+    const trimmed = purchaseSchema.safeParse({
+      ...validPurchase(),
+      voucherNumber: "  F001-000001  ",
+    });
+    expect(trimmed.success).toBe(true);
+    if (trimmed.success) {
+      expect(trimmed.data.voucherNumber).toBe("F001-000001");
+    }
+
+    expect(
+      purchaseSchema.safeParse({ ...validPurchase(), voucherNumber: "F001-00A1" })
+        .success
+    ).toBe(false);
+  });
 });

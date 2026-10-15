@@ -155,20 +155,48 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
   const registrationDate = sale?.registrationDate ?? getTodayLocalDate();
   const clientItems = toEntityAutocompleteItems(clients);
 
+  const entityId = useWatch({ control: form.control, name: "entityId" });
+  const selectedClient =
+    clients.find((client) => client.id === entityId) ?? null;
+  const canIssueFactura = selectedClient?.documentType === "RUC";
+  const isPaidLocked = (sale?.paidAmount ?? 0) > 0;
+
   const errors = form.formState.errors;
+
+  function handleSubmit(values: SaleFormValues) {
+    if (values.voucherType === "FACTURA" && !canIssueFactura) {
+      form.setError("voucherType", {
+        message: "No se puede emitir factura a un cliente sin RUC",
+      });
+      return;
+    }
+
+    onSubmit(values);
+  }
 
   return (
     <form
       id={SALE_FORM_ID}
-      onSubmit={form.handleSubmit(onSubmit)}
+      onSubmit={form.handleSubmit(handleSubmit)}
       className="flex flex-col gap-6"
     >
+      {isPaidLocked ? (
+        <p
+          role="status"
+          className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground"
+        >
+          Este comprobante tiene pagos registrados: importe, número, cliente y
+          fecha quedan bloqueados. Anula los pagos si necesitas corregirlo.
+        </p>
+      ) : null}
+
       <FormGroup title="Datos del comprobante">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="issueDate">Fecha de emisión</Label>
           <Input
             id="issueDate"
             type="date"
+            disabled={isPaidLocked}
             aria-invalid={!!errors.issueDate}
             {...form.register("issueDate")}
           />
@@ -204,12 +232,21 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {VOUCHER_TYPES.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      disabled={option.value === "FACTURA" && !canIssueFactura}
+                    >
                       {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {!canIssueFactura ? (
+                <p className="text-xs text-muted-foreground">
+                  Para emitir factura, el cliente debe tener RUC.
+                </p>
+              ) : null}
               <FieldError message={errors.voucherType?.message} />
             </div>
           )}
@@ -220,6 +257,7 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
           <Input
             id="voucherNumber"
             placeholder="F001-000001"
+            disabled={isPaidLocked}
             aria-invalid={!!errors.voucherNumber}
             {...form.register("voucherNumber")}
           />
@@ -236,9 +274,20 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
                 id="entityId"
                 items={clientItems}
                 value={field.value ? field.value : null}
-                onValueChange={(value) => field.onChange(value)}
+                onValueChange={(value) => {
+                  field.onChange(value);
+
+                  const client =
+                    clients.find((item) => item.id === value) ?? null;
+
+                  form.setValue(
+                    "voucherType",
+                    client?.documentType === "RUC" ? "FACTURA" : "BOLETA"
+                  );
+                }}
                 placeholder="Buscar cliente..."
                 isLoading={isLoading}
+                isDisabled={isPaidLocked}
                 aria-invalid={!!errors.entityId}
               />
               <FieldError message={errors.entityId?.message} />
@@ -256,6 +305,7 @@ export function SaleForm({ sale, onSubmit }: SaleFormProps) {
             step="0.01"
             min="0"
             placeholder="0.00"
+            disabled={isPaidLocked}
             aria-invalid={!!errors.total}
             {...form.register("total")}
           />

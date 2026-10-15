@@ -183,6 +183,8 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
   const registrationDate = purchase?.registrationDate ?? getTodayLocalDate();
   const supplierItems = toEntityAutocompleteItems(suppliers);
 
+  const isPaidLocked = (purchase?.paidAmount ?? 0) > 0;
+
   const errors = form.formState.errors;
 
   return (
@@ -191,12 +193,23 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
       onSubmit={form.handleSubmit(onSubmit)}
       className="flex flex-col gap-6"
     >
+      {isPaidLocked ? (
+        <p
+          role="status"
+          className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground"
+        >
+          Este comprobante tiene pagos registrados: importe, número, proveedor
+          y fecha quedan bloqueados. Anula los pagos si necesitas corregirlo.
+        </p>
+      ) : null}
+
       <FormGroup title="Datos del comprobante">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="issueDate">Fecha de emisión</Label>
           <Input
             id="issueDate"
             type="date"
+            disabled={isPaidLocked}
             aria-invalid={!!errors.issueDate}
             {...form.register("issueDate")}
           />
@@ -248,6 +261,7 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
           <Input
             id="voucherNumber"
             placeholder="F001-000001"
+            disabled={isPaidLocked}
             aria-invalid={!!errors.voucherNumber}
             {...form.register("voucherNumber")}
           />
@@ -264,9 +278,20 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
                 id="supplierId"
                 items={supplierItems}
                 value={field.value ? field.value : null}
-                onValueChange={(value) => field.onChange(value)}
+                onValueChange={(value) => {
+                  field.onChange(value);
+
+                  const supplier =
+                    suppliers.find((item) => item.id === value) ?? null;
+
+                  form.setValue(
+                    "voucherType",
+                    supplier?.documentType === "RUC" ? "FACTURA" : "BOLETA"
+                  );
+                }}
                 placeholder="Buscar proveedor..."
                 isLoading={isSuppliersLoading}
+                isDisabled={isPaidLocked}
                 aria-invalid={!!errors.supplierId}
               />
               <FieldError message={errors.supplierId?.message} />
@@ -284,6 +309,7 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
             step="0.01"
             min="0"
             placeholder="0.00"
+            disabled={isPaidLocked}
             aria-invalid={!!errors.total}
             {...form.register("total")}
           />
