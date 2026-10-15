@@ -103,10 +103,22 @@ export function AllocationPicker({
   }, [vouchers, entityId, initialComprobanteId, onChange, onSuggestAmount]);
 
   const assigned = useMemo(
-    () => value.reduce((sum, item) => sum + item.amount, 0),
+    () => round2(value.reduce((sum, item) => sum + item.amount, 0)),
     [value]
   );
   const unassigned = Math.max(0, round2(amount - assigned));
+
+  // Validación en vivo (SPEC 37): el reparto no puede superar ni el importe
+  // del pago ni la suma de los saldos de los comprobantes seleccionados.
+  const selectedBalanceTotal = round2(
+    vouchers
+      .filter((voucher) =>
+        value.some((item) => item.comprobanteId === voucher.comprobanteId)
+      )
+      .reduce((sum, voucher) => sum + voucher.balance, 0)
+  );
+  const overAmount = round2(assigned - amount);
+  const overBalances = round2(assigned - selectedBalanceTotal);
 
   const hasOpenVouchers = vouchers.some((voucher) => voucher.balance > 0);
   const canAutoDistribute = amount > 0 && hasOpenVouchers;
@@ -141,8 +153,12 @@ export function AllocationPicker({
 
   function toggle(voucher: VoucherBalance, checked: boolean) {
     if (checked) {
-      const defaultAmount =
-        unassigned > 0 ? Math.min(voucher.balance, unassigned) : voucher.balance;
+      // Clampea contra lo que queda del importe y contra el saldo del voucher:
+      // nunca se pre-reparte más de lo disponible.
+      const defaultAmount = Math.min(
+        voucher.balance,
+        Math.max(unassigned, 0)
+      );
 
       onChange([
         ...value,
@@ -252,6 +268,18 @@ export function AllocationPicker({
           })}
         </div>
       )}
+
+      {overAmount > 0 ? (
+        <p role="alert" className="text-sm text-destructive">
+          El reparto supera el importe del pago en {formatCurrency(overAmount)}.
+        </p>
+      ) : null}
+      {overBalances > 0 ? (
+        <p role="alert" className="text-sm text-destructive">
+          El reparto supera la suma de los saldos de los comprobantes
+          seleccionados en {formatCurrency(overBalances)}.
+        </p>
+      ) : null}
 
       <div className="flex items-center justify-end">
         <span

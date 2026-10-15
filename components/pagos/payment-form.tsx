@@ -455,6 +455,9 @@ export function PaymentForm({
             control={form.control}
             name="allocations"
             render={({ field }) => (
+              // La validación en vivo del reparto contra los saldos de los
+              // comprobantes vive en AllocationPicker (es quien los carga);
+              // aquí solo se surfacea el error de zod (SPEC 37).
               <AllocationPicker
                 direction={direction}
                 entityId={entityId}
