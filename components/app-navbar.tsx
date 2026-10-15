@@ -9,6 +9,7 @@ import {
   Calculator,
   Database,
   Landmark,
+  LayoutDashboard,
   Receipt,
   Settings,
   ShoppingCart,
@@ -66,6 +67,7 @@ const groups: NavGroup[] = [
     label: "CAJA Y BANCOS",
     icon: Landmark,
     items: [
+      { label: "Resumen", href: "/cajas-bancos", icon: LayoutDashboard },
       { label: "Detalle de Cuentas", href: "/cajas-bancos/cuentas", icon: Wallet },
       { label: "Cuadres de Caja", href: "/cajas-bancos/cuadres", icon: Calculator },
       { label: "Configuración", href: "/cajas-bancos/configuracion", icon: Settings },

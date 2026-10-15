@@ -27,7 +27,11 @@ interface QueryBuilder {
   insert: (payload: unknown) => QueryBuilder;
   update: (payload: unknown) => QueryBuilder;
   eq: (col: string, val: unknown) => QueryBuilder;
+  neq: (col: string, val: unknown) => QueryBuilder;
   gt: (col: string, val: unknown) => QueryBuilder;
+  gte: (col: string, val: unknown) => QueryBuilder;
+  lt: (col: string, val: unknown) => QueryBuilder;
+  lte: (col: string, val: unknown) => QueryBuilder;
   is: (col: string, val: unknown) => QueryBuilder;
   in: (col: string, vals: unknown[]) => QueryBuilder;
   order: (col: string, opts?: { ascending?: boolean }) => QueryBuilder;
@@ -103,7 +107,11 @@ export function createMockSupabase(): MockSupabase {
       },
       update: () => builder,
       eq: () => builder,
+      neq: () => builder,
       gt: () => builder,
+      gte: () => builder,
+      lt: () => builder,
+      lte: () => builder,
       is: () => builder,
       in: () => builder,
       order: () => builder,

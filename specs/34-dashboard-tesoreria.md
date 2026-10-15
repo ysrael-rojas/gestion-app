@@ -1,6 +1,6 @@
 # SPEC 34 — Dashboard de tesorería (índice del módulo)
 
-> **Status:** Draft
+> **Status:** Implementado
 > **Depends on:** SPEC 31
 > **Date:** 2026-10-14
 > **Objective:** Portada `/cajas-bancos` con posición consolidada de efectivo, resultado del mes y cartera breve, para que el dueño vea en una pantalla cuánto tiene, de dónde viene y hacia dónde va.
@@ -44,13 +44,13 @@ Sin tablas ni columnas nuevas.
 
 ## Acceptance criteria
 
-- [ ] `/cajas-bancos` carga los saldos de todas las cuentas con una única RPC (sin N+1).
-- [ ] El total disponible cuadra con la suma de las cuentas individuales.
-- [ ] El resultado del mes (ingresos − egresos) cuadra con los movimientos del período.
-- [ ] La tarjeta de cartera muestra total y saldo vencido.
-- [ ] La vista funciona con cuentas mixtas caja/banco y muestra el tipo de cada una.
-- [ ] Los montos se muestran en formato `es-PE` (S/).
-- [ ] `npm test`, `npm run lint` y `npm run build` pasan.
+- [x] `/cajas-bancos` carga los saldos de todas las cuentas con una única RPC (sin N+1).
+- [x] El total disponible cuadra con la suma de las cuentas individuales.
+- [x] El resultado del mes (ingresos − egresos) cuadra con los movimientos del período.
+- [x] La tarjeta de cartera muestra total y saldo vencido.
+- [x] La vista funciona con cuentas mixtas caja/banco y muestra el tipo de cada una.
+- [x] Los montos se muestran en formato `es-PE` (S/).
+- [x] `npm test`, `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 

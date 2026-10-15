@@ -750,6 +750,16 @@ export type Database = {
         }
         Returns: number
       }
+      get_cash_positions: {
+        Args: { p_as_of?: string }
+        Returns: {
+          account_id: string
+          balance: number
+          currency: string
+          name: string
+          type: Database["public"]["Enums"]["cash_account_type"]
+        }[]
+      }
       mark_payments_processed: {
         Args: {
           p_payment_ids: string[]

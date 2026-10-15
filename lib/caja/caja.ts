@@ -11,6 +11,10 @@ import type { CashReceiptCategoryFormValues } from "@/lib/schemas/cash-receipt-c
 import type { PaymentMethodFormValues } from "@/lib/schemas/payment-method";
 import { DEFAULT_CATEGORIES, DEFAULT_PAYMENT_METHODS } from "@/lib/caja/defaults";
 import {
+  summarizeCashFlow,
+  type CashFlowTotals,
+} from "@/lib/caja/dashboard";
+import {
   sumDenominationCounts,
   toDenominationPayload,
 } from "@/lib/caja/denominaciones";
@@ -359,6 +363,38 @@ export async function getCashPosition(
   return data ?? 0;
 }
 
+/**
+ * Saldos de todas las cuentas activas con una sola RPC (`get_cash_positions`),
+ * en lugar de una llamada `get_cash_position` por cuenta (N+1).
+ */
+export async function listCashPositionsConsolidated(
+  asOf: string
+): Promise<CashAccountPosition[]> {
+  const [accounts, { data, error }] = await Promise.all([
+    listCashAccounts(),
+    supabase.rpc("get_cash_positions", { p_as_of: asOf }),
+  ]);
+
+  if (error) {
+    throw mapError(error);
+  }
+
+  const balances = new Map(
+    (data ?? []).map((row) => [row.account_id, Number(row.balance)])
+  );
+
+  return accounts
+    .filter((account) => account.isActive)
+    .map((account) => ({
+      account,
+      balance: balances.get(account.id) ?? 0,
+    }));
+}
+
+/**
+ * @deprecated Usa `listCashPositionsConsolidated`: resuelve todos los saldos
+ * con una sola RPC en lugar de una llamada por cuenta (N+1).
+ */
 export async function listCashPositions(
   asOf: string
 ): Promise<CashAccountPosition[]> {
@@ -370,6 +406,25 @@ export async function listCashPositions(
       balance: await getCashPosition(account.id, asOf),
     }))
   );
+}
+
+/** Ingresos y egresos (sin anulados) de un período, para el resultado del mes. */
+export async function getMonthlyCashFlow(
+  from: string,
+  to: string
+): Promise<CashFlowTotals> {
+  const { data, error } = await supabase
+    .from("payment")
+    .select("direction, amount")
+    .neq("status", "ANULADO")
+    .gte("payment_date", from)
+    .lte("payment_date", to);
+
+  if (error) {
+    throw mapError(error);
+  }
+
+  return summarizeCashFlow(data ?? []);
 }
 
 export async function getCashAccountStatement(
