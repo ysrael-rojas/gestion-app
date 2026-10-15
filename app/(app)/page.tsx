@@ -27,6 +27,7 @@ interface CarteraCardConfig {
   title: string;
   href: string;
   linkLabel: string;
+  tone: string;
 }
 
 const CARDS: CarteraCardConfig[] = [
@@ -35,24 +36,28 @@ const CARDS: CarteraCardConfig[] = [
     title: "Por cobrar",
     href: "/pagos/ingresos?filtro=pendientes",
     linkLabel: "Ver pendientes",
+    tone: "bg-pastel-mint",
   },
   {
     key: "payable",
     title: "Por pagar",
     href: "/pagos/egresos?filtro=pendientes",
     linkLabel: "Ver pendientes",
+    tone: "bg-pastel-peach",
   },
   {
     key: "unassignedReceipts",
     title: "Recibos sin asignar",
     href: "/pagos/ingresos?filtro=sin-asignar",
     linkLabel: "Ver sin asignar",
+    tone: "bg-pastel-lilac",
   },
   {
     key: "unassignedPayments",
     title: "Pagos sin asignar",
     href: "/pagos/egresos?filtro=sin-asignar",
     linkLabel: "Ver sin asignar",
+    tone: "bg-pastel-cream",
   },
 ];
 
@@ -70,7 +75,7 @@ interface CarteraCardProps {
 
 function CarteraCard({ config, bucket, isLoading }: CarteraCardProps) {
   return (
-    <Card>
+    <Card className={config.tone}>
       <CardHeader>
         <CardTitle>{config.title}</CardTitle>
       </CardHeader>

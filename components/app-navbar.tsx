@@ -43,28 +43,28 @@ type NavGroup = {
 };
 
 const directLinks: NavLink[] = [
-  { label: "VENTAS", href: "/ventas/listado", icon: Receipt },
-  { label: "COMPRAS", href: "/compras/listado", icon: ShoppingCart },
+  { label: "Ventas", href: "/ventas/listado", icon: Receipt },
+  { label: "Compras", href: "/compras/listado", icon: ShoppingCart },
 ];
 
 const groups: NavGroup[] = [
   {
-    label: "MAESTRO",
+    label: "Maestro",
     icon: Database,
     items: [
       { label: "Clientes/Proveedores", href: "/clientes/listado", icon: Users },
     ],
   },
   {
-    label: "PAGOS",
+    label: "Pagos",
     icon: Wallet,
     items: [
-      { label: "INGRESOS", href: "/pagos/ingresos", icon: ArrowDownCircle },
-      { label: "EGRESOS", href: "/pagos/egresos", icon: ArrowUpCircle },
+      { label: "Ingresos", href: "/pagos/ingresos", icon: ArrowDownCircle },
+      { label: "Egresos", href: "/pagos/egresos", icon: ArrowUpCircle },
     ],
   },
   {
-    label: "CAJA Y BANCOS",
+    label: "Caja y bancos",
     icon: Landmark,
     items: [
       { label: "Resumen", href: "/cajas-bancos", icon: LayoutDashboard },
@@ -83,7 +83,7 @@ export function AppNavbar() {
       <Link href="/" className="flex shrink-0 items-center gap-2">
         <Building2 className="size-5" />
         <span className="hidden font-semibold sm:inline">
-          GESTION COMERCIAL
+          Gestión Comercial
         </span>
       </Link>
 
