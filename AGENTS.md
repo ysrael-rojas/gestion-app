@@ -101,6 +101,7 @@ Para validar cambios: `npm run lint` + `npm test` + `npm run build`.
 - `supabase-postgres-best-practices` — cargar antes de crear/alterar tablas, RLS, índices o migraciones en Postgres.
 - `caja-bancos-mype` — experto operativo de caja y bancos para MYPE en Perú (arqueo, conciliación bancaria, caja chica, tesorería, ITF, detracciones). **Cargar antes de planear o tocar el módulo de caja y bancos**; actúa como maestro que enseña el procedimiento ideal y recomienda mejoras al sistema, sin asientos contables.
 - `consultor-pagos-cobranzas` — consultor de negocios digitales / "director de obra" para dueños de negocio y emprendedores: guía en lenguaje simple (sin tecnicismos) el diseño de un módulo de pagos (CxP) y cobranzas (CxC), el diagnóstico de código/datos existentes, las pasarelas de pago y los recordatorios automáticos. Úsala cuando el usuario quiera montar u ordenar cobros/pagos "para su negocio".
+- `facturacion-sunat-mype` — experto en facturación SUNAT (Perú) para MYPE: comprobantes de venta (factura, boleta, notas de crédito/débito) y de compra, IGV, series y correlativos, y facturación electrónica (CPE). Explica la regla en simple y guía el desarrollo web; **cargar antes de tocar la emisión de comprobantes o el cálculo de impuestos**.
 - `frontend-design` — dirección visual distintiva. **Obligatorio** para toda propuesta de diseño (ver sección UI).
 
 ### Skills de diseño instalados (`.opencode/skills/`)
