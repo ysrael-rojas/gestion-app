@@ -25,6 +25,7 @@ const close = (overrides: Partial<CashClose> = {}): CashClose => ({
   expenseTotal: 0,
   expectedBalance: 500,
   countedBalance: 400.5,
+  changeFund: null,
   difference: -99.5,
   penUsdRate: null,
   notes: null,
@@ -35,6 +36,7 @@ const close = (overrides: Partial<CashClose> = {}): CashClose => ({
 function renderReport(props: {
   denominations?: { denomination: number; quantity: number }[];
   changeFund?: number;
+  accountType?: "CASH_BOX" | "BANK_ACCOUNT";
 }) {
   return render(
     <CuadreReport
@@ -44,6 +46,7 @@ function renderReport(props: {
       accountId="acc-1"
       accountName="Caja principal"
       currency="PEN"
+      accountType={props.accountType ?? "CASH_BOX"}
       denominations={props.denominations ?? []}
       changeFund={props.changeFund ?? 0}
     />

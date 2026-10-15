@@ -573,6 +573,7 @@ export function CuadresView() {
               accountId={account.id}
               accountName={account.name}
               currency={account.currency}
+              accountType={account.type}
               denominations={denominations}
               changeFund={account.changeFund}
               onMarkVerified={handleMarkVerified}

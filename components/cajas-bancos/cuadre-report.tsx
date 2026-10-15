@@ -48,6 +48,7 @@ import {
 import type { CashClose, Payment } from "@/components/pagos/types";
 import type { CloseDenomination } from "@/lib/caja/caja";
 import type { CashTransfer } from "@/lib/caja/transferencias";
+import type { CashAccountType } from "@/lib/schemas/cash-account";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface CuadreReportProps {
@@ -57,6 +58,8 @@ interface CuadreReportProps {
   accountId: string;
   accountName: string;
   currency: string;
+  /** Tipo de cuenta: define la etiqueta del conteo (caja vs. banco). */
+  accountType: CashAccountType;
   /** Detalle del conteo por denominación (vacío en bancos y cierres previos). */
   denominations: CloseDenomination[];
   /** Fondo de cambio de la cuenta al momento de ver el reporte. */
@@ -90,6 +93,11 @@ function groupByCategory(statement: Payment[]): CategoryTotal[] {
   const map = new Map<string, CategoryTotal>();
 
   for (const payment of statement) {
+    // Los recibos anulados no suman en el resumen: así cuadra con los totales
+    // de Ingresos y Egresos. Su rastro sigue en Movimientos con su estado.
+    if (payment.status === "ANULADO") {
+      continue;
+    }
     const key = `${payment.direction}|${payment.categoryName}`;
     const current = map.get(key);
     if (current) {
@@ -324,11 +332,17 @@ export function CuadreReport({
   accountId,
   accountName,
   currency,
+  accountType,
   denominations,
   changeFund,
   onMarkVerified,
   onRegisterBankCharge,
 }: CuadreReportProps) {
+  const isBank = accountType === "BANK_ACCOUNT";
+  const countedLabel = isBank ? "Saldo según extracto" : "Conteo físico";
+  // El cierre congela el fondo de cambio; los cierres históricos sin snapshot
+  // caen al valor actual de la cuenta.
+  const effectiveChangeFund = close.changeFund ?? changeFund;
   const categories = groupByCategory(statement);
   const statementRows = buildStatementRows(statement, transfers, accountId);
   // El detalle manda cuando existe: A = suma del conteo. Si el cierre es previo
@@ -339,10 +353,10 @@ export function CuadreReport({
       : (close.countedBalance ?? 0);
   const totals: DenominationTotals = {
     counted: countedTotal,
-    changeFund,
-    net: netCash(countedTotal, changeFund),
+    changeFund: effectiveChangeFund,
+    net: netCash(countedTotal, effectiveChangeFund),
   };
-  const hasArqueo = denominations.length > 0 || changeFund > 0;
+  const hasArqueo = denominations.length > 0 || effectiveChangeFund > 0;
 
   function handleExport() {
     const rows: (string | number | null)[][] = [
@@ -355,7 +369,7 @@ export function CuadreReport({
       ["Ingresos", close.incomeTotal],
       ["Egresos", close.expenseTotal],
       ["Saldo esperado", close.expectedBalance],
-      ["Conteo físico", close.countedBalance ?? ""],
+      [countedLabel, close.countedBalance ?? ""],
       ["Diferencia", close.difference ?? ""],
       [],
       ...(hasArqueo
@@ -437,7 +451,7 @@ export function CuadreReport({
           {close.countedBalance !== null ? (
             <>
               <SummaryRow
-                label="Conteo físico"
+                label={countedLabel}
                 value={formatAmount(close.countedBalance, currency)}
               />
               <SummaryRow
