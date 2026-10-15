@@ -79,66 +79,70 @@ export function AppNavbar() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 w-full items-center gap-3 border-b bg-background px-4">
-      <Link href="/" className="flex shrink-0 items-center gap-2">
-        <Building2 className="size-5" />
-        <span className="hidden font-semibold sm:inline">
-          Gestión Comercial
-        </span>
-      </Link>
+    <header className="sticky top-0 z-40 w-full px-4 pt-4">
+      <div className="mx-auto flex h-14 w-full items-center gap-3 rounded-2xl border-[3px] border-ink bg-card px-3 shadow-[var(--clay-shadow)]">
+        <Link href="/" className="flex shrink-0 items-center gap-2">
+          <span className="flex size-9 items-center justify-center rounded-lg border-[3px] border-ink bg-pastel-mint">
+            <Building2 className="size-5" />
+          </span>
+          <span className="hidden font-heading text-base font-semibold sm:inline">
+            Gestión Comercial
+          </span>
+        </Link>
 
-      <div className="min-w-0 flex-1 overflow-x-auto">
-        <NavigationMenu>
-          <NavigationMenuList>
-            {directLinks.map((item) => (
-              <NavigationMenuItem key={item.href}>
-                <NavigationMenuLink
-                  active={pathname === item.href}
-                  render={<Link href={item.href} />}
-                  className={cn(navigationMenuTriggerStyle(), "gap-2")}
-                >
-                  <item.icon />
-                  <span>{item.label}</span>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            ))}
+        <div className="min-w-0 flex-1 overflow-x-auto">
+          <NavigationMenu>
+            <NavigationMenuList>
+              {directLinks.map((item) => (
+                <NavigationMenuItem key={item.href}>
+                  <NavigationMenuLink
+                    active={pathname === item.href}
+                    render={<Link href={item.href} />}
+                    className={cn(navigationMenuTriggerStyle(), "gap-2")}
+                  >
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              ))}
 
-            {groups.map((group) => (
-              <NavigationMenuItem key={group.label}>
-                <NavigationMenuTrigger
-                  className={cn(
-                    "gap-2",
-                    group.items.some((item) => item.href === pathname) &&
-                      "bg-brand/10 text-brand-strong"
-                  )}
-                >
-                  <group.icon />
-                  <span>{group.label}</span>
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-56 gap-1 p-1">
-                    {group.items.map((item) => (
-                      <li key={item.href}>
-                        <NavigationMenuLink
-                          active={pathname === item.href}
-                          closeOnClick
-                          render={<Link href={item.href} />}
-                        >
-                          <item.icon />
-                          <span>{item.label}</span>
-                        </NavigationMenuLink>
-                      </li>
-                    ))}
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            ))}
-          </NavigationMenuList>
-        </NavigationMenu>
-      </div>
+              {groups.map((group) => (
+                <NavigationMenuItem key={group.label}>
+                  <NavigationMenuTrigger
+                    className={cn(
+                      "gap-2",
+                      group.items.some((item) => item.href === pathname) &&
+                        "bg-pastel-mint text-brand-strong hover:text-brand-strong"
+                    )}
+                  >
+                    <group.icon />
+                    <span>{group.label}</span>
+                  </NavigationMenuTrigger>
+                  <NavigationMenuContent>
+                    <ul className="grid w-56 gap-1 p-1.5">
+                      {group.items.map((item) => (
+                        <li key={item.href}>
+                          <NavigationMenuLink
+                            active={pathname === item.href}
+                            closeOnClick
+                            render={<Link href={item.href} />}
+                          >
+                            <item.icon />
+                            <span>{item.label}</span>
+                          </NavigationMenuLink>
+                        </li>
+                      ))}
+                    </ul>
+                  </NavigationMenuContent>
+                </NavigationMenuItem>
+              ))}
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
 
-      <div className="shrink-0">
-        <SignOutButton className="w-auto justify-center" />
+        <div className="shrink-0">
+          <SignOutButton className="w-auto justify-center" />
+        </div>
       </div>
     </header>
   );

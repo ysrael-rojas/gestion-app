@@ -55,7 +55,7 @@ function NavigationMenuItem({
 }
 
 const navigationMenuTriggerStyle = cva(
-  "group/navigation-menu-trigger inline-flex h-9 w-max items-center justify-center rounded-lg px-2.5 py-1.5 text-sm font-medium transition-all outline-none hover:bg-brand/10 focus:bg-brand/10 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-popup-open:bg-brand/10 data-popup-open:hover:bg-brand/15 data-open:bg-brand/10 data-open:hover:bg-brand/15 data-open:focus:bg-brand/15"
+  "group/navigation-menu-trigger inline-flex h-9 w-max items-center justify-center rounded-full px-3 py-1.5 text-sm font-semibold text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-popup-open:bg-pastel-mint data-popup-open:text-brand-strong data-popup-open:hover:bg-pastel-mint data-popup-open:focus:bg-pastel-mint data-open:bg-pastel-mint data-open:text-brand-strong data-open:hover:bg-pastel-mint data-open:focus:bg-pastel-mint"
 )
 
 function NavigationMenuTrigger({
@@ -112,7 +112,7 @@ function NavigationMenuPositioner({
         )}
         {...props}
       >
-        <NavigationMenuPrimitive.Popup className="data-[ending-style]:easing-[ease] xs:w-(--popup-width) relative h-(--popup-height) w-(--popup-width) origin-(--transform-origin) rounded-lg bg-popover text-popover-foreground shadow ring-1 ring-foreground/10 transition-[opacity,transform,width,height,scale,translate] duration-[0.35s] ease-[cubic-bezier(0.22,1,0.36,1)] outline-none data-ending-style:scale-90 data-ending-style:opacity-0 data-ending-style:duration-150 data-starting-style:scale-90 data-starting-style:opacity-0">
+        <NavigationMenuPrimitive.Popup className="data-[ending-style]:easing-[ease] xs:w-(--popup-width) relative h-(--popup-height) w-(--popup-width) origin-(--transform-origin) rounded-2xl border-[3px] border-ink bg-popover text-popover-foreground shadow-[var(--clay-shadow)] transition-[opacity,transform,width,height,scale,translate] duration-[0.35s] ease-[cubic-bezier(0.22,1,0.36,1)] outline-none data-ending-style:scale-90 data-ending-style:opacity-0 data-ending-style:duration-150 data-starting-style:scale-90 data-starting-style:opacity-0">
           <NavigationMenuPrimitive.Viewport className="relative size-full overflow-hidden" />
         </NavigationMenuPrimitive.Popup>
       </NavigationMenuPrimitive.Positioner>
@@ -128,7 +128,7 @@ function NavigationMenuLink({
     <NavigationMenuPrimitive.Link
       data-slot="navigation-menu-link"
       className={cn(
-        "flex items-center gap-2 rounded-lg p-2 text-sm transition-all outline-none hover:bg-brand/10 focus:bg-brand/10 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-1 in-data-[slot=navigation-menu-content]:rounded-md data-active:bg-brand/10 data-active:text-brand-strong data-active:hover:bg-brand/15 data-active:focus:bg-brand/15 [&_svg:not([class*='size-'])]:size-4",
+        "flex items-center gap-2 rounded-lg p-2 text-sm font-semibold text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-1 in-data-[slot=navigation-menu-content]:rounded-xl in-data-[slot=navigation-menu-content]:hover:bg-brand/10 in-data-[slot=navigation-menu-content]:focus:bg-brand/10 data-active:bg-pastel-mint data-active:text-brand-strong data-active:hover:bg-pastel-mint data-active:hover:text-brand-strong data-active:focus:bg-pastel-mint [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
