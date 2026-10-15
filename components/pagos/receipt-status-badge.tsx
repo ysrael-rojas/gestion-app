@@ -5,9 +5,9 @@ import { getOptionLabel } from "@/lib/data/sale-options";
 
 const STATUS_STYLES: Record<PaymentStatus, string> = {
   EN_REVISION:
-    "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+    "bg-pastel-lilac text-violet-800 dark:bg-violet-500/15 dark:text-violet-300",
   PROCESADO:
-    "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    "bg-pastel-mint text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
   ANULADO: "bg-red-500/15 text-red-700 dark:text-red-300",
 };
 

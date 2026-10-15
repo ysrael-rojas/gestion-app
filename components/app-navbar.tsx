@@ -109,7 +109,7 @@ export function AppNavbar() {
                   className={cn(
                     "gap-2",
                     group.items.some((item) => item.href === pathname) &&
-                      "bg-muted/50"
+                      "bg-brand/10 text-brand-strong"
                   )}
                 >
                   <group.icon />

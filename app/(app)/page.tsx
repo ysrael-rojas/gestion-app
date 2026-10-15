@@ -101,7 +101,7 @@ function CarteraCard({ config, bucket, isLoading }: CarteraCardProps) {
             ) : null}
             <Link
               href={config.href}
-              className="text-sm font-medium text-primary hover:underline"
+              className="text-sm font-medium text-brand-strong hover:underline"
             >
               {config.linkLabel}
             </Link>
@@ -172,7 +172,7 @@ function OverdueList({
         )}
         <Link
           href={href}
-          className="text-sm font-medium text-primary hover:underline"
+          className="text-sm font-medium text-brand-strong hover:underline"
         >
           Ver vencidas
         </Link>
@@ -238,7 +238,7 @@ export default function Home() {
   };
 
   return (
-    <main className="container mx-auto flex flex-col gap-6 p-6">
+    <main className="container mx-auto flex flex-col gap-4 p-4">
       <div>
         <h1 className="text-2xl font-semibold">Resumen de cartera</h1>
         <p className="text-sm text-muted-foreground">
@@ -246,7 +246,7 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {CARDS.map((config) => (
           <CarteraCard
             key={config.key}
@@ -257,7 +257,7 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
         <OverdueList
           title="Comprobantes vencidos por cobrar"
           href="/pagos/ingresos?filtro=vencidas"
