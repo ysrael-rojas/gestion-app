@@ -1,6 +1,6 @@
 # SPEC 35 — Saneamiento del cuadre y los cargos bancarios
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 19, SPEC 32, SPEC 33
 > **Date:** 2026-10-14
 > **Objective:** Cerrar los cinco ajustes pequeños que quedaron tras implementar SPEC 32 y SPEC 33: el resumen por categoría que suma recibos anulados, la fecha del cargo bancario, el cierre de un banco sin saldo de extracto, el cierre de una caja en cero y el fondo de cambio sin snapshot.
