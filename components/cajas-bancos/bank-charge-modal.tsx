@@ -164,8 +164,11 @@ export function BankChargeModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-lg">
+        {/* noValidate: el `min` nativo bloquea el submit y dejaría inalcanzable el
+        mensaje propio de período cerrado; el schema y handleSubmit validan. */}
         <form
           id={BANK_CHARGE_FORM_ID}
+          noValidate
           onSubmit={form.handleSubmit(handleSubmit)}
           className="flex flex-col gap-5 p-6"
         >
