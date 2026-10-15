@@ -105,19 +105,26 @@ function ReceiptContent({
 
       <div className="my-2 border-t border-dashed border-black" />
 
-      <ReceiptRow label="Importe" value={formatCurrency(detail.amount)} strong />
+      <ReceiptRow
+        label="Importe"
+        value={formatCurrency(detail.amount, detail.currency)}
+        strong
+      />
 
       <div className="my-2 border-t border-dashed border-black" />
 
       <div className="font-semibold">Asignaciones</div>
       {detail.allocations.length === 0 ? (
-        <ReceiptRow label="(sin asignaciones)" value={formatCurrency(0)} />
+        <ReceiptRow
+          label="(sin asignaciones)"
+          value={formatCurrency(0, detail.currency)}
+        />
       ) : (
         detail.allocations.map((allocation) => (
           <ReceiptRow
             key={allocation.id}
             label={`${getOptionLabel(VOUCHER_TYPES, allocation.voucherType)} ${allocation.voucherNumber}`}
-            value={formatCurrency(allocation.amount)}
+            value={formatCurrency(allocation.amount, detail.currency)}
           />
         ))
       )}
@@ -126,7 +133,7 @@ function ReceiptContent({
 
       <ReceiptRow
         label="Saldo sin asignar"
-        value={formatCurrency(detail.unassignedAmount)}
+        value={formatCurrency(detail.unassignedAmount, detail.currency)}
       />
       <ReceiptRow
         label="Estado"

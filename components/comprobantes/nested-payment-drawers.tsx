@@ -44,7 +44,12 @@ import {
   PAYMENT_TYPES,
   VOUCHER_TYPES,
 } from "@/lib/data/sale-options";
-import { formatDate, formatCurrency, getTodayLocalDate } from "@/lib/utils";
+import {
+  formatDate,
+  formatCurrency,
+  getTodayLocalDate,
+  type Currency,
+} from "@/lib/utils";
 import { cn } from "cn";
 
 type WizardStep = 1 | 2 | 3 | 4;
@@ -373,6 +378,13 @@ export function NestedPaymentDrawers({
   const amountValue = Number.isFinite(parsedAmount) ? parsedAmount : 0;
   const newBalance = Math.max(balance - amountValue, 0);
 
+  // La moneda del pago es la de la cuenta elegida (SPEC 37).
+  const selectedAccount = activeAccounts.find(
+    (account) => account.id === draft.cashAccountId
+  );
+  const paymentCurrency: Currency =
+    selectedAccount?.currency === "USD" ? "USD" : "PEN";
+
   // Validación por panel: cada "Continuar" valida solo los campos del panel.
   const goToStep = (next: WizardStep) => {
     setFormError(null);
@@ -634,6 +646,7 @@ export function NestedPaymentDrawers({
                       total={total}
                       paidAmount={paidAmount}
                       balance={balance}
+                      currency={paymentCurrency}
                     />
 
                     <div className="flex flex-col gap-1.5">
@@ -668,7 +681,7 @@ export function NestedPaymentDrawers({
                             : "text-amber-600 dark:text-amber-400"
                         )}
                       >
-                        {formatCurrency(newBalance)}
+                        {formatCurrency(newBalance, paymentCurrency)}
                       </span>
                     </div>
                   </div>
