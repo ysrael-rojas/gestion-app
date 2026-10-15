@@ -18,6 +18,7 @@ const payment = (overrides: Partial<Payment> = {}): Payment => ({
   paymentDate: "2026-10-05",
   receiptNumber: "RI-000001",
   amount: 100,
+  currency: "PEN",
   methodId: "m-1",
   methodName: "Efectivo",
   cashAccountId: ACCOUNT_ID,
