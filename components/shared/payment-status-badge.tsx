@@ -4,8 +4,8 @@ import { cn } from "cn";
 export type BadgeStatus = "PAGADO" | "PENDIENTE";
 
 const STATUS_STYLES: Record<BadgeStatus, string> = {
-  PAGADO: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  PENDIENTE: "bg-red-500/15 text-red-700 dark:text-red-300",
+  PAGADO: "bg-pastel-mint text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
+  PENDIENTE: "bg-pastel-peach text-rose-800 dark:bg-rose-500/15 dark:text-rose-300",
 };
 
 const STATUS_LABELS: Record<BadgeStatus, string> = {

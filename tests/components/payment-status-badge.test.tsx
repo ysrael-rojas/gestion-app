@@ -11,12 +11,12 @@ describe("PaymentStatusBadge", () => {
     expect(badge.className).toContain("emerald");
   });
 
-  it("renderiza PENDIENTE con variante roja (red)", () => {
+  it("renderiza PENDIENTE con acento cálido (rose)", () => {
     render(<PaymentStatusBadge status="PENDIENTE" />);
 
     const badge = screen.getByText("Pendiente");
     expect(badge).toBeInTheDocument();
-    expect(badge.className).toContain("red");
+    expect(badge.className).toContain("rose");
   });
 
   it("acepta className adicional sin romper estilos base", () => {

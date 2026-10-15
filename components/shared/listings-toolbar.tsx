@@ -54,7 +54,7 @@ export function ListingsToolbar({ children }: ListingsToolbarProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2">
           <Label>Desde:</Label>
@@ -104,7 +104,7 @@ export function ListingsToolbar({ children }: ListingsToolbarProps) {
           </Select>
         </div>
         {hasActiveFilters ? (
-          <Button variant="ghost" onClick={clearFilters}>
+          <Button variant="ghost" size="sm" onClick={clearFilters}>
             <X />
             Limpiar filtros
           </Button>

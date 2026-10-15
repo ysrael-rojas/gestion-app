@@ -12,7 +12,10 @@ export function SignOutButton({ className }: { className?: string }) {
   return (
     <Button
       variant="ghost"
-      className={cn("w-full justify-start", className)}
+      className={cn(
+        "w-full justify-start font-semibold text-muted-foreground hover:bg-transparent hover:text-foreground",
+        className
+      )}
       disabled={isPending}
       onClick={() => startTransition(() => void signOut())}
     >
