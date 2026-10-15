@@ -13,32 +13,32 @@ vi.mock("@/components/auth/sign-out-button", () => ({
 import { AppNavbar } from "@/components/app-navbar";
 
 describe("AppNavbar", () => {
-  it("ordena las entradas de izquierda a derecha: VENTAS, COMPRAS, MAESTRO, PAGOS, CAJA Y BANCOS", () => {
+  it("ordena las entradas de izquierda a derecha: Ventas, Compras, Maestro, Pagos, Caja y bancos", () => {
     render(<AppNavbar />);
 
     const labels = screen
-      .getAllByText(/^(VENTAS|COMPRAS|MAESTRO|PAGOS|CAJA Y BANCOS)$/, {
+      .getAllByText(/^(Ventas|Compras|Maestro|Pagos|Caja y bancos)$/, {
         selector: "span",
       })
       .map((el) => el.textContent);
 
     expect(labels).toEqual([
-      "VENTAS",
-      "COMPRAS",
-      "MAESTRO",
-      "PAGOS",
-      "CAJA Y BANCOS",
+      "Ventas",
+      "Compras",
+      "Maestro",
+      "Pagos",
+      "Caja y bancos",
     ]);
   });
 
-  it("enlaza VENTAS y COMPRAS directamente a sus listados", () => {
+  it("enlaza Ventas y Compras directamente a sus listados", () => {
     render(<AppNavbar />);
 
-    expect(screen.getByRole("link", { name: /VENTAS/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Ventas/ })).toHaveAttribute(
       "href",
       "/ventas/listado"
     );
-    expect(screen.getByRole("link", { name: /COMPRAS/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Compras/ })).toHaveAttribute(
       "href",
       "/compras/listado"
     );
