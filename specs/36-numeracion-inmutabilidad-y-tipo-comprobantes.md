@@ -1,6 +1,6 @@
 # SPEC 36 — Numeración, inmutabilidad y regla de tipo en comprobantes
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 07, SPEC 08, SPEC 13
 > **Date:** 2026-10-15
 > **Objective:** Endurecer los comprobantes de ventas y compras en sus tres zonas críticas fiscales: numeración manual con formato validado y unicidad en la BD, edición bloqueada cuando el comprobante ya tiene pagos, y tipo de comprobante sugerido según el documento del cliente.
@@ -48,17 +48,17 @@ Los tres riesgos salieron de la revisión de los módulos de compras y ventas co
 
 ## Acceptance criteria
 
-- [ ] Una venta o compra con número que no calza el formato serie-correlativo (ej. `factura uno`) es rechazada con mensaje en español.
-- [ ] Registrar dos comprobantes del mismo tipo (VENTA/COMPRA) con el mismo número falla: el segundo recibe un mensaje claro de duplicado.
-- [ ] El mismo número sí se acepta entre una VENTA y una COMPRA.
-- [ ] Editar total, número, cliente o fecha de un comprobante con pagos asignados queda bloqueado en pantalla y es rechazado por la BD si se fuerza.
-- [ ] Editar un comprobante sin pagos sigue permitido.
-- [ ] Al elegir un cliente con RUC, el tipo precarga FACTURA; con DNI o SIN_DOCUMENTO, precarga BOLETA.
-- [ ] FACTURA no es seleccionable cuando el cliente no tiene RUC (opción deshabilitada y validación al enviar).
-- [ ] En compras el tipo queda libre: se registra el comprobante que entregó el proveedor.
-- [ ] Los comprobantes históricos con números antiguos siguen listando y con su saldo intacto.
-- [ ] Un intento de borrar físicamente un comprobante desde el cliente falla y el comprobante sigue existiendo con su saldo.
-- [ ] `npm test`, `npm run lint` y `npm run build` pasan.
+- [x] Una venta o compra con número que no calza el formato serie-correlativo (ej. `factura uno`) es rechazada con mensaje en español.
+- [x] Registrar dos comprobantes del mismo tipo (VENTA/COMPRA) con el mismo número falla: el segundo recibe un mensaje claro de duplicado.
+- [x] El mismo número sí se acepta entre una VENTA y una COMPRA.
+- [x] Editar total, número, cliente o fecha de un comprobante con pagos asignados queda bloqueado en pantalla y es rechazado por la BD si se fuerza.
+- [x] Editar un comprobante sin pagos sigue permitido.
+- [x] Al elegir un cliente con RUC, el tipo precarga FACTURA; con DNI o SIN_DOCUMENTO, precarga BOLETA.
+- [x] FACTURA no es seleccionable cuando el cliente no tiene RUC (opción deshabilitada y validación al enviar).
+- [x] En compras el tipo queda libre: se registra el comprobante que entregó el proveedor.
+- [x] Los comprobantes históricos con números antiguos siguen listando y con su saldo intacto.
+- [x] Un intento de borrar físicamente un comprobante desde el cliente falla y el comprobante sigue existiendo con su saldo.
+- [x] `npm test`, `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 

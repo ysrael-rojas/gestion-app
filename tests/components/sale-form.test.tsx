@@ -26,6 +26,17 @@ const { CLIENTS } = vi.hoisted(() => ({
       billingEmail: "",
       managementEmail: "",
     },
+    {
+      id: "c-sin-doc",
+      documentType: "SIN_DOCUMENTO" as const,
+      documentNumber: "",
+      name: "Cliente sin documento",
+      address: "",
+      phone: "",
+      contactName: "",
+      billingEmail: "",
+      managementEmail: "",
+    },
   ],
 }));
 
@@ -100,6 +111,17 @@ describe("SaleForm — tipo de comprobante según el documento del cliente", () 
     renderForm(null);
 
     await pickClient("Bodega María");
+
+    expect(await screen.findByText("Boleta")).toBeInTheDocument();
+    expect(
+      screen.getByText("Para emitir factura, el cliente debe tener RUC.")
+    ).toBeInTheDocument();
+  });
+
+  it("precarga Boleta cuando el cliente no tiene documento (SIN_DOCUMENTO)", async () => {
+    renderForm(null);
+
+    await pickClient("Cliente sin documento");
 
     expect(await screen.findByText("Boleta")).toBeInTheDocument();
     expect(
