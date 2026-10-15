@@ -25,9 +25,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   ensureCatalogsSeeded,
+  getLastClose,
   listCategories,
   listPaymentMethods,
 } from "@/lib/caja/caja";
+import { addDays } from "@/lib/caja/periodo";
 import { BANK_CHARGE_CATEGORIES } from "@/lib/caja/defaults";
 import {
   bankChargeSchema,
@@ -36,7 +38,7 @@ import {
 } from "@/lib/schemas/bank-charge";
 import type { PaymentMethodRef, CashReceiptCategory } from "@/components/pagos/types";
 import type { CashAccount } from "@/lib/cuentas/entidades";
-import { getTodayLocalDate } from "@/lib/utils";
+import { formatDate, getTodayLocalDate } from "@/lib/utils";
 
 export const BANK_CHARGE_FORM_ID = "bank-charge-form";
 
@@ -84,6 +86,10 @@ export function BankChargeModal({
 }: BankChargeModalProps) {
   const [methods, setMethods] = useState<PaymentMethodRef[]>([]);
   const [categories, setCategories] = useState<CashReceiptCategory[]>([]);
+  // Primer día abierto de la cuenta (posterior al último cierre) y fin del
+  // último período cerrado, para proponer la fecha y bloquear una cerrada.
+  const [openFrom, setOpenFrom] = useState<string>(() => getTodayLocalDate());
+  const [lastClosedEnd, setLastClosedEnd] = useState<string | null>(null);
 
   const form = useForm<BankChargeFormInput, unknown, BankChargeFormValues>({
     resolver: zodResolver(bankChargeSchema),
@@ -95,9 +101,22 @@ export function BankChargeModal({
       return;
     }
 
-    form.reset(createEmptyValues(account.id));
-
     void (async () => {
+      let nextOpenFrom = getTodayLocalDate();
+
+      try {
+        const lastClose = await getLastClose(account.id);
+        if (lastClose) {
+          nextOpenFrom = addDays(lastClose.periodEnd, 1);
+        }
+        setLastClosedEnd(lastClose?.periodEnd ?? null);
+      } catch (error) {
+        toast.error(getErrorMessage(error));
+      }
+
+      setOpenFrom(nextOpenFrom);
+      form.reset({ ...createEmptyValues(account.id), chargeDate: nextOpenFrom });
+
       try {
         // Las categorías de cargo son semillas: si el dueño aún no abrió un
         // formulario de pago, hay que sembrarlas antes de listarlas.
@@ -120,6 +139,19 @@ export function BankChargeModal({
     })();
   }, [open, account.id, form]);
 
+  function handleSubmit(values: BankChargeFormValues) {
+    if (lastClosedEnd && values.chargeDate <= lastClosedEnd) {
+      const message = `La fecha cae en un período cerrado (hasta ${formatDate(
+        lastClosedEnd
+      )}). Usa una fecha posterior al cierre.`;
+      form.setError("chargeDate", { message });
+      toast.error(message);
+      return;
+    }
+
+    onDone(values);
+  }
+
   const errors = form.formState.errors;
   const methodItems = methods.map((method) => ({
     value: method.id,
@@ -135,7 +167,7 @@ export function BankChargeModal({
       <DialogContent className="max-h-[90vh] gap-0 overflow-y-auto p-0 sm:max-w-lg">
         <form
           id={BANK_CHARGE_FORM_ID}
-          onSubmit={form.handleSubmit(onDone)}
+          onSubmit={form.handleSubmit(handleSubmit)}
           className="flex flex-col gap-5 p-6"
         >
           <div className="flex flex-col gap-1">
@@ -225,10 +257,14 @@ export function BankChargeModal({
             <Input
               id="chargeDate"
               type="date"
+              min={openFrom}
               aria-invalid={!!errors.chargeDate}
               {...form.register("chargeDate")}
             />
             <FieldError message={errors.chargeDate?.message} />
+            <p className="text-xs text-muted-foreground">
+              Solo fechas abiertas: el último cierre bloquea los días anteriores.
+            </p>
           </div>
 
           <div className="flex flex-col gap-1.5">
