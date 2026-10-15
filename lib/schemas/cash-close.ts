@@ -61,6 +61,8 @@ export const cashCloseSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)"),
   countedBalance: optionalCountedBalance,
   notes: z.string().trim().max(200).optional(),
+  // Confirmación explícita para cerrar una caja con la grilla en cero (solo UI).
+  emptyCashConfirmed: z.boolean().optional(),
   // Solo cajas: conteo por denominación. En bancos no se envía.
   denominations: cashCloseDenominationsSchema.optional(),
 });

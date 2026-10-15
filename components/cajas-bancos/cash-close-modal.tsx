@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -82,6 +82,7 @@ function createEmptyValues(
     periodEnd,
     countedBalance: "",
     notes: "",
+    emptyCashConfirmed: false,
     denominations: PEN_DENOMINATIONS.map((denomination) => ({
       denomination,
       quantity: "",
@@ -110,9 +111,6 @@ export function CashCloseModal({
 }: CashCloseModalProps) {
   const isBank = account?.type === "BANK_ACCOUNT";
 
-  // Confirmación explícita para cerrar una caja con la grilla en cero.
-  const [emptyConfirmed, setEmptyConfirmed] = useState(false);
-
   const form = useForm<CashCloseFormInput, unknown, CashCloseFormValues>({
     resolver: zodResolver(cashCloseSchema),
     defaultValues: createEmptyValues(account?.id ?? "", defaultPeriod.periodEnd),
@@ -123,7 +121,6 @@ export function CashCloseModal({
       form.reset(
         createEmptyValues(account?.id ?? "", defaultPeriod.periodEnd)
       );
-      setEmptyConfirmed(false);
     }
   }, [open, account?.id, defaultPeriod.periodEnd, form]);
 
@@ -131,6 +128,10 @@ export function CashCloseModal({
   const watchedDenominations = useWatch({
     control: form.control,
     name: "denominations",
+  });
+  const emptyConfirmed = useWatch({
+    control: form.control,
+    name: "emptyCashConfirmed",
   });
 
   // Suma en vivo del arqueo: total de valores en caja y efectivo neto.
@@ -145,7 +146,7 @@ export function CashCloseModal({
     const denominationsTotal = sumDenominationCounts(toCounts(values.denominations));
 
     if (!isBank && denominationsTotal <= 0) {
-      if (!emptyConfirmed) {
+      if (!values.emptyCashConfirmed) {
         toast.error(
           "Marca la confirmación para cerrar la caja sin efectivo, o ingresa el conteo."
         );
@@ -307,9 +308,12 @@ export function CashCloseModal({
                     <div className="flex items-start gap-2">
                       <Checkbox
                         id="emptyCashConfirmed"
-                        checked={emptyConfirmed}
+                        checked={Boolean(emptyConfirmed)}
                         onCheckedChange={(checked) =>
-                          setEmptyConfirmed(Boolean(checked))
+                          form.setValue(
+                            "emptyCashConfirmed",
+                            Boolean(checked)
+                          )
                         }
                       />
                       <Label

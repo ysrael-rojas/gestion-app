@@ -29,7 +29,7 @@ import {
   listCategories,
   listPaymentMethods,
 } from "@/lib/caja/caja";
-import { addDays } from "@/lib/caja/periodo";
+import { firstOpenDate, isDateClosed } from "@/lib/caja/periodo";
 import { BANK_CHARGE_CATEGORIES } from "@/lib/caja/defaults";
 import {
   bankChargeSchema,
@@ -102,18 +102,17 @@ export function BankChargeModal({
     }
 
     void (async () => {
-      let nextOpenFrom = getTodayLocalDate();
+      let lastCloseEnd: string | null = null;
 
       try {
         const lastClose = await getLastClose(account.id);
-        if (lastClose) {
-          nextOpenFrom = addDays(lastClose.periodEnd, 1);
-        }
-        setLastClosedEnd(lastClose?.periodEnd ?? null);
+        lastCloseEnd = lastClose?.periodEnd ?? null;
+        setLastClosedEnd(lastCloseEnd);
       } catch (error) {
         toast.error(getErrorMessage(error));
       }
 
+      const nextOpenFrom = firstOpenDate(lastCloseEnd, getTodayLocalDate());
       setOpenFrom(nextOpenFrom);
       form.reset({ ...createEmptyValues(account.id), chargeDate: nextOpenFrom });
 
@@ -140,7 +139,7 @@ export function BankChargeModal({
   }, [open, account.id, form]);
 
   function handleSubmit(values: BankChargeFormValues) {
-    if (lastClosedEnd && values.chargeDate <= lastClosedEnd) {
+    if (lastClosedEnd && isDateClosed(values.chargeDate, lastClosedEnd)) {
       const message = `La fecha cae en un período cerrado (hasta ${formatDate(
         lastClosedEnd
       )}). Usa una fecha posterior al cierre.`;
