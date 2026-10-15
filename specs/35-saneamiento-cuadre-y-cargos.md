@@ -1,6 +1,6 @@
 # SPEC 35 — Saneamiento del cuadre y los cargos bancarios
 
-> **Status:** Draft
+> **Status:** Aprobado
 > **Depends on:** SPEC 19, SPEC 32, SPEC 33
 > **Date:** 2026-10-14
 > **Objective:** Cerrar los cinco ajustes pequeños que quedaron tras implementar SPEC 32 y SPEC 33: el resumen por categoría que suma recibos anulados, la fecha del cargo bancario, el cierre de un banco sin saldo de extracto, el cierre de una caja en cero y el fondo de cambio sin snapshot.
@@ -41,16 +41,16 @@ Los cinco puntos salieron de la verificación independiente de SPEC 32 y SPEC 33
 
 ## Acceptance criteria
 
-- [ ] Un recibo `ANULADO` del período no suma en el resumen por categoría ni en su bloque del CSV.
-- [ ] Los totales por dirección del resumen coinciden con la suma de los recibos no anulados del período.
-- [ ] El cierre de un banco permite registrar el saldo según extracto y el reporte lo muestra con su diferencia; si se deja vacío, `counted_balance` queda `null` como hoy.
-- [ ] El reporte etiqueta el conteo como "Conteo físico" en cajas y "Saldo según extracto" en bancos.
-- [ ] Una caja con la grilla en cero solo se cierra tras marcar "Confirmo que la caja quedó sin efectivo", y queda `counted_balance = 0`.
-- [ ] Sin esa confirmación, el cierre con la grilla en cero sigue bloqueado.
-- [ ] El modal de cargo bancario propone una fecha abierta (posterior al último cierre) y rechaza en el cliente una fecha dentro del período cerrado con un mensaje explícito.
-- [ ] `cash_close.change_fund` guarda el fondo vigente al cerrar; cambiar el fondo de la cuenta después no altera el reporte de ese cierre.
-- [ ] Un cierre histórico sin snapshot sigue mostrando el fondo actual de la cuenta.
-- [ ] `npm test`, `npm run lint` y `npm run build` pasan.
+- [x] Un recibo `ANULADO` del período no suma en el resumen por categoría ni en su bloque del CSV.
+- [x] Los totales por dirección del resumen coinciden con la suma de los recibos no anulados del período.
+- [x] El cierre de un banco permite registrar el saldo según extracto y el reporte lo muestra con su diferencia; si se deja vacío, `counted_balance` queda `null` como hoy.
+- [x] El reporte etiqueta el conteo como "Conteo físico" en cajas y "Saldo según extracto" en bancos.
+- [x] Una caja con la grilla en cero solo se cierra tras marcar "Confirmo que la caja quedó sin efectivo", y queda `counted_balance = 0`.
+- [x] Sin esa confirmación, el cierre con la grilla en cero sigue bloqueado.
+- [x] El modal de cargo bancario propone una fecha abierta (posterior al último cierre) y rechaza en el cliente una fecha dentro del período cerrado con un mensaje explícito.
+- [x] `cash_close.change_fund` guarda el fondo vigente al cerrar; cambiar el fondo de la cuenta después no altera el reporte de ese cierre.
+- [x] Un cierre histórico sin snapshot sigue mostrando el fondo actual de la cuenta.
+- [x] `npm test`, `npm run lint` y `npm run build` pasan.
 
 ## Decisions
 
