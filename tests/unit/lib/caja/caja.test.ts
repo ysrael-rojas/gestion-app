@@ -11,6 +11,7 @@ import {
   closeCashAccount,
   ensureCatalogsSeeded,
   getLastClose,
+  listCashPositionsConsolidated,
   listCloseDenominations,
   proposeClosePeriod,
 } from "@/lib/caja/caja";
@@ -327,6 +328,50 @@ describe("caja.ts", () => {
       mock.setTable("cash_close_denomination", { data: [], error: null });
 
       expect(await listCloseDenominations("close-1")).toEqual([]);
+    });
+  });
+
+  describe("listCashPositionsConsolidated", () => {
+    it("resuelve todos los saldos con una sola RPC (sin N+1)", async () => {
+      mock.setTable("cash_account", {
+        data: [
+          accountRow({ id: "acc-1", is_active: true }),
+          accountRow({ id: "acc-2", is_active: true }),
+        ],
+        error: null,
+      });
+      mock.setRpc("get_cash_positions", {
+        data: [
+          { account_id: "acc-1", balance: 500 },
+          { account_id: "acc-2", balance: 9320 },
+        ],
+        error: null,
+      });
+
+      const positions = await listCashPositionsConsolidated("2026-10-14");
+
+      expect(positions).toHaveLength(2);
+      expect(positions[0].balance).toBe(500);
+      expect(positions[1].balance).toBe(9320);
+      expect(mock.rpcCalls).toHaveLength(1);
+      expect(mock.rpcCalls[0].name).toBe("get_cash_positions");
+    });
+
+    it("ignora cuentas inactivas y usa 0 si la RPC no devuelve saldo", async () => {
+      mock.setTable("cash_account", {
+        data: [
+          accountRow({ id: "acc-1", is_active: true }),
+          accountRow({ id: "acc-off", is_active: false }),
+        ],
+        error: null,
+      });
+      mock.setRpc("get_cash_positions", { data: [], error: null });
+
+      const positions = await listCashPositionsConsolidated("2026-10-14");
+
+      expect(positions).toHaveLength(1);
+      expect(positions[0].account.id).toBe("acc-1");
+      expect(positions[0].balance).toBe(0);
     });
   });
 });
