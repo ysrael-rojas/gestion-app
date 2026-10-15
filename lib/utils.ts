@@ -1,9 +1,13 @@
 export { cn } from "cn";
 
-export function formatCurrency(value: number): string {
+export type Currency = "PEN" | "USD";
+
+export function formatCurrency(value: number, currency: Currency = "PEN"): string {
   return new Intl.NumberFormat("es-PE", {
     style: "currency",
-    currency: "PEN",
+    currency,
+    // narrowSymbol: USD se muestra como "$" y PEN como "S/" en todo ICU.
+    currencyDisplay: "narrowSymbol",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);

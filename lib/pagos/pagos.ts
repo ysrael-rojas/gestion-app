@@ -18,14 +18,14 @@ type VoucherBalanceRow = Tables<"voucher_balance">;
 
 type PaymentRefs = {
   payment_method: { name: string } | null;
-  cash_account: { name: string } | null;
+  cash_account: { name: string; currency: string } | null;
   cash_receipt_category: { name: string } | null;
 };
 
 type PaymentRowWithRefs = PaymentRow & PaymentRefs;
 
 const PAYMENT_SELECT =
-  "*, payment_method(name), cash_account(name), cash_receipt_category(name)";
+  "*, payment_method(name), cash_account(name, currency), cash_receipt_category(name)";
 
 type PaymentHistoryRow = {
   allocation_id: string;
@@ -54,6 +54,7 @@ function mapPaymentRow(row: PaymentRowWithRefs): Payment {
     paymentDate: row.payment_date,
     receiptNumber: row.receipt_number ?? "",
     amount: row.amount,
+    currency: row.cash_account?.currency === "USD" ? "USD" : "PEN",
     methodId: row.method_id,
     methodName: row.payment_method?.name ?? "",
     cashAccountId: row.cash_account_id,

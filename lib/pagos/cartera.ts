@@ -16,7 +16,9 @@ type VoucherBalanceRow = Tables<"voucher_balance">;
 const LOAD_ERROR =
   "No se pudo cargar el resumen de cartera. Intenta nuevamente.";
 
-function mapPaymentRow(row: PaymentRow): Payment {
+function mapPaymentRow(
+  row: PaymentRow & { cash_account?: { currency: string } | null }
+): Payment {
   return {
     id: row.id,
     entityId: row.entity_id,
@@ -24,6 +26,7 @@ function mapPaymentRow(row: PaymentRow): Payment {
     paymentDate: row.payment_date,
     receiptNumber: row.receipt_number ?? "",
     amount: row.amount,
+    currency: row.cash_account?.currency === "USD" ? "USD" : "PEN",
     methodId: row.method_id,
     methodName: "",
     cashAccountId: row.cash_account_id,
@@ -183,7 +186,7 @@ export async function listUnassignedPayments(
 
   const { data, error } = await supabase
     .from("payment")
-    .select("*")
+    .select("*, cash_account(currency)")
     .in("id", paymentIds)
     .order("payment_date", { ascending: false });
 
@@ -191,5 +194,7 @@ export async function listUnassignedPayments(
     throw new Error(LOAD_ERROR);
   }
 
-  return (data as PaymentRow[]).map(mapPaymentRow);
+  return (
+    data as (PaymentRow & { cash_account?: { currency: string } | null })[]
+  ).map(mapPaymentRow);
 }

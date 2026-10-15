@@ -9,7 +9,12 @@ import type {
 import type { CashCloseFormValues as CashCloseValues } from "@/lib/schemas/cash-close";
 import type { CashReceiptCategoryFormValues } from "@/lib/schemas/cash-receipt-category";
 import type { PaymentMethodFormValues } from "@/lib/schemas/payment-method";
-import { DEFAULT_CATEGORIES, DEFAULT_PAYMENT_METHODS } from "@/lib/caja/defaults";
+import {
+  categoryCodeFromName,
+  DEFAULT_CATEGORIES,
+  DEFAULT_PAYMENT_METHODS,
+  type SeedCategory,
+} from "@/lib/caja/defaults";
 import {
   summarizeCashFlow,
   type CashFlowTotals,
@@ -94,6 +99,7 @@ function mapCategoryRow(row: CategoryRow): CashReceiptCategory {
     id: row.id,
     direction: row.direction,
     name: row.name,
+    code: row.code ?? "",
     isActive: row.is_active,
   };
 }
@@ -141,11 +147,12 @@ export async function listCategories(
 // Siembra perezosa por dueño: el esquema exige owner_id (DEFAULT auth.uid()),
 // así que no se puede sembrar por SQL. Inserta solo las semillas que faltan,
 // para que añadir una categoría nueva llegue también a los dueños que ya
-// tenían catálogo (SPEC 33).
+// tenían catálogo (SPEC 33). El match es por `code` estable (SPEC 37); las
+// categorías antiguas sin code se rescatan con backfill por nombre semilla.
 export async function ensureCatalogsSeeded(): Promise<void> {
   const [methods, categories] = await Promise.all([
     supabase.from("payment_method").select("code"),
-    supabase.from("cash_receipt_category").select("direction,name"),
+    supabase.from("cash_receipt_category").select("direction,name,code"),
   ]);
 
   if (methods.error) {
@@ -174,16 +181,53 @@ export async function ensureCatalogsSeeded(): Promise<void> {
     }
   }
 
-  const existingCategories = new Set(
-    (categories.data ?? []).map((row) => `${row.direction}|${row.name}`)
+  const seeds = (
+    Object.entries(DEFAULT_CATEGORIES) as [PaymentDirection, SeedCategory[]][]
+  ).flatMap(([direction, items]) =>
+    items.map((item) => ({ direction, ...item }))
   );
-  const missingCategories = (
-    Object.entries(DEFAULT_CATEGORIES) as [PaymentDirection, string[]][]
-  )
-    .flatMap(([direction, names]) => names.map((name) => ({ direction, name })))
-    .filter(
-      (row) => !existingCategories.has(`${row.direction}|${row.name}`)
-    );
+  const seedCodeByKey = new Map(
+    seeds.map((seed) => [`${seed.direction}|${seed.name}`, seed.code])
+  );
+  const rows = (categories.data ?? []) as {
+    direction: PaymentDirection;
+    name: string;
+    code: string | null;
+  }[];
+
+  // Backfill: categorías existentes sin code que aún conservan el nombre
+  // semilla. Las renombradas por el usuario quedan sin code (aviso aparte).
+  for (const row of rows) {
+    if (row.code) {
+      continue;
+    }
+
+    const code = seedCodeByKey.get(`${row.direction}|${row.name}`);
+
+    if (!code) {
+      continue;
+    }
+
+    const { error } = await supabase
+      .from("cash_receipt_category")
+      .update({ code })
+      .eq("direction", row.direction)
+      .eq("name", row.name)
+      .is("code", null);
+
+    if (error) {
+      throw mapError(error);
+    }
+  }
+
+  const existingCategoryCodes = new Set(
+    rows
+      .map((row) => row.code ?? seedCodeByKey.get(`${row.direction}|${row.name}`))
+      .filter((code): code is string => Boolean(code))
+  );
+  const missingCategories = seeds.filter(
+    (seed) => !existingCategoryCodes.has(seed.code)
+  );
 
   if (missingCategories.length > 0) {
     const { error } = await supabase
@@ -235,9 +279,20 @@ export async function updatePaymentMethod(
 export async function createCategory(
   values: CashReceiptCategoryFormValues
 ): Promise<void> {
+  // Código estable auto-generado desde el nombre (SPEC 37): el usuario no lo
+  // ve, pero permite que el wizard resuelva categorías renombradas.
+  const code = categoryCodeFromName(values.name);
+
+  if (!code) {
+    throw new Error(
+      "El nombre de la categoría debe contener letras o números."
+    );
+  }
+
   const { error } = await supabase.from("cash_receipt_category").insert({
     direction: values.direction,
     name: values.name,
+    code,
     is_active: values.isActive,
   });
 

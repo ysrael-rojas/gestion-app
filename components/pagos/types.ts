@@ -1,4 +1,5 @@
 import type { PaymentType, VoucherType } from "@/components/compras/types";
+import type { Currency } from "@/lib/utils";
 
 export type PaymentDirection = "INGRESO" | "EGRESO";
 export type PaymentStatus = "EN_REVISION" | "PROCESADO" | "ANULADO";
@@ -15,6 +16,7 @@ export interface CashReceiptCategory {
   id: string;
   direction: PaymentDirection;
   name: string;
+  code: string; // código estable para resolver la categoría (SPEC 37)
   isActive: boolean;
 }
 
@@ -25,6 +27,7 @@ export interface Payment {
   paymentDate: string; // "YYYY-MM-DD" — única fecha del recibo (emisión = pago)
   receiptNumber: string; // "RI-000001" | "RE-000001"
   amount: number;
+  currency: Currency; // moneda de la cuenta de caja del pago (join, no columna)
   methodId: string;
   methodName: string;
   cashAccountId: string;

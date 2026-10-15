@@ -142,8 +142,8 @@ describe("caja.ts", () => {
       });
       mock.setTable("cash_receipt_category", {
         data: [
-          { direction: "EGRESO", name: "Pago a proveedor" },
-          { direction: "INGRESO", name: "Cobranza de venta" },
+          { direction: "EGRESO", name: "Pago a proveedor", code: "PAGO_PROVEEDOR" },
+          { direction: "INGRESO", name: "Cobranza de venta", code: "COBRANZA_VENTA" },
         ],
         error: null,
       });
@@ -194,13 +194,15 @@ describe("caja.ts", () => {
       });
       mock.setTable("cash_receipt_category", {
         data: [
-          ...DEFAULT_CATEGORIES.EGRESO.map((name) => ({
+          ...DEFAULT_CATEGORIES.EGRESO.map(({ code, name }) => ({
             direction: "EGRESO",
             name,
+            code,
           })),
-          ...DEFAULT_CATEGORIES.INGRESO.map((name) => ({
+          ...DEFAULT_CATEGORIES.INGRESO.map(({ code, name }) => ({
             direction: "INGRESO",
             name,
+            code,
           })),
         ],
         error: null,

@@ -17,17 +17,44 @@ export const BANK_CHARGE_CATEGORIES = [
   "Detracción SPOT",
 ] as const;
 
-export const DEFAULT_CATEGORIES: Record<PaymentDirection, string[]> = {
-  INGRESO: ["Cobranza de venta", "Anticipo de cliente", "Otro ingreso"],
+// Cada semilla lleva un `code` estable (SPEC 37): el wizard de pagos resuelve
+// su categoría por código, así que renombrar el nombre no lo rompe.
+export interface SeedCategory {
+  code: string;
+  name: string;
+}
+
+export const DEFAULT_CATEGORIES: Record<PaymentDirection, SeedCategory[]> = {
+  INGRESO: [
+    { code: "COBRANZA_VENTA", name: "Cobranza de venta" },
+    { code: "ANTICIPO_CLIENTE", name: "Anticipo de cliente" },
+    { code: "OTRO_INGRESO", name: "Otro ingreso" },
+  ],
   EGRESO: [
-    "Pago a proveedor",
-    "Anticipo a proveedor",
-    "Gasto operativo",
-    "Retiro del propietario",
-    ...BANK_CHARGE_CATEGORIES,
-    "Otro egreso",
+    { code: "PAGO_PROVEEDOR", name: "Pago a proveedor" },
+    { code: "ANTICIPO_PROVEEDOR", name: "Anticipo a proveedor" },
+    { code: "GASTO_OPERATIVO", name: "Gasto operativo" },
+    { code: "RETIRO_PROPIETARIO", name: "Retiro del propietario" },
+    { code: "ITF", name: "ITF" },
+    { code: "COMISION_BANCARIA", name: "Comisión bancaria" },
+    { code: "DETRACCION_SPOT", name: "Detracción SPOT" },
+    { code: "OTRO_EGRESO", name: "Otro egreso" },
   ],
 };
 
 // Métodos que postean a una caja de efectivo (el resto se asume banco/tarjeta).
 export const CASH_METHOD_CODE = "EFECTIVO";
+
+/**
+ * Código para categorías creadas por el usuario: slug del nombre
+ * ("Comisión mensual" → "COMISION_MENSUAL"). Devuelve "" si el nombre no
+ * tiene letras ni números.
+ */
+export function categoryCodeFromName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}

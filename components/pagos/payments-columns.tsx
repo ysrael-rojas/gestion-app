@@ -122,7 +122,8 @@ export function getPaymentsColumns({
           <ArrowUpDown />
         </Button>
       ),
-      cell: ({ getValue }) => formatCurrency(getValue()),
+      cell: ({ getValue, row }) =>
+        formatCurrency(getValue(), row.original.currency),
     }),
     columnHelper.accessor(
       (payment) => getOptionLabel(PAYMENT_STATUSES, payment.status),

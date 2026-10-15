@@ -249,11 +249,11 @@ function PaymentDetailContent({
               <DetailField label="Referencia" value={detail.reference ?? ""} />
               <DetailField
                 label="Importe"
-                value={formatCurrency(detail.amount)}
+                value={formatCurrency(detail.amount, detail.currency)}
               />
               <DetailField
                 label="Saldo sin asignar"
-                value={formatCurrency(detail.unassignedAmount)}
+                value={formatCurrency(detail.unassignedAmount, detail.currency)}
               />
               {detail.voidReason ? (
                 <div className="sm:col-span-2">
@@ -296,7 +296,7 @@ function PaymentDetailContent({
                       {allocation.voucherNumber}
                     </span>
                     <span className="text-sm font-medium">
-                      {formatCurrency(allocation.amount)}
+                      {formatCurrency(allocation.amount, detail.currency)}
                     </span>
                   </div>
                 ))}

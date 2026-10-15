@@ -5,12 +5,13 @@ import { Fragment } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "cn";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, type Currency } from "@/lib/utils";
 
 interface VoucherAmountsBandProps {
   total: number;
   paidAmount: number;
   balance: number;
+  currency?: Currency;
 }
 
 interface AmountItem {
@@ -27,6 +28,7 @@ export function VoucherAmountsBand({
   total,
   paidAmount,
   balance,
+  currency = "PEN",
 }: VoucherAmountsBandProps) {
   const isSettled = balance <= 0;
 
@@ -71,7 +73,7 @@ export function VoucherAmountsBand({
               <span
                 className={cn("font-semibold tabular-nums", item.valueClassName)}
               >
-                {formatCurrency(item.value)}
+                {formatCurrency(item.value, currency)}
               </span>
             </div>
           </Fragment>
