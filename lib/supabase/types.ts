@@ -213,6 +213,7 @@ export type Database = {
       }
       cash_receipt_category: {
         Row: {
+          code: string | null
           created_at: string
           direction: Database["public"]["Enums"]["payment_direction"]
           id: string
@@ -221,6 +222,7 @@ export type Database = {
           owner_id: string
         }
         Insert: {
+          code?: string | null
           created_at?: string
           direction: Database["public"]["Enums"]["payment_direction"]
           id?: string
@@ -229,6 +231,7 @@ export type Database = {
           owner_id?: string
         }
         Update: {
+          code?: string | null
           created_at?: string
           direction?: Database["public"]["Enums"]["payment_direction"]
           id?: string

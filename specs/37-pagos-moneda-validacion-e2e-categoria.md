@@ -33,30 +33,30 @@ Revisión del módulo de pagos con el agente `explore` y la skill `consultor-pag
 
 ## Data model
 
-- **Migración `add_cash_receipt_category_code`** (vía MCP `apply_migration`, snake_case):
+- **Migración `add_cash_receipt_category_code`** (vía MCP `apply_migration`, snake_case) — parte 1 de 2:
 
 ```sql
 alter table public.cash_receipt_category add column code text;
 -- backfill por nombre semilla exacto (solo categorías aún no renombradas)
 update public.cash_receipt_category set code = 'PAGO_PROVEEDOR' where name = 'Pago a proveedor' and direction = 'EGRESO';
 -- ... (una línea por semilla)
-alter table public.cash_receipt_category alter column code set not null;
-create unique index cash_receipt_category_owner_code_uidx
+create unique index cash_receipt_category_owner_id_code_key
   on public.cash_receipt_category (owner_id, code);
 ```
 
-  Luego `npm run gen:types` para regenerar `lib/supabase/types.ts`.
+  La columna queda **nullable** en esta primera migración: `createCategory` (formulario de categorías personalizadas) e `ensureCatalogsSeeded` aún no envían `code`, y un `NOT NULL` inmediato rompería crear categorías. El índice único admite varios `NULL` (Postgres), así que las categorías personalizadas conviven. Luego `npm run gen:types` para regenerar `lib/supabase/types.ts`.
+- **Migración `set_cash_receipt_category_code_not_null`** — parte 2 de 2, en el paso 6 (con las semillas): se aplica `alter column code set not null` tras confirmar 0 filas sin código, cuando la app siempre envía `code` (semillas con código + `createCategory` generando slug).
 - **Tipos TS**: `Payment` (en `components/pagos/types.ts`) gana `currency: "PEN" | "USD"` — derivado del join, no es columna nueva en `payment`.
 - Sin tablas nuevas, sin cambios de enum, sin tocar `payment`, `payment_allocation`, vistas ni RPCs existentes.
 
 ## Implementation plan
 
-1. Migración `add_cash_receipt_category_code` (backfill + unique + not null), regenerar tipos y revisar advisors de seguridad y rendimiento.
+1. Migración `add_cash_receipt_category_code` (columna nullable + backfill + índice único `(owner_id, code)`), regenerar tipos y revisar advisors de seguridad y rendimiento.
 2. `lib/utils.ts`: `formatCurrency(amount: number, currency: "PEN" | "USD" = "PEN")` — default PEN para que ventas/compras no cambien. Test unitario nuevo que verifique el símbolo de cada moneda.
 3. `lib/pagos/pagos.ts`: join de `cash_account` en `listPayments`, `getPaymentDetail` y `listAccountStatement`; mapear `currency` al tipo `Payment`. Prueba manual: registrar un pago en una cuenta USD y ver `currency: "USD"` en el detalle.
 4. UI de pagos: `payments-columns.tsx` (Importe), `payment-detail-modal.tsx`, `receipt-dialog.tsx` y `voucher-amounts-band.tsx` usan la moneda del pago. Prueba manual: el recibo de un pago USD muestra "$".
 5. Validación en vivo: en `allocation-picker.tsx`, el `toggle`/edición de importe clampea contra el saldo restante disponible (saldo del voucher menos ya repartido en otras filas); en `payment-form.tsx`, validar `Σ reparto ≤ Σ saldos seleccionados` y mostrar el error inline en el picker, antes del submit.
-6. Categoría por código: semillas con `code` en `lib/caja/defaults.ts`; `ensureCatalogsSeeded` rellena `code` en categorías existentes que matcheen por nombre; `nested-payment-drawers.tsx` resuelve la categoría por `code` y, si falta, muestra error visible (toast/estado) en lugar de fallback a la primera.
+6. Categoría por código: semillas con `code` en `lib/caja/defaults.ts`; `ensureCatalogsSeeded` rellena `code` en categorías existentes que matcheen por nombre; `nested-payment-drawers.tsx` resuelve la categoría por `code` y, si falta, muestra error visible (toast/estado) en lugar de fallback a la primera. `createCategory` genera el `code` automáticamente como slug del nombre (mayúsculas, sin acentos ni espacios). Migración `set_cash_receipt_category_code_not_null` (0 nulos → `set not null`).
 7. Reescribir `tests/e2e/registrar-pago-y-ver-saldo.spec.ts` contra el flujo de drawers, con seed documentado en el comentario inicial.
 8. Validación completa: `npm run lint` + `npm test` + `npm run build`.
 
@@ -68,7 +68,7 @@ create unique index cash_receipt_category_owner_code_uidx
 - [ ] El e2e `registrar-pago-y-ver-saldo` pasa de verde contra el flujo de drawers (ventas → Wallet → asistente → verificar saldo/PAGADO).
 - [ ] Renombrar la categoría "Pago a proveedor" en la configuración NO rompe el wizard de compras (resuelve por `code`).
 - [ ] Si ninguna categoría tiene el `code` esperado, el wizard muestra un error visible (no elige la primera en silencio).
-- [ ] Las categorías existentes quedan con `code` no nulo tras el backfill (0 filas sin código).
+- [ ] Tras el backfill hay 0 categorías sin código, y al terminar el paso 6 la columna `code` queda en `NOT NULL`.
 - [ ] `npm run lint`, `npm test` y `npm run build` pasan.
 
 ## Decisions
@@ -76,6 +76,8 @@ create unique index cash_receipt_category_owner_code_uidx
 - **Sí:** moneda solo en display con join a `cash_account.currency`. **No:** columna `currency` en `payment` — movimiento acordado con el usuario: sin migración sobre pagos, riesgo cero para el histórico.
 - **Sí:** reescribir el e2e al flujo de drawers vigente. **No:** retirarlo — el flujo de cobranza es crítico y merece cobertura.
 - **Sí:** `code` en `cash_receipt_category` siguiendo el patrón de `payment_method.code`. **No:** identificar categorías por id fijo (los ids cambian por dueño) ni por nombre (se puede renombrar).
+- **Sí:** migración partida en dos (columna nullable + backfill en el paso 1; `NOT NULL` en el paso 6 cuando la app siempre envía `code`). **No:** `NOT NULL` desde el paso 1 — rompía `createCategory` (categorías personalizadas) e `ensureCatalogsSeeded`, y la spec exige que cada paso deje el sistema funcional.
+- **Sí:** `createCategory` genera el `code` como slug automático del nombre. **No:** añadir campo de código al formulario (el usuario no necesita verlo).
 - **Sí:** `formatCurrency` con default `"PEN"`. **No:** propagar moneda a ventas/compras en esta spec — solo el módulo de pagos la maneja hoy.
 - **Diferido:** unificación modal/wizard; cuando entre, extraer hook común (preferencia del usuario), **no** reescribir las UIs.
 
