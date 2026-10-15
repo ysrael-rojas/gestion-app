@@ -1,6 +1,6 @@
 # SPEC 37 — Pagos: moneda real, validación en vivo, e2e y categoría estable
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 09, SPEC 25, SPEC 26
 > **Date:** 2026-10-15
 > **Objective:** Corregir los cuatro defectos operativos del módulo de pagos (ingresos y egresos): mostrar cada pago con la moneda real de su cuenta, validar el reparto a comprobantes antes de guardar, alinear el test e2e al flujo vigente y dar a las categorías de caja un código estable.
@@ -62,14 +62,14 @@ create unique index cash_receipt_category_owner_id_code_key
 
 ## Acceptance criteria
 
-- [ ] Un pago en una cuenta USD se muestra con "$" en la columna del listado, en el modal de detalle y en el recibo; un pago en PEN sigue mostrándose con "S/".
-- [ ] `formatCurrency` con default sigue emitiendo "S/" en todos los puntos que no pasan moneda (ventas/compras no cambian).
-- [ ] Intentar repartir más que la suma de los saldos muestra un error inline en el formulario, sin enviar el formulario y sin llegar a la RPC.
-- [ ] El e2e `registrar-pago-y-ver-saldo` pasa de verde contra el flujo de drawers (ventas → Wallet → asistente → verificar saldo/PAGADO).
-- [ ] Renombrar la categoría "Pago a proveedor" en la configuración NO rompe el wizard de compras (resuelve por `code`).
-- [ ] Si ninguna categoría tiene el `code` esperado, el wizard muestra un error visible (no elige la primera en silencio).
-- [ ] Tras el backfill hay 0 categorías sin código, y al terminar el paso 6 la columna `code` queda en `NOT NULL`.
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan.
+- [x] Un pago en una cuenta USD se muestra con "$" en la columna del listado, en el modal de detalle y en el recibo; un pago en PEN sigue mostrándose con "S/".
+- [x] `formatCurrency` con default sigue emitiendo "S/" en todos los puntos que no pasan moneda (ventas/compras no cambian).
+- [x] Intentar repartir más que la suma de los saldos muestra un error inline en el formulario, sin enviar el formulario y sin llegar a la RPC.
+- [x] El e2e `registrar-pago-y-ver-saldo` pasa de verde contra el flujo de drawers (ventas → Wallet → asistente → verificar saldo/PAGADO).
+- [x] Renombrar la categoría "Pago a proveedor" en la configuración NO rompe el wizard de compras (resuelve por `code`).
+- [x] Si ninguna categoría tiene el `code` esperado, el wizard muestra un error visible (no elige la primera en silencio).
+- [x] Tras el backfill hay 0 categorías sin código, y al terminar el paso 6 la columna `code` queda en `NOT NULL`.
+- [x] `npm run lint`, `npm test` y `npm run build` pasan.
 
 ## Decisions
 
@@ -78,6 +78,7 @@ create unique index cash_receipt_category_owner_id_code_key
 - **Sí:** `code` en `cash_receipt_category` siguiendo el patrón de `payment_method.code`. **No:** identificar categorías por id fijo (los ids cambian por dueño) ni por nombre (se puede renombrar).
 - **Sí:** migración partida en dos (columna nullable + backfill en el paso 1; `NOT NULL` en el paso 6 cuando la app siempre envía `code`). **No:** `NOT NULL` desde el paso 1 — rompía `createCategory` (categorías personalizadas) e `ensureCatalogsSeeded`, y la spec exige que cada paso deje el sistema funcional.
 - **Sí:** `createCategory` genera el `code` como slug automático del nombre. **No:** añadir campo de código al formulario (el usuario no necesita verlo).
+- **Sí:** e2e adicional `validacion-reparto-en-vivo.spec.ts` (sin mutaciones: no registra pagos) para verificar el error inline del criterio 3. **No:** tests de componente de los tres formularios (fuera de alcance acordado).
 - **Sí:** `formatCurrency` con default `"PEN"`. **No:** propagar moneda a ventas/compras en esta spec — solo el módulo de pagos la maneja hoy.
 - **Diferido:** unificación modal/wizard; cuando entre, extraer hook común (preferencia del usuario), **no** reescribir las UIs.
 

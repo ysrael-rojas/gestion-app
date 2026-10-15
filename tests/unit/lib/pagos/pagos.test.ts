@@ -92,6 +92,35 @@ describe("pagos.ts", () => {
       expect(result[0]?.id).toBe("p-1");
     });
 
+    it("mapea la moneda que trae la cuenta de caja del pago", async () => {
+      mock.setTable("payment", {
+        data: [
+          paymentRow({
+            id: "p-usd",
+            cash_account: { name: "Banco USD", currency: "USD" },
+          }),
+          paymentRow({
+            id: "p-pen",
+            cash_account: { name: "Caja General", currency: "PEN" },
+          }),
+        ],
+        error: null,
+      });
+
+      const result = await listPayments("INGRESO");
+
+      expect(result[0]?.currency).toBe("USD");
+      expect(result[1]?.currency).toBe("PEN");
+    });
+
+    it("asume PEN cuando la cuenta no trae moneda", async () => {
+      mock.setTable("payment", { data: [paymentRow()], error: null });
+
+      const result = await listPayments("INGRESO");
+
+      expect(result[0]?.currency).toBe("PEN");
+    });
+
     it("traduce el error a mensaje amigable", async () => {
       mock.setTable("payment", {
         data: [],
