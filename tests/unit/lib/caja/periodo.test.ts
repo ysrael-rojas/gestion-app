@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   addDays,
   computeCashDifference,
+  firstOpenDate,
+  isDateClosed,
   suggestedPeriodEnd,
 } from "@/lib/caja/periodo";
 
@@ -52,6 +54,31 @@ describe("periodo.ts", () => {
 
     it("devuelve null cuando no hay conteo (banco)", () => {
       expect(computeCashDifference(null, 1500)).toBeNull();
+    });
+  });
+
+  describe("firstOpenDate", () => {
+    it("es el día siguiente al último cierre", () => {
+      expect(firstOpenDate("2026-10-31", "2026-11-05")).toBe("2026-11-01");
+    });
+
+    it("es hoy cuando la cuenta no tiene cierres", () => {
+      expect(firstOpenDate(null, "2026-11-05")).toBe("2026-11-05");
+    });
+  });
+
+  describe("isDateClosed", () => {
+    it("es verdadero para una fecha dentro del período cerrado, inclusive su fin", () => {
+      expect(isDateClosed("2026-10-31", "2026-10-31")).toBe(true);
+      expect(isDateClosed("2026-10-15", "2026-10-31")).toBe(true);
+    });
+
+    it("es falso para una fecha posterior al cierre", () => {
+      expect(isDateClosed("2026-11-01", "2026-10-31")).toBe(false);
+    });
+
+    it("es falso cuando no hay cierres", () => {
+      expect(isDateClosed("2026-10-15", null)).toBe(false);
     });
   });
 });

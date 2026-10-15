@@ -52,3 +52,21 @@ export function computeCashDifference(
 
   return Math.round((counted - expected) * 100) / 100;
 }
+
+// Primer día abierto para registrar movimientos: el siguiente al último cierre
+// o hoy si la cuenta aún no tiene cierres.
+export function firstOpenDate(
+  lastCloseEnd: string | null,
+  today: string
+): string {
+  return lastCloseEnd ? addDays(lastCloseEnd, 1) : today;
+}
+
+// ¿La fecha cae dentro de un período ya cerrado? (el cierre bloquea hasta su
+// period_end inclusive).
+export function isDateClosed(
+  date: string,
+  lastCloseEnd: string | null
+): boolean {
+  return lastCloseEnd !== null && date <= lastCloseEnd;
+}

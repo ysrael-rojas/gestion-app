@@ -12,7 +12,7 @@ vi.mock("@/lib/caja/csv", async () => {
 });
 
 import { CuadreReport } from "@/components/cajas-bancos/cuadre-report";
-import type { CashClose } from "@/components/pagos/types";
+import type { CashClose, Payment } from "@/components/pagos/types";
 
 const close = (overrides: Partial<CashClose> = {}): CashClose => ({
   id: "close-1",
@@ -25,6 +25,7 @@ const close = (overrides: Partial<CashClose> = {}): CashClose => ({
   expenseTotal: 0,
   expectedBalance: 500,
   countedBalance: 400.5,
+  changeFund: null,
   difference: -99.5,
   penUsdRate: null,
   notes: null,
@@ -32,18 +33,43 @@ const close = (overrides: Partial<CashClose> = {}): CashClose => ({
   ...overrides,
 });
 
+const payment = (overrides: Partial<Payment> = {}): Payment => ({
+  id: "pay-1",
+  entityId: null,
+  direction: "INGRESO",
+  paymentDate: "2026-10-05",
+  receiptNumber: "RI-000001",
+  amount: 100,
+  methodId: "method-1",
+  methodName: "Efectivo",
+  cashAccountId: "acc-1",
+  cashAccountName: "Caja principal",
+  categoryId: "cat-1",
+  categoryName: "Cobranza de venta",
+  reference: null,
+  status: "EN_REVISION",
+  voidReason: null,
+  voidedAt: null,
+  notes: null,
+  ...overrides,
+});
+
 function renderReport(props: {
   denominations?: { denomination: number; quantity: number }[];
   changeFund?: number;
+  accountType?: "CASH_BOX" | "BANK_ACCOUNT";
+  statement?: Payment[];
+  close?: Partial<CashClose>;
 }) {
   return render(
     <CuadreReport
-      close={close()}
-      statement={[]}
+      close={close(props.close)}
+      statement={props.statement ?? []}
       transfers={[]}
       accountId="acc-1"
       accountName="Caja principal"
       currency="PEN"
+      accountType={props.accountType ?? "CASH_BOX"}
       denominations={props.denominations ?? []}
       changeFund={props.changeFund ?? 0}
     />
@@ -134,5 +160,89 @@ describe("CuadreReport", () => {
     expect(csv).toContain("Total valores en caja (A),,300.5");
     expect(csv).toContain("Menos fondo de cambio (B),,100");
     expect(csv).toContain("Efectivo neto (A − B),,200.5");
+  });
+
+  it("excluye los recibos ANULADO del resumen por categoría", () => {
+    renderReport({
+      statement: [
+        payment({ amount: 100, status: "EN_REVISION" }),
+        payment({ id: "pay-2", amount: 50, status: "ANULADO" }),
+        payment({
+          id: "pay-3",
+          direction: "EGRESO",
+          categoryName: "ITF",
+          amount: 30,
+          status: "EN_REVISION",
+        }),
+      ],
+    });
+
+    const resumen = screen.getByRole("heading", {
+      name: "Resumen por categoría",
+    }).parentElement as HTMLElement;
+
+    // Solo el no anulado suma: 100, no 150.
+    expect(within(resumen).getByText("S/ 100.00")).toBeInTheDocument();
+    expect(within(resumen).queryByText("S/ 150.00")).toBeNull();
+    expect(within(resumen).getByText("ITF")).toBeInTheDocument();
+  });
+
+  it("excluye los anulados del bloque de resumen del CSV", async () => {
+    const user = userEvent.setup();
+
+    renderReport({
+      statement: [
+        payment({ amount: 100, status: "EN_REVISION" }),
+        payment({
+          id: "pay-2",
+          direction: "EGRESO",
+          categoryName: "ITF",
+          amount: 50,
+          status: "ANULADO",
+        }),
+      ],
+    });
+
+    await user.click(screen.getByRole("button", { name: /Exportar CSV/ }));
+
+    const [, csv] = downloadCsv.mock.calls[0] as [string, string];
+    expect(csv).toContain("INGRESO,Cobranza de venta,100");
+    // El anulado no aparece en el resumen (sí en Movimientos, con su estado).
+    expect(csv).not.toContain("EGRESO,ITF,50");
+  });
+
+  it("etiqueta el conteo según el tipo de cuenta", () => {
+    const { unmount } = renderReport({ accountType: "CASH_BOX" });
+    expect(screen.getByText("Conteo físico")).toBeInTheDocument();
+    unmount();
+
+    renderReport({
+      accountType: "BANK_ACCOUNT",
+      close: { countedBalance: 500 },
+    });
+    expect(screen.queryByText("Conteo físico")).toBeNull();
+    expect(screen.getByText("Saldo según extracto")).toBeInTheDocument();
+  });
+
+  it("usa el fondo congelado del cierre y cae al actual sin snapshot", () => {
+    const { unmount } = renderReport({
+      changeFund: 100,
+      close: { changeFund: 250 },
+      denominations: [{ denomination: 100, quantity: 1 }],
+    });
+    expect(
+      screen.getByText("Menos fondo de cambio (B)").parentElement
+    ).toHaveTextContent("S/ 250.00");
+    unmount();
+
+    // Cierre histórico sin snapshot: usa el fondo actual de la cuenta.
+    renderReport({
+      changeFund: 100,
+      close: { changeFund: null },
+      denominations: [{ denomination: 100, quantity: 1 }],
+    });
+    expect(
+      screen.getByText("Menos fondo de cambio (B)").parentElement
+    ).toHaveTextContent("S/ 100.00");
   });
 });

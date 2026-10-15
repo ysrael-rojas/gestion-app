@@ -113,4 +113,51 @@ describe("CashCloseModal", () => {
       screen.queryByText("Arqueo por denominación")
     ).not.toBeInTheDocument();
   });
+
+  it("permite registrar el saldo según extracto en un banco", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+
+    renderModal({
+      account: account({ type: "BANK_ACCOUNT", bankName: "BCP" }),
+      onClose,
+    });
+
+    await user.type(
+      screen.getByLabelText("Saldo según extracto (opcional)"),
+      "1234.56"
+    );
+    await user.click(screen.getByRole("button", { name: "Cerrar caja" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    const values = onClose.mock.calls[0][0] as {
+      countedBalance?: number;
+      denominations?: unknown;
+    };
+    expect(values.countedBalance).toBe(1234.56);
+    expect(values.denominations).toBeUndefined();
+  });
+
+  it("cierra una caja en cero solo con la confirmación explícita", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+
+    renderModal({ account: account(), onClose });
+
+    // Sin la casilla, el cierre queda bloqueado.
+    await user.click(screen.getByRole("button", { name: "Cerrar caja" }));
+    await waitFor(() => expect(onClose).not.toHaveBeenCalled());
+
+    // Con la casilla marcada, cierra con conteo 0 y sin detalle de arqueo.
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: "Cerrar caja" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    const values = onClose.mock.calls[0][0] as {
+      countedBalance?: number;
+      denominations?: unknown;
+    };
+    expect(values.countedBalance).toBe(0);
+    expect(values.denominations).toBeUndefined();
+  });
 });

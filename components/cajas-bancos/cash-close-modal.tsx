@@ -19,6 +19,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -81,6 +82,7 @@ function createEmptyValues(
     periodEnd,
     countedBalance: "",
     notes: "",
+    emptyCashConfirmed: false,
     denominations: PEN_DENOMINATIONS.map((denomination) => ({
       denomination,
       quantity: "",
@@ -127,6 +129,10 @@ export function CashCloseModal({
     control: form.control,
     name: "denominations",
   });
+  const emptyConfirmed = useWatch({
+    control: form.control,
+    name: "emptyCashConfirmed",
+  });
 
   // Suma en vivo del arqueo: total de valores en caja y efectivo neto.
   const countedTotal = useMemo(
@@ -140,7 +146,18 @@ export function CashCloseModal({
     const denominationsTotal = sumDenominationCounts(toCounts(values.denominations));
 
     if (!isBank && denominationsTotal <= 0) {
-      toast.error("Ingresa el conteo por denominación para cerrar la caja.");
+      if (!values.emptyCashConfirmed) {
+        toast.error(
+          "Marca la confirmación para cerrar la caja sin efectivo, o ingresa el conteo."
+        );
+        return;
+      }
+      // Caja en cero confirmada: el conteo queda en 0 y sin detalle de arqueo.
+      onClose({
+        ...values,
+        countedBalance: 0,
+        denominations: undefined,
+      });
       return;
     }
 
@@ -185,7 +202,27 @@ export function CashCloseModal({
                 </p>
               </div>
 
-              {isBank ? null : (
+              {isBank ? (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="countedBalance">
+                    Saldo según extracto (opcional)
+                  </Label>
+                  <Input
+                    id="countedBalance"
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    aria-invalid={!!errors.countedBalance}
+                    {...form.register("countedBalance")}
+                  />
+                  <FieldError message={errors.countedBalance?.message} />
+                  <p className="text-xs text-muted-foreground">
+                    Si lo dejas vacío, el cierre no compara contra el extracto.
+                  </p>
+                </div>
+              ) : (
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="denomination-0">Arqueo por denominación</Label>
                   <div className="overflow-hidden rounded-md border">
@@ -266,6 +303,27 @@ export function CashCloseModal({
                       </span>
                     </div>
                   </div>
+
+                  {countedTotal <= 0 ? (
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="emptyCashConfirmed"
+                        checked={Boolean(emptyConfirmed)}
+                        onCheckedChange={(checked) =>
+                          form.setValue(
+                            "emptyCashConfirmed",
+                            Boolean(checked)
+                          )
+                        }
+                      />
+                      <Label
+                        htmlFor="emptyCashConfirmed"
+                        className="text-sm font-normal"
+                      >
+                        Confirmo que la caja quedó sin efectivo
+                      </Label>
+                    </div>
+                  ) : null}
                 </div>
               )}
 
