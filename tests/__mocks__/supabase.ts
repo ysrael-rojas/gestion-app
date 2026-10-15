@@ -53,6 +53,8 @@ export interface MockSupabase {
   queueRpc: (name: string, result: RpcResult) => void;
   /** RPC calls in order, with the arguments they received. */
   rpcCalls: { name: string; args?: Record<string, unknown> }[];
+  /** Insert calls in order, with the table and payload they received. */
+  insertCalls: { table: string; payload: unknown }[];
   reset: () => void;
 }
 
@@ -70,6 +72,7 @@ export function createMockSupabase(): MockSupabase {
   const tableQueues = new Map<string, TableResult[]>();
   const rpcQueues = new Map<string, RpcResult[]>();
   const rpcCalls: { name: string; args?: Record<string, unknown> }[] = [];
+  const insertCalls: { table: string; payload: unknown }[] = [];
 
   function nextTableResult(table: string): TableResult {
     const queue = tableQueues.get(table);
@@ -94,7 +97,10 @@ export function createMockSupabase(): MockSupabase {
   function makeBuilder(table: string): QueryBuilder {
     const builder: QueryBuilder = {
       select: () => builder,
-      insert: () => builder,
+      insert: (payload) => {
+        insertCalls.push({ table, payload });
+        return builder;
+      },
       update: () => builder,
       eq: () => builder,
       gt: () => builder,
@@ -130,6 +136,7 @@ export function createMockSupabase(): MockSupabase {
       },
     },
     rpcCalls,
+    insertCalls,
     setTable(table, result) {
       tables.set(table, result);
     },
@@ -152,6 +159,7 @@ export function createMockSupabase(): MockSupabase {
       tableQueues.clear();
       rpcQueues.clear();
       rpcCalls.length = 0;
+      insertCalls.length = 0;
     },
   };
 }

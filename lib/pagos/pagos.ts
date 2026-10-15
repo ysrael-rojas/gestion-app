@@ -202,6 +202,29 @@ export async function listAccountStatement(
   return (data as unknown as PaymentRowWithRefs[]).map(mapPaymentRow);
 }
 
+/**
+ * Marca recibos como verificados (EN_REVISION -> PROCESADO) en una sola
+ * operación. La RPC valida que cada recibo sea del dueño y esté en revisión, y
+ * rechaza los ya verificados o anulados (SPEC 33).
+ */
+export async function markPaymentsProcessed(
+  paymentIds: string[]
+): Promise<number> {
+  if (paymentIds.length === 0) {
+    return 0;
+  }
+
+  const { data, error } = await supabase.rpc("mark_payments_processed", {
+    p_payment_ids: paymentIds,
+  });
+
+  if (error) {
+    throw mapError(error);
+  }
+
+  return data ?? 0;
+}
+
 export async function listOpenVouchers(
   direction: PaymentDirection,
   entityId: string

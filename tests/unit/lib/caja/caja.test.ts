@@ -9,10 +9,12 @@ vi.mock("@/lib/supabase/client", () => ({ supabase: mock.client }));
 
 import {
   closeCashAccount,
+  ensureCatalogsSeeded,
   getLastClose,
   listCloseDenominations,
   proposeClosePeriod,
 } from "@/lib/caja/caja";
+import { DEFAULT_CATEGORIES } from "@/lib/caja/defaults";
 
 const accountRow = (overrides: Record<string, unknown> = {}) => ({
   id: "acc-1",
@@ -128,6 +130,84 @@ describe("caja.ts", () => {
       const result = await getLastClose("acc-1");
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe("ensureCatalogsSeeded", () => {
+    it("siembra solo las categorías que faltan, incluidas las de cargo bancario", async () => {
+      mock.setTable("payment_method", {
+        data: [{ code: "EFECTIVO" }],
+        error: null,
+      });
+      mock.setTable("cash_receipt_category", {
+        data: [
+          { direction: "EGRESO", name: "Pago a proveedor" },
+          { direction: "INGRESO", name: "Cobranza de venta" },
+        ],
+        error: null,
+      });
+
+      await ensureCatalogsSeeded();
+
+      const inserts = mock.insertCalls.map((call) => call.table);
+      expect(inserts).toEqual(["payment_method", "cash_receipt_category"]);
+
+      const methodPayload = mock.insertCalls[0].payload as { code: string }[];
+      expect(methodPayload.map((row) => row.code)).toEqual([
+        "TRANSFERENCIA_BCP",
+        "TARJETA_CREDITO",
+      ]);
+
+      const categoryPayload = mock.insertCalls[1].payload as {
+        direction: string;
+        name: string;
+      }[];
+      const names = categoryPayload.map((row) => row.name);
+      // Ya existía "Pago a proveedor": no se vuelve a insertar.
+      expect(names).not.toContain("Pago a proveedor");
+      expect(names).not.toContain("Cobranza de venta");
+      // Las de cargo bancario sí, junto con el resto de egresos.
+      expect(names).toEqual(
+        expect.arrayContaining([
+          "ITF",
+          "Comisión bancaria",
+          "Detracción SPOT",
+        ])
+      );
+      // Faltan todas menos las dos que ya existían.
+      const expectedMissing =
+        DEFAULT_CATEGORIES.EGRESO.length -
+        1 +
+        (DEFAULT_CATEGORIES.INGRESO.length - 1);
+      expect(categoryPayload).toHaveLength(expectedMissing);
+    });
+
+    it("no inserta nada cuando el catálogo ya está completo", async () => {
+      mock.setTable("payment_method", {
+        data: [
+          { code: "EFECTIVO" },
+          { code: "TRANSFERENCIA_BCP" },
+          { code: "TARJETA_CREDITO" },
+        ],
+        error: null,
+      });
+      mock.setTable("cash_receipt_category", {
+        data: [
+          ...DEFAULT_CATEGORIES.EGRESO.map((name) => ({
+            direction: "EGRESO",
+            name,
+          })),
+          ...DEFAULT_CATEGORIES.INGRESO.map((name) => ({
+            direction: "INGRESO",
+            name,
+          })),
+        ],
+        error: null,
+      });
+
+      await ensureCatalogsSeeded();
+
+      expect(mock.insertCalls).toEqual([]);
     });
   });
 

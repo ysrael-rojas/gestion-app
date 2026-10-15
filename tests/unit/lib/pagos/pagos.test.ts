@@ -14,6 +14,7 @@ import {
   getPaymentHistory,
   listOpenVouchers,
   listPayments,
+  markPaymentsProcessed,
   voidPayment,
 } from "@/lib/pagos/pagos";
 
@@ -374,6 +375,52 @@ describe("pagos.ts", () => {
       });
 
       await expect(voidPayment("p-1", "razón")).rejects.toThrow(
+        "Los datos del pago no son válidos.",
+      );
+    });
+  });
+
+  describe("markPaymentsProcessed", () => {
+    it("llama a la RPC con los recibos y devuelve cuántos marcó", async () => {
+      mock.setRpc("mark_payments_processed", { data: 2, error: null });
+
+      const count = await markPaymentsProcessed(["p-1", "p-2"]);
+
+      expect(count).toBe(2);
+      expect(mock.rpcCalls[0]).toEqual({
+        name: "mark_payments_processed",
+        args: { p_payment_ids: ["p-1", "p-2"] },
+      });
+    });
+
+    it("no llama a la RPC con una lista vacía", async () => {
+      const count = await markPaymentsProcessed([]);
+
+      expect(count).toBe(0);
+      expect(mock.rpcCalls).toEqual([]);
+    });
+
+    it("propaga el mensaje cuando algún recibo no está en revisión", async () => {
+      mock.setRpc("mark_payments_processed", {
+        data: null,
+        error: {
+          code: "P0001",
+          message: "Solo se pueden marcar recibos en revisión de tus cuentas",
+        },
+      });
+
+      await expect(markPaymentsProcessed(["p-1"])).rejects.toThrow(
+        "Solo se pueden marcar recibos en revisión de tus cuentas",
+      );
+    });
+
+    it("traduce un error de validación de la base de datos", async () => {
+      mock.setRpc("mark_payments_processed", {
+        data: null,
+        error: { code: "23514", message: "x" },
+      });
+
+      await expect(markPaymentsProcessed(["p-1"])).rejects.toThrow(
         "Los datos del pago no son válidos.",
       );
     });

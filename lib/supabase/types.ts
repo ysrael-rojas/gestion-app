@@ -750,6 +750,12 @@ export type Database = {
         }
         Returns: number
       }
+      mark_payments_processed: {
+        Args: {
+          p_payment_ids: string[]
+        }
+        Returns: number
+      }
       replenish_petty_cash: {
         Args: {
           p_account_id: string
