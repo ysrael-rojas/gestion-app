@@ -147,6 +147,21 @@ describe("comprobantes.ts (ventas)", () => {
         "El cliente seleccionado no existe.",
       );
     });
+
+    it("traduce el número duplicado (23505) a un mensaje claro", async () => {
+      mock.setTable("comprobante", {
+        data: null,
+        error: {
+          code: "23505",
+          message:
+            'duplicate key value violates unique constraint "comprobante_owner_kind_number_key"',
+        },
+      });
+
+      await expect(createSaleRecord(validForm())).rejects.toThrow(
+        "Ya registraste una venta con ese número de comprobante.",
+      );
+    });
   });
 
   describe("updateSaleRecord", () => {
@@ -156,6 +171,21 @@ describe("comprobantes.ts (ventas)", () => {
       const sale = await updateSaleRecord("s-1", validForm());
 
       expect(sale.id).toBe("s-1");
+    });
+
+    it("muestra el mensaje del trigger de inmutabilidad (P0001) tal cual", async () => {
+      mock.setTable("comprobante", {
+        data: null,
+        error: {
+          code: "P0001",
+          message:
+            "No se puede modificar un comprobante con pagos registrados: anula los pagos antes de cambiar importe, numero, cliente o fecha",
+        },
+      });
+
+      await expect(updateSaleRecord("s-1", validForm())).rejects.toThrow(
+        /No se puede modificar un comprobante con pagos registrados/,
+      );
     });
   });
 });

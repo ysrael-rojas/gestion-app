@@ -62,4 +62,58 @@ describe("saleSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rechaza un número que no calza el formato serie-correlativo", () => {
+    const result = saleSchema.safeParse({
+      ...validSale(),
+      voucherNumber: "factura uno",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issue = result.error.issues.find(
+        (i) => i.path[0] === "voucherNumber"
+      );
+      expect(issue?.message).toBe(
+        "Usa el formato serie-correlativo, por ejemplo F001-000001"
+      );
+    }
+  });
+
+  it("rechaza números sin guion, con correlativo no numérico o demasiado largo", () => {
+    expect(
+      saleSchema.safeParse({ ...validSale(), voucherNumber: "F001000001" }).success
+    ).toBe(false);
+    expect(
+      saleSchema.safeParse({ ...validSale(), voucherNumber: "F001-00A1" }).success
+    ).toBe(false);
+    expect(
+      saleSchema.safeParse({
+        ...validSale(),
+        voucherNumber: "F001-000000012345",
+      }).success
+    ).toBe(false);
+  });
+
+  it("acepta series cortas y correlativos numéricos (B001-1, FF01-000014)", () => {
+    expect(
+      saleSchema.safeParse({ ...validSale(), voucherNumber: "B001-1" }).success
+    ).toBe(true);
+    expect(
+      saleSchema.safeParse({ ...validSale(), voucherNumber: "FF01-000014" })
+        .success
+    ).toBe(true);
+  });
+
+  it("recorta espacios alrededor del número antes de validar", () => {
+    const result = saleSchema.safeParse({
+      ...validSale(),
+      voucherNumber: "  F001-000001  ",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.voucherNumber).toBe("F001-000001");
+    }
+  });
 });
