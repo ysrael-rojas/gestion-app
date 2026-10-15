@@ -83,8 +83,18 @@ function mapSaleRow(
 }
 
 function mapError(error: { code?: string; message: string }): Error {
+  if (error.code === "P0001") {
+    return new Error(error.message);
+  }
+
   if (error.code === "23503") {
     return new Error("El cliente seleccionado no existe.");
+  }
+
+  if (error.code === "23505") {
+    return new Error(
+      "Ya registraste una venta con ese número de comprobante."
+    );
   }
 
   if (error.code === "23514") {
