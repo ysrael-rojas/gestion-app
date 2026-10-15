@@ -16,6 +16,7 @@ export interface CashReceiptCategory {
   id: string;
   direction: PaymentDirection;
   name: string;
+  code: string; // código estable para resolver la categoría (SPEC 37)
   isActive: boolean;
 }
 
