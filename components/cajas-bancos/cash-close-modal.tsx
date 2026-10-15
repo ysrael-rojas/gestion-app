@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -109,6 +110,9 @@ export function CashCloseModal({
 }: CashCloseModalProps) {
   const isBank = account?.type === "BANK_ACCOUNT";
 
+  // Confirmación explícita para cerrar una caja con la grilla en cero.
+  const [emptyConfirmed, setEmptyConfirmed] = useState(false);
+
   const form = useForm<CashCloseFormInput, unknown, CashCloseFormValues>({
     resolver: zodResolver(cashCloseSchema),
     defaultValues: createEmptyValues(account?.id ?? "", defaultPeriod.periodEnd),
@@ -119,6 +123,7 @@ export function CashCloseModal({
       form.reset(
         createEmptyValues(account?.id ?? "", defaultPeriod.periodEnd)
       );
+      setEmptyConfirmed(false);
     }
   }, [open, account?.id, defaultPeriod.periodEnd, form]);
 
@@ -140,7 +145,18 @@ export function CashCloseModal({
     const denominationsTotal = sumDenominationCounts(toCounts(values.denominations));
 
     if (!isBank && denominationsTotal <= 0) {
-      toast.error("Ingresa el conteo por denominación para cerrar la caja.");
+      if (!emptyConfirmed) {
+        toast.error(
+          "Marca la confirmación para cerrar la caja sin efectivo, o ingresa el conteo."
+        );
+        return;
+      }
+      // Caja en cero confirmada: el conteo queda en 0 y sin detalle de arqueo.
+      onClose({
+        ...values,
+        countedBalance: 0,
+        denominations: undefined,
+      });
       return;
     }
 
@@ -185,7 +201,27 @@ export function CashCloseModal({
                 </p>
               </div>
 
-              {isBank ? null : (
+              {isBank ? (
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="countedBalance">
+                    Saldo según extracto (opcional)
+                  </Label>
+                  <Input
+                    id="countedBalance"
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    aria-invalid={!!errors.countedBalance}
+                    {...form.register("countedBalance")}
+                  />
+                  <FieldError message={errors.countedBalance?.message} />
+                  <p className="text-xs text-muted-foreground">
+                    Si lo dejas vacío, el cierre no compara contra el extracto.
+                  </p>
+                </div>
+              ) : (
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="denomination-0">Arqueo por denominación</Label>
                   <div className="overflow-hidden rounded-md border">
@@ -266,6 +302,24 @@ export function CashCloseModal({
                       </span>
                     </div>
                   </div>
+
+                  {countedTotal <= 0 ? (
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="emptyCashConfirmed"
+                        checked={emptyConfirmed}
+                        onCheckedChange={(checked) =>
+                          setEmptyConfirmed(Boolean(checked))
+                        }
+                      />
+                      <Label
+                        htmlFor="emptyCashConfirmed"
+                        className="text-sm font-normal"
+                      >
+                        Confirmo que la caja quedó sin efectivo
+                      </Label>
+                    </div>
+                  ) : null}
                 </div>
               )}
 
