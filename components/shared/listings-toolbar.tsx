@@ -104,7 +104,7 @@ export function ListingsToolbar({ children }: ListingsToolbarProps) {
           </Select>
         </div>
         {hasActiveFilters ? (
-          <Button variant="ghost" onClick={clearFilters}>
+          <Button variant="ghost" size="sm" onClick={clearFilters}>
             <X />
             Limpiar filtros
           </Button>
