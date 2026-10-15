@@ -114,6 +114,7 @@ export type Database = {
       cash_close: {
         Row: {
           cash_account_id: string
+          change_fund: number | null
           counted_balance: number | null
           created_at: string
           difference: number | null
@@ -133,6 +134,7 @@ export type Database = {
         }
         Insert: {
           cash_account_id: string
+          change_fund?: number | null
           counted_balance?: number | null
           created_at?: string
           difference?: number | null
@@ -152,6 +154,7 @@ export type Database = {
         }
         Update: {
           cash_account_id?: string
+          change_fund?: number | null
           counted_balance?: number | null
           created_at?: string
           difference?: number | null
