@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -325,14 +325,14 @@ export function DashboardView() {
         <h2 className="text-lg font-semibold">Accesos rápidos</h2>
         <div className="flex flex-wrap gap-2">
           {QUICK_LINKS.map((link) => (
-            <Button
+            <Link
               key={link.href}
-              variant="outline"
-              render={<Link href={link.href} />}
+              href={link.href}
+              className={buttonVariants({ variant: "outline" })}
             >
               <link.icon />
               {link.label}
-            </Button>
+            </Link>
           ))}
         </div>
       </section>
