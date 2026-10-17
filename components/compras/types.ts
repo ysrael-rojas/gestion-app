@@ -1,4 +1,10 @@
-export type VoucherType = "FACTURA" | "BOLETA" | "NOTA_VENTA";
+export type VoucherType =
+  | "FACTURA"
+  | "BOLETA"
+  | "NOTA_VENTA"
+  | "NOTA_CREDITO"
+  | "NOTA_DEBITO"
+  | "COMPROBANTE_RETENCION";
 export type PaymentType = "CONTADO" | "CREDITO";
 export type PurchaseStatus = "PAGADO" | "PENDIENTE";
 
