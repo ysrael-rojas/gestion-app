@@ -9,6 +9,7 @@ import type { Client } from "@/components/clientes/types";
 import { useCompras } from "@/components/compras/compras-provider";
 import { NotaModal } from "@/components/notas/nota-modal";
 import { NotasDataTable } from "@/components/notas/notas-data-table";
+import { ReferablePickerModal } from "@/components/notas/referable-picker-modal";
 import type { Nota, ReferableComprobante } from "@/components/notas/types";
 import { useVentas } from "@/components/ventas/ventas-provider";
 import { listSuppliers } from "@/lib/clientes/entidades";
@@ -67,7 +68,10 @@ export function NotasListadoView({ voucherType }: NotasListadoViewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [editingNota, setEditingNota] = useState<Nota | null>(null);
+  const [selectedReferable, setSelectedReferable] =
+    useState<ReferableComprobante | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -143,19 +147,33 @@ export function NotasListadoView({ voucherType }: NotasListadoViewProps) {
 
   function openCreate() {
     setEditingNota(null);
-    setModalOpen(true);
+    setSelectedReferable(null);
+    setPickerOpen(true);
   }
 
   const openEdit = useCallback((nota: Nota) => {
     setEditingNota(nota);
+    setSelectedReferable(null);
     setModalOpen(true);
   }, []);
 
+  const handleSelectReferable = useCallback(
+    (referable: ReferableComprobante) => {
+      setSelectedReferable(referable);
+      setPickerOpen(false);
+      setModalOpen(true);
+    },
+    []
+  );
+
+  // Al editar, el referenciado se busca en la lista; si ya no está, la ficha
+  // se arma con los datos guardados en la nota.
   const editingReferable = editingNota
     ? referables.find(
         (referable) => referable.id === editingNota.referencedId
       ) ?? null
     : null;
+  const activeReferable = editingNota ? editingReferable : selectedReferable;
 
   async function handleSave(values: NotaFormValues) {
     try {
@@ -168,6 +186,7 @@ export function NotasListadoView({ voucherType }: NotasListadoViewProps) {
       );
       setModalOpen(false);
       setEditingNota(null);
+      setSelectedReferable(null);
       await refreshNotas();
 
       if (saved.voucherKind === "VENTA") {
@@ -206,13 +225,23 @@ export function NotasListadoView({ voucherType }: NotasListadoViewProps) {
           setModalOpen(open);
           if (!open) {
             setEditingNota(null);
+            setSelectedReferable(null);
           }
         }}
         voucherType={voucherType}
         nota={editingNota}
-        referable={editingReferable}
+        referable={activeReferable}
         resolveEntityName={resolveEntityName}
         onSave={handleSave}
+      />
+
+      <ReferablePickerModal
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        voucherType={voucherType}
+        referables={referables}
+        resolveEntityName={resolveEntityName}
+        onSelect={handleSelectReferable}
       />
     </main>
   );
