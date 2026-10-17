@@ -13,18 +13,22 @@ vi.mock("@/components/auth/sign-out-button", () => ({
 import { AppNavbar } from "@/components/app-navbar";
 
 describe("AppNavbar", () => {
-  it("ordena las entradas de izquierda a derecha: Ventas, Compras, Maestro, Pagos, Caja y bancos", () => {
+  it("ordena las entradas de izquierda a derecha: Ventas, Compras, Notas y retenciones, Maestro, Pagos, Caja y bancos", () => {
     render(<AppNavbar />);
 
     const labels = screen
-      .getAllByText(/^(Ventas|Compras|Maestro|Pagos|Caja y bancos)$/, {
-        selector: "span",
-      })
+      .getAllByText(
+        /^(Ventas|Compras|Notas y retenciones|Maestro|Pagos|Caja y bancos)$/,
+        {
+          selector: "span",
+        }
+      )
       .map((el) => el.textContent);
 
     expect(labels).toEqual([
       "Ventas",
       "Compras",
+      "Notas y retenciones",
       "Maestro",
       "Pagos",
       "Caja y bancos",
@@ -90,6 +94,25 @@ describe("AppNavbar", () => {
     expect(
       await screen.findByRole("link", { name: /Clientes\/Proveedores/i })
     ).toHaveAttribute("href", "/clientes/listado");
+  });
+
+  it("abre el grupo NOTAS Y RETENCIONES con sus tres rutas", async () => {
+    const user = userEvent.setup();
+    render(<AppNavbar />);
+
+    await user.click(
+      screen.getByRole("button", { name: /NOTAS Y RETENCIONES/i })
+    );
+
+    expect(
+      await screen.findByRole("link", { name: /Notas de crédito/i })
+    ).toHaveAttribute("href", "/notas/credito");
+    expect(
+      screen.getByRole("link", { name: /Notas de débito/i })
+    ).toHaveAttribute("href", "/notas/debito");
+    expect(
+      screen.getByRole("link", { name: /Comprobante de retención/i })
+    ).toHaveAttribute("href", "/retenciones");
   });
 
   it("no emite el warning de nativeButton de Base UI", async () => {
