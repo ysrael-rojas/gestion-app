@@ -10,6 +10,7 @@ import {
   SALE_STATUSES,
   VOUCHER_TYPES,
 } from "@/lib/data/sale-options";
+import { voucherNumberSchema } from "@/lib/schemas/voucher";
 
 const voucherTypeEnum = z.enum(
   VOUCHER_TYPES.map((option) => option.value) as [VoucherType, ...VoucherType[]],
@@ -26,25 +27,11 @@ const saleStatusEnum = z.enum(
   { error: "Selecciona el estado" }
 );
 
-/**
- * Serie + correlativo del comprobante (SUNAT): hasta 4 caracteres alfanuméricos de
- * serie, un guion y el correlativo numérico. Ejemplo: `F001-000001`.
- * Se valida solo en la app: un CHECK en la base rompería comprobantes históricos.
- */
-const VOUCHER_NUMBER_PATTERN = /^[A-Za-z0-9]{1,4}-\d{1,8}$/;
-
 export const saleSchema = z
   .object({
     issueDate: z.string().min(1, "La fecha de emisión es requerida"),
     voucherType: voucherTypeEnum,
-    voucherNumber: z
-      .string()
-      .trim()
-      .min(1, "El número de comprobante es requerido")
-      .regex(
-        VOUCHER_NUMBER_PATTERN,
-        "Usa el formato serie-correlativo, por ejemplo F001-000001"
-      ),
+    voucherNumber: voucherNumberSchema,
     entityId: z.string().min(1, "Selecciona un cliente"),
     total: z.coerce
       .number({ error: "Ingresa un total válido" })
