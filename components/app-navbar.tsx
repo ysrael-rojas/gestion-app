@@ -8,6 +8,10 @@ import {
   Building2,
   Calculator,
   Database,
+  FileCheck,
+  FileMinus,
+  FilePlus,
+  FileText,
   Landmark,
   LayoutDashboard,
   Receipt,
@@ -48,6 +52,19 @@ const directLinks: NavLink[] = [
 ];
 
 const groups: NavGroup[] = [
+  {
+    label: "Notas y retenciones",
+    icon: FileText,
+    items: [
+      { label: "Notas de crédito", href: "/notas/credito", icon: FileMinus },
+      { label: "Notas de débito", href: "/notas/debito", icon: FilePlus },
+      {
+        label: "Comprobante de retención",
+        href: "/retenciones",
+        icon: FileCheck,
+      },
+    ],
+  },
   {
     label: "Maestro",
     icon: Database,

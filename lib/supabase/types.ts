@@ -11,7 +11,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -299,8 +299,10 @@ export type Database = {
           id: string
           igv: number
           issue_date: string
+          motive_code: string | null
           owner_id: string
           payment_type: Database["public"]["Enums"]["payment_type"]
+          referenced_comprobante_id: string | null
           registration_date: string
           status: Database["public"]["Enums"]["comprobante_status"]
           subtotal: number
@@ -319,8 +321,10 @@ export type Database = {
           id?: string
           igv: number
           issue_date: string
+          motive_code?: string | null
           owner_id?: string
           payment_type: Database["public"]["Enums"]["payment_type"]
+          referenced_comprobante_id?: string | null
           registration_date?: string
           status?: Database["public"]["Enums"]["comprobante_status"]
           subtotal: number
@@ -339,8 +343,10 @@ export type Database = {
           id?: string
           igv?: number
           issue_date?: string
+          motive_code?: string | null
           owner_id?: string
           payment_type?: Database["public"]["Enums"]["payment_type"]
+          referenced_comprobante_id?: string | null
           registration_date?: string
           status?: Database["public"]["Enums"]["comprobante_status"]
           subtotal?: number
@@ -357,6 +363,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "entidad"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comprobante_referenced_comprobante_id_fkey"
+            columns: ["referenced_comprobante_id"]
+            isOneToOne: false
+            referencedRelation: "comprobante"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comprobante_referenced_comprobante_id_fkey"
+            columns: ["referenced_comprobante_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_balance"
+            referencedColumns: ["comprobante_id"]
           },
         ]
       }
@@ -680,6 +700,8 @@ export type Database = {
         Row: {
           balance: number | null
           comprobante_id: string | null
+          credit_amount: number | null
+          debit_amount: number | null
           effective_due_date: string | null
           entity_id: string | null
           issue_date: string | null
@@ -750,10 +772,7 @@ export type Database = {
         Returns: string
       }
       get_cash_position: {
-        Args: {
-          p_as_of?: string
-          p_cash_account_id: string
-        }
+        Args: { p_as_of?: string; p_cash_account_id: string }
         Returns: number
       }
       get_cash_positions: {
@@ -767,9 +786,7 @@ export type Database = {
         }[]
       }
       mark_payments_processed: {
-        Args: {
-          p_payment_ids: string[]
-        }
+        Args: { p_payment_ids: string[] }
         Returns: number
       }
       replenish_petty_cash: {
@@ -780,12 +797,7 @@ export type Database = {
         }
         Returns: string
       }
-      void_petty_cash_vale: {
-        Args: {
-          p_vale_id: string
-        }
-        Returns: undefined
-      }
+      void_petty_cash_vale: { Args: { p_vale_id: string }; Returns: undefined }
     }
     Enums: {
       cash_account_type: "CASH_BOX" | "BANK_ACCOUNT"
@@ -797,7 +809,13 @@ export type Database = {
       payment_type: "CONTADO" | "CREDITO"
       vale_status: "PENDIENTE" | "REPUESTO" | "ANULADO"
       voucher_kind: "COMPRA" | "VENTA"
-      voucher_type: "FACTURA" | "BOLETA" | "NOTA_VENTA"
+      voucher_type:
+        | "FACTURA"
+        | "BOLETA"
+        | "NOTA_VENTA"
+        | "NOTA_CREDITO"
+        | "NOTA_DEBITO"
+        | "COMPROBANTE_RETENCION"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -842,11 +860,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -867,11 +885,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -934,7 +952,14 @@ export const Constants = {
       payment_type: ["CONTADO", "CREDITO"],
       vale_status: ["PENDIENTE", "REPUESTO", "ANULADO"],
       voucher_kind: ["COMPRA", "VENTA"],
-      voucher_type: ["FACTURA", "BOLETA", "NOTA_VENTA"],
+      voucher_type: [
+        "FACTURA",
+        "BOLETA",
+        "NOTA_VENTA",
+        "NOTA_CREDITO",
+        "NOTA_DEBITO",
+        "COMPROBANTE_RETENCION",
+      ],
     },
   },
 } as const

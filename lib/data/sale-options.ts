@@ -15,6 +15,15 @@ export const VOUCHER_TYPES: SelectOption<VoucherType>[] = [
   { value: "NOTA_VENTA", label: "Nota de venta" },
 ];
 
+/**
+ * Tipos base (los únicos cobrables/pagables). Las notas de crédito/débito y el
+ * comprobante de retención ajustan a un comprobante base y quedan fuera de
+ * listados de ventas/compras, cartera y selector de pagos.
+ */
+export const BASE_VOUCHER_TYPES: VoucherType[] = VOUCHER_TYPES.map(
+  (option) => option.value
+);
+
 export const PAYMENT_TYPES: SelectOption<PaymentType>[] = [
   { value: "CONTADO", label: "Contado" },
   { value: "CREDITO", label: "Crédito" },
