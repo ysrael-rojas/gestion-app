@@ -299,8 +299,10 @@ export type Database = {
           id: string
           igv: number
           issue_date: string
+          motive_code: string | null
           owner_id: string
           payment_type: Database["public"]["Enums"]["payment_type"]
+          referenced_comprobante_id: string | null
           registration_date: string
           status: Database["public"]["Enums"]["comprobante_status"]
           subtotal: number
@@ -319,8 +321,10 @@ export type Database = {
           id?: string
           igv: number
           issue_date: string
+          motive_code?: string | null
           owner_id?: string
           payment_type: Database["public"]["Enums"]["payment_type"]
+          referenced_comprobante_id?: string | null
           registration_date?: string
           status?: Database["public"]["Enums"]["comprobante_status"]
           subtotal: number
@@ -339,8 +343,10 @@ export type Database = {
           id?: string
           igv?: number
           issue_date?: string
+          motive_code?: string | null
           owner_id?: string
           payment_type?: Database["public"]["Enums"]["payment_type"]
+          referenced_comprobante_id?: string | null
           registration_date?: string
           status?: Database["public"]["Enums"]["comprobante_status"]
           subtotal?: number
@@ -357,6 +363,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "entidad"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comprobante_referenced_comprobante_id_fkey"
+            columns: ["referenced_comprobante_id"]
+            isOneToOne: false
+            referencedRelation: "comprobante"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comprobante_referenced_comprobante_id_fkey"
+            columns: ["referenced_comprobante_id"]
+            isOneToOne: false
+            referencedRelation: "voucher_balance"
+            referencedColumns: ["comprobante_id"]
           },
         ]
       }
@@ -680,6 +700,8 @@ export type Database = {
         Row: {
           balance: number | null
           comprobante_id: string | null
+          credit_amount: number | null
+          debit_amount: number | null
           effective_due_date: string | null
           entity_id: string | null
           issue_date: string | null
