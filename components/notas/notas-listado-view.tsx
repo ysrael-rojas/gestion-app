@@ -151,6 +151,12 @@ export function NotasListadoView({ voucherType }: NotasListadoViewProps) {
     setModalOpen(true);
   }, []);
 
+  const editingReferable = editingNota
+    ? referables.find(
+        (referable) => referable.id === editingNota.referencedId
+      ) ?? null
+    : null;
+
   async function handleSave(values: NotaFormValues) {
     try {
       const saved = editingNota
@@ -204,7 +210,7 @@ export function NotasListadoView({ voucherType }: NotasListadoViewProps) {
         }}
         voucherType={voucherType}
         nota={editingNota}
-        referables={referables}
+        referable={editingReferable}
         resolveEntityName={resolveEntityName}
         onSave={handleSave}
       />

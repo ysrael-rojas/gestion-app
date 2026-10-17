@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { NOTA_FORM_ID, NotaForm } from "@/components/notas/nota-form";
 import type { Nota, ReferableComprobante } from "@/components/notas/types";
 import type { AdjustmentVoucherType } from "@/lib/data/nota-options";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 const ENTITY_NAMES: Record<string, string> = {
   "e-cliente": "Distribuidora Norte SAC",
@@ -18,51 +18,47 @@ const resolveEntityName = (entityId: string) =>
 /** `formatCurrency` usa NBSP tras "S/"; el matcher de texto normaliza al espacio común. */
 const money = (value: number) => formatCurrency(value).replace(/\u00a0/g, " ");
 
-const REFERABLES: ReferableComprobante[] = [
-  {
-    id: "v-1",
-    entityId: "e-cliente",
-    voucherKind: "VENTA",
-    voucherType: "FACTURA",
-    voucherNumber: "F001-000001",
-    issueDate: "2026-10-01",
-    total: 118,
-    paidAmount: 0,
-    balance: 118,
-    creditAmount: 0,
-    status: "PENDIENTE",
-  },
-  {
-    id: "v-2",
-    entityId: "e-cliente",
-    voucherKind: "VENTA",
-    voucherType: "BOLETA",
-    voucherNumber: "B001-000002",
-    issueDate: "2026-10-02",
-    total: 236,
-    paidAmount: 0,
-    balance: 200,
-    creditAmount: 36,
-    status: "PENDIENTE",
-  },
-  {
-    id: "c-1",
-    entityId: "e-proveedor",
-    voucherKind: "COMPRA",
-    voucherType: "FACTURA",
-    voucherNumber: "F001-000099",
-    issueDate: "2026-10-03",
-    total: 59,
-    paidAmount: 0,
-    balance: 59,
-    creditAmount: 0,
-    status: "PENDIENTE",
-  },
-];
+const VENTA_FACTURA: ReferableComprobante = {
+  id: "v-1",
+  entityId: "e-cliente",
+  voucherKind: "VENTA",
+  voucherType: "FACTURA",
+  voucherNumber: "F001-000001",
+  issueDate: "2026-10-01",
+  total: 118,
+  paidAmount: 0,
+  balance: 118,
+  creditAmount: 0,
+  status: "PENDIENTE",
+};
 
-const VENTA_OPTION = "F001-000001 — Distribuidora Norte SAC";
-const VENTA_CON_CREDITOS_OPTION = "B001-000002 — Distribuidora Norte SAC";
-const COMPRA_OPTION = "F001-000099 — Ferretería El Sol EIRL";
+const VENTA_BOLETA: ReferableComprobante = {
+  id: "v-2",
+  entityId: "e-cliente",
+  voucherKind: "VENTA",
+  voucherType: "BOLETA",
+  voucherNumber: "B001-000002",
+  issueDate: "2026-10-02",
+  total: 236,
+  paidAmount: 36,
+  balance: 200,
+  creditAmount: 36,
+  status: "PENDIENTE",
+};
+
+const COMPRA_FACTURA: ReferableComprobante = {
+  id: "c-1",
+  entityId: "e-proveedor",
+  voucherKind: "COMPRA",
+  voucherType: "FACTURA",
+  voucherNumber: "F001-000099",
+  issueDate: "2026-10-03",
+  total: 59,
+  paidAmount: 0,
+  balance: 59,
+  creditAmount: 0,
+  status: "PENDIENTE",
+};
 
 function baseNota(overrides: Partial<Nota> = {}): Nota {
   return {
@@ -86,9 +82,11 @@ function renderForm(
   {
     voucherType = "NOTA_CREDITO",
     nota = null,
+    referable = null,
   }: {
     voucherType?: AdjustmentVoucherType;
     nota?: Nota | null;
+    referable?: ReferableComprobante | null;
   } = {}
 ) {
   const onSubmit = vi.fn();
@@ -98,7 +96,7 @@ function renderForm(
       <NotaForm
         voucherType={voucherType}
         nota={nota}
-        referables={REFERABLES}
+        referable={referable}
         resolveEntityName={resolveEntityName}
         onSubmit={onSubmit}
       />
@@ -111,54 +109,73 @@ function renderForm(
   return onSubmit;
 }
 
-async function pickReferable(optionName: string) {
-  const user = userEvent.setup();
+describe("NotaForm — ficha del comprobante referenciado", () => {
+  it("muestra entidad, tipo, número, fecha, total, saldo y tope del referenciado", () => {
+    renderForm({ referable: VENTA_BOLETA });
 
-  await user.click(screen.getByLabelText("Comprobante referenciado"));
-  await user.click(await screen.findByRole("option", { name: optionName }));
-
-  return user;
-}
-
-describe("NotaForm — resumen del comprobante referenciado", () => {
-  it("precarga total, créditos aplicados y tope disponible al elegir el comprobante", async () => {
-    renderForm();
-
-    await pickReferable(VENTA_CON_CREDITOS_OPTION);
-
+    expect(
+      screen.getByText("Distribuidora Norte SAC — Boleta B001-000002")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(`Fecha de emisión: ${formatDate("2026-10-02")}`)
+    ).toBeInTheDocument();
     expect(
       screen.getByText(`Total del comprobante: ${money(236)}`)
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(`Créditos y retenciones aplicados: ${money(36)}`)
-    ).toBeInTheDocument();
+    expect(screen.getByText(`Saldo: ${money(200)}`)).toBeInTheDocument();
     expect(
       screen.getByText(`Tope disponible para este documento: ${money(200)}`)
     ).toBeInTheDocument();
   });
 
-  it("al cambiar la relación limpia la referencia y ofrece compras", async () => {
-    renderForm();
+  it("en una nota de débito avisa que aumenta el saldo y no muestra tope", () => {
+    renderForm({ voucherType: "NOTA_DEBITO", referable: VENTA_FACTURA });
 
-    const user = await pickReferable(VENTA_OPTION);
+    expect(
+      screen.getByText("Una nota de débito aumenta el saldo del comprobante.")
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Tope disponible para este documento/)
+    ).not.toBeInTheDocument();
+  });
 
-    expect(screen.getByText(/Total del comprobante/)).toBeInTheDocument();
+  it("al editar sin el referenciado en la lista usa los datos guardados en la nota", () => {
+    renderForm({ nota: baseNota(), referable: null });
 
-    await user.click(screen.getByLabelText("Relación"));
-    await user.click(await screen.findByRole("option", { name: "Recibida" }));
-
+    expect(
+      screen.getByText("Distribuidora Norte SAC — Boleta B001-000002")
+    ).toBeInTheDocument();
     expect(
       screen.queryByText(/Total del comprobante/)
     ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Saldo:/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Tope disponible para este documento/)
+    ).not.toBeInTheDocument();
+  });
 
-    await user.click(screen.getByLabelText("Comprobante referenciado"));
+  it("excluye la propia nota del tope disponible al editar", () => {
+    renderForm({ nota: baseNota({ total: 36 }), referable: VENTA_BOLETA });
+
+    // La boleta tiene 36 de créditos y son de esta misma nota: el tope
+    // disponible vuelve a ser su total (236).
+    expect(
+      screen.getByText(`Tope disponible para este documento: ${money(236)}`)
+    ).toBeInTheDocument();
+  });
+
+  it("precarga la ficha de la compra en un comprobante de retención", () => {
+    renderForm({
+      voucherType: "COMPROBANTE_RETENCION",
+      referable: COMPRA_FACTURA,
+    });
 
     expect(
-      await screen.findByRole("option", { name: COMPRA_OPTION })
+      screen.getByText("Ferretería El Sol EIRL — Factura F001-000099")
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("option", { name: VENTA_OPTION })
-    ).not.toBeInTheDocument();
+      screen.getByText(`Tope disponible para este documento: ${money(59)}`)
+    ).toBeInTheDocument();
   });
 });
 
@@ -203,10 +220,9 @@ describe("NotaForm — validaciones en español", () => {
   });
 
   it("rechaza un número fuera del formato serie-correlativo", async () => {
-    const onSubmit = renderForm();
+    const onSubmit = renderForm({ referable: VENTA_FACTURA });
 
     const user = userEvent.setup();
-    await pickReferable(VENTA_OPTION);
     await user.type(screen.getByLabelText("Nro comprobante"), "000001");
     await user.type(screen.getByLabelText("Total"), "10");
     await user.click(screen.getByRole("button", { name: "Guardar" }));
@@ -221,8 +237,11 @@ describe("NotaForm — validaciones en español", () => {
 });
 
 describe("NotaForm — comprobante de retención", () => {
-  it("registra sin motivo y sin desglose de IGV, solo referencias de compra", async () => {
-    const onSubmit = renderForm({ voucherType: "COMPROBANTE_RETENCION" });
+  it("registra sin motivo y sin desglose de IGV con la referencia heredada", async () => {
+    const onSubmit = renderForm({
+      voucherType: "COMPROBANTE_RETENCION",
+      referable: COMPRA_FACTURA,
+    });
 
     expect(screen.getByLabelText("Monto retenido")).toBeInTheDocument();
     expect(screen.queryByLabelText("Motivo")).not.toBeInTheDocument();
@@ -234,8 +253,7 @@ describe("NotaForm — comprobante de retención", () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Relación")).not.toBeInTheDocument();
 
-    const user = await pickReferable(COMPRA_OPTION);
-
+    const user = userEvent.setup();
     await user.type(screen.getByLabelText("Nro comprobante"), "R001-000001");
     await user.type(screen.getByLabelText("Monto retenido"), "5.9");
     await user.click(screen.getByRole("button", { name: "Guardar" }));
@@ -250,62 +268,18 @@ describe("NotaForm — comprobante de retención", () => {
       })
     );
   });
-
-  it("solo ofrece comprobantes de compra como referenciables", async () => {
-    renderForm({ voucherType: "COMPROBANTE_RETENCION" });
-
-    const user = userEvent.setup();
-    await user.click(screen.getByLabelText("Comprobante referenciado"));
-
-    expect(
-      await screen.findByRole("option", { name: COMPRA_OPTION })
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByRole("option", { name: VENTA_OPTION })
-    ).not.toBeInTheDocument();
-  });
 });
 
 describe("NotaForm — edición", () => {
-  it("precarga los datos de la nota y avisa que la referencia no cambia", async () => {
-    renderForm({ nota: baseNota() });
+  it("precarga los datos de la nota y la ficha de su referenciado", () => {
+    renderForm({ nota: baseNota(), referable: VENTA_BOLETA });
 
     expect(screen.getByLabelText("Fecha de emisión")).toHaveValue("2026-10-10");
     expect(screen.getByLabelText("Nro comprobante")).toHaveValue("FC01-000001");
     expect(screen.getByLabelText("Total")).toHaveValue(36);
     expect(screen.getByText("Anulación de la operación")).toBeInTheDocument();
     expect(
-      screen.getByText("La referencia y el tipo de una nota no se pueden cambiar.")
+      screen.getByText("Distribuidora Norte SAC — Boleta B001-000002")
     ).toBeInTheDocument();
-    expect(screen.getByText(/Tope disponible para este documento/)).toBeInTheDocument();
-  });
-
-  it("excluye la propia nota del tope disponible al editar", async () => {
-    const ownTotal = 36;
-
-    renderForm({ nota: baseNota({ total: ownTotal }) });
-
-    // La boleta tiene 36 de créditos y son de esta misma nota: el tope
-    // disponible vuelve a ser su total (236).
-    expect(
-      screen.getByText(`Créditos y retenciones aplicados: ${money(0)}`)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(`Tope disponible para este documento: ${money(236)}`)
-    ).toBeInTheDocument();
-  });
-
-  it("muestra el aviso de aumento de saldo sin tope en una nota de débito", async () => {
-    renderForm({
-      voucherType: "NOTA_DEBITO",
-      nota: baseNota({ voucherType: "NOTA_DEBITO", motiveCode: "02" }),
-    });
-
-    expect(
-      screen.getByText("Una nota de débito aumenta el saldo del comprobante.")
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(/Tope disponible para este documento/)
-    ).not.toBeInTheDocument();
   });
 });
