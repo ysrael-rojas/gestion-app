@@ -1,6 +1,6 @@
 # SPEC 40 — Picker de comprobante referenciable para notas y retenciones
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 39
 > **Date:** 2026-10-17
 > **Objective:** Registrar una nota o retención en dos pasos: elegir el comprobante referenciable en un modal de lista (pestañas, búsqueda y tope disponible) y completar el registro con su ficha como cabecera.
@@ -60,15 +60,15 @@ Convenciones:
 
 ## Acceptance criteria
 
-- [ ] "Registrar nota de crédito" y "Registrar nota de débito" abren primero el picker con las pestañas Emitidas/Recibidas; "Registrar retención" abre la lista solo de compras y sin pestañas.
-- [ ] El picker lista F. emisión, Nro, Cliente/Proveedor, Total y Tope disponible, con búsqueda y paginación.
-- [ ] En NC y retención la fila con tope 0 está deshabilitada (no se puede elegir); en ND todas las filas son elegibles y el tope muestra "—".
-- [ ] Al presionar "Elegir", el picker se cierra y se abre el modal de registro con la ficha del comprobante (entidad, tipo + número, fecha, total, saldo, tope) como cabecera.
-- [ ] El formulario ya no muestra los selects de "Relación" ni "Comprobante referenciado", en creación ni en edición.
-- [ ] Al editar una nota se abre directo el modal de edición (sin picker) con la ficha del referenciado; si no está en la lista, la ficha usa los datos guardados de la nota.
-- [ ] Las validaciones de SPEC 39 (motivo obligatorio, número serie-correlativo, tope de créditos, referencia heredada) siguen intactas.
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan.
-- [ ] El e2e `registrar-nota-credito-y-ver-saldo` pasa contra el dev server con el seed documentado (flujo de dos pasos).
+- [x] "Registrar nota de crédito" y "Registrar nota de débito" abren primero el picker con las pestañas Emitidas/Recibidas; "Registrar retención" abre la lista solo de compras y sin pestañas.
+- [x] El picker lista F. emisión, Nro, Cliente/Proveedor, Total y Tope disponible, con búsqueda y paginación.
+- [x] En NC y retención la fila con tope 0 está deshabilitada (no se puede elegir); en ND todas las filas son elegibles y el tope muestra "—".
+- [x] Al presionar "Elegir", el picker se cierra y se abre el modal de registro con la ficha del comprobante (entidad, tipo + número, fecha, total, saldo, tope) como cabecera.
+- [x] El formulario ya no muestra los selects de "Relación" ni "Comprobante referenciado", en creación ni en edición.
+- [x] Al editar una nota se abre directo el modal de edición (sin picker) con la ficha del referenciado; si no está en la lista, la ficha usa los datos guardados de la nota.
+- [x] Las validaciones de SPEC 39 (motivo obligatorio, número serie-correlativo, tope de créditos, referencia heredada) siguen intactas.
+- [x] `npm run lint`, `npm test` y `npm run build` pasan.
+- [x] El e2e `registrar-nota-credito-y-ver-saldo` pasa contra el dev server con el seed documentado (flujo de dos pasos).
 
 ## Decisions
 
