@@ -1,8 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * E2E: registrar una nota de crédito emitida (SPEC 39) sobre una venta y
+ * E2E: registrar una nota de crédito emitida (SPEC 39/40) sobre una venta y
  * verificar que el saldo de la venta baja por el monto de la nota.
+ *
+ * El registro es en dos pasos (SPEC 40): "Registrar nota de crédito" abre el
+ * picker de comprobantes referenciables (pestaña "Emitidas"); la venta se
+ * busca por número y se elige con "Elegir"; recién ahí se abre el modal de
+ * registro con la ficha del comprobante como cabecera.
  *
  * Seed requerido en la DB de desarrollo antes de correr este test:
  *   - 1 usuario con credenciales válidas en `.env`: `USUARIO` y `PASSWORD`.
@@ -78,22 +83,36 @@ test.describe.serial("registrar nota de credito y ver saldo", () => {
     const saldoBefore = parseAmount(await saldoBand.innerText());
     await page.getByRole("button", { name: "Cerrar" }).click();
 
-    // 2. Registrar la NC emitida sobre esa venta.
+    // 2. Registrar la NC emitida en dos pasos (picker → formulario).
     const noteNumber = `FC01-${String(Date.now()).slice(-6)}`;
 
     await page.goto("/notas/credito");
     await page
       .getByRole("button", { name: "Registrar nota de crédito" })
       .click();
-    await expect(page.getByRole("dialog")).toBeVisible({ timeout: 15_000 });
 
-    await page.locator("#referencedComprobanteId").click();
-    await page.getByRole("option", { name: new RegExp(saleNumber) }).click();
+    const pickerDialog = page
+      .getByRole("dialog")
+      .filter({ hasText: "Elegir comprobante" });
+    await expect(pickerDialog).toBeVisible({ timeout: 15_000 });
 
-    // El resumen del referenciado aparece con el tope disponible.
+    await pickerDialog
+      .getByPlaceholder("Buscar comprobante...")
+      .fill(saleNumber);
+
+    const pickerRow = pickerDialog.getByRole("row", {
+      name: new RegExp(saleNumber),
+    });
+    await expect(pickerRow).toBeVisible({ timeout: 15_000 });
+    await expect(
+      pickerRow.getByRole("button", { name: "Elegir" })
+    ).toBeEnabled();
+    await pickerRow.getByRole("button", { name: "Elegir" }).click();
+
+    // El modal de registro muestra la ficha del referenciado con su tope.
     await expect(
       page.getByText("Tope disponible para este documento")
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15_000 });
 
     await page.locator("#voucherNumber").fill(noteNumber);
     await page.locator("#motiveCode").click();
