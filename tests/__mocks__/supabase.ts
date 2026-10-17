@@ -59,6 +59,8 @@ export interface MockSupabase {
   rpcCalls: { name: string; args?: Record<string, unknown> }[];
   /** Insert calls in order, with the table and payload they received. */
   insertCalls: { table: string; payload: unknown }[];
+  /** Filter calls in order (eq/neq/gt/gte/lt/lte/is/in), with the arguments they received. */
+  filterCalls: { table: string; method: string; args: unknown[] }[];
   reset: () => void;
 }
 
@@ -77,6 +79,7 @@ export function createMockSupabase(): MockSupabase {
   const rpcQueues = new Map<string, RpcResult[]>();
   const rpcCalls: { name: string; args?: Record<string, unknown> }[] = [];
   const insertCalls: { table: string; payload: unknown }[] = [];
+  const filterCalls: { table: string; method: string; args: unknown[] }[] = [];
 
   function nextTableResult(table: string): TableResult {
     const queue = tableQueues.get(table);
@@ -99,6 +102,10 @@ export function createMockSupabase(): MockSupabase {
   }
 
   function makeBuilder(table: string): QueryBuilder {
+    function recordFilter(method: string, args: unknown[]) {
+      filterCalls.push({ table, method, args });
+    }
+
     const builder: QueryBuilder = {
       select: () => builder,
       insert: (payload) => {
@@ -106,14 +113,38 @@ export function createMockSupabase(): MockSupabase {
         return builder;
       },
       update: () => builder,
-      eq: () => builder,
-      neq: () => builder,
-      gt: () => builder,
-      gte: () => builder,
-      lt: () => builder,
-      lte: () => builder,
-      is: () => builder,
-      in: () => builder,
+      eq: (col, val) => {
+        recordFilter("eq", [col, val]);
+        return builder;
+      },
+      neq: (col, val) => {
+        recordFilter("neq", [col, val]);
+        return builder;
+      },
+      gt: (col, val) => {
+        recordFilter("gt", [col, val]);
+        return builder;
+      },
+      gte: (col, val) => {
+        recordFilter("gte", [col, val]);
+        return builder;
+      },
+      lt: (col, val) => {
+        recordFilter("lt", [col, val]);
+        return builder;
+      },
+      lte: (col, val) => {
+        recordFilter("lte", [col, val]);
+        return builder;
+      },
+      is: (col, val) => {
+        recordFilter("is", [col, val]);
+        return builder;
+      },
+      in: (col, vals) => {
+        recordFilter("in", [col, vals]);
+        return builder;
+      },
       order: () => builder,
       limit: () => builder,
       single: async () => {
@@ -145,6 +176,7 @@ export function createMockSupabase(): MockSupabase {
     },
     rpcCalls,
     insertCalls,
+    filterCalls,
     setTable(table, result) {
       tables.set(table, result);
     },
@@ -168,6 +200,7 @@ export function createMockSupabase(): MockSupabase {
       rpcQueues.clear();
       rpcCalls.length = 0;
       insertCalls.length = 0;
+      filterCalls.length = 0;
     },
   };
 }

@@ -1,4 +1,5 @@
 import type { Purchase } from "@/components/compras/types";
+import { BASE_VOUCHER_TYPES } from "@/lib/data/sale-options";
 import type { PurchaseFormValues } from "@/lib/schemas/purchase";
 import { supabase } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/supabase/types";
@@ -108,6 +109,7 @@ export async function listPurchases(): Promise<PurchaseListResult> {
       .from("comprobante")
       .select("*")
       .eq("voucher_kind", "COMPRA")
+      .in("voucher_type", BASE_VOUCHER_TYPES)
       .is("deleted_at", null)
       .order("issue_date", { ascending: false }),
     supabase

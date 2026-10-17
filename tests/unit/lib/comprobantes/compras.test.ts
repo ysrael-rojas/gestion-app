@@ -82,6 +82,21 @@ describe("compras.ts", () => {
       });
     });
 
+    it("filtra solo tipos base en el listado de compras", async () => {
+      mock.queueTable("comprobante", { data: [], error: null });
+      mock.queueTable("voucher_balance", { data: [], error: null });
+
+      await listPurchases();
+
+      const filterCall = mock.filterCalls.find(
+        (call) =>
+          call.table === "comprobante" &&
+          call.method === "in" &&
+          call.args[0] === "voucher_type"
+      );
+      expect(filterCall?.args[1]).toEqual(["FACTURA", "BOLETA", "NOTA_VENTA"]);
+    });
+
     it("devuelve purchases con balance = total cuando voucher_balance está vacío", async () => {
       mock.queueTable("comprobante", { data: [purchaseRow()], error: null });
       mock.queueTable("voucher_balance", { data: [], error: null });

@@ -87,6 +87,21 @@ describe("comprobantes.ts (ventas)", () => {
       });
     });
 
+    it("filtra solo tipos base en el listado de ventas", async () => {
+      mock.queueTable("comprobante", { data: [], error: null });
+      mock.queueTable("voucher_balance", { data: [], error: null });
+
+      await listSales();
+
+      const filterCall = mock.filterCalls.find(
+        (call) =>
+          call.table === "comprobante" &&
+          call.method === "in" &&
+          call.args[0] === "voucher_type"
+      );
+      expect(filterCall?.args[1]).toEqual(["FACTURA", "BOLETA", "NOTA_VENTA"]);
+    });
+
     it("devuelve sales con balance = total cuando no hay filas en voucher_balance", async () => {
       mock.queueTable("comprobante", { data: [saleRow()], error: null });
       mock.queueTable("voucher_balance", { data: [], error: null });

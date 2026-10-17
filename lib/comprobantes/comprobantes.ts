@@ -1,4 +1,5 @@
 import type { Sale } from "@/components/ventas/types";
+import { BASE_VOUCHER_TYPES } from "@/lib/data/sale-options";
 import type { SaleFormValues } from "@/lib/schemas/sale";
 import { supabase } from "@/lib/supabase/client";
 import type { Tables } from "@/lib/supabase/types";
@@ -112,6 +113,7 @@ export async function listSales(): Promise<SaleListResult> {
       .from("comprobante")
       .select("*")
       .eq("voucher_kind", "VENTA")
+      .in("voucher_type", BASE_VOUCHER_TYPES)
       .is("deleted_at", null)
       .order("issue_date", { ascending: false }),
     supabase
