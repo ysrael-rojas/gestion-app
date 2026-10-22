@@ -3,6 +3,8 @@ import { expect, test, type Page } from "@playwright/test";
 /**
  * E2E: registrar el pago total de una venta desde el asistente de drawers
  * (SPEC 25) y verificar que el comprobante queda PAGADO con saldo 0.
+ * El botón "Ver" del listado navega a la página de detalle (`/ventas/[id]`),
+ * que muestra la banda de montos y las pestañas de datos e historial.
  *
  * Seed requerido en la DB de desarrollo antes de correr este test:
  *   - 1 usuario con credenciales válidas en `.env`: `USUARIO` y `PASSWORD`.
@@ -114,9 +116,12 @@ test.describe.serial("registrar pago y ver saldo", () => {
     await expect(rowAfter).toBeVisible({ timeout: 15_000 });
     await expect(rowAfter).toContainText("Pagado");
 
-    // 5. Abrir el detalle: la banda de montos muestra saldo 0 y el
+    // 5. Abrir la página de detalle: la banda de montos muestra saldo 0 y el
     //    historial de pagos registra el recibo recién creado.
     await rowAfter.getByRole("button", { name: "Ver" }).click();
+    await expect(page).toHaveURL(/\/ventas\/[0-9a-f-]{36}$/i, {
+      timeout: 15_000,
+    });
     const saldoBand = page.getByText("Saldo por pagar").locator("..");
     await expect(saldoBand).toBeVisible({ timeout: 15_000 });
     await expect(saldoBand).toContainText("0.00");

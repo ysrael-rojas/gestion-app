@@ -78,10 +78,12 @@ test.describe.serial("registrar nota de credito y ver saldo", () => {
     const saleNumber = cells.find((text) => /[A-Z0-9]+-\d+/.test(text)) ?? "";
 
     await saleRow.getByRole("button", { name: "Ver" }).click();
+    await expect(page).toHaveURL(/\/ventas\/[0-9a-f-]{36}$/i, {
+      timeout: 15_000,
+    });
     const saldoBand = page.getByText("Saldo por pagar").locator("..");
     await expect(saldoBand).toBeVisible({ timeout: 15_000 });
     const saldoBefore = parseAmount(await saldoBand.innerText());
-    await page.getByRole("button", { name: "Cerrar" }).click();
 
     // 2. Registrar la NC emitida en dos pasos (picker → formulario).
     const noteNumber = `FC01-${String(Date.now()).slice(-6)}`;
@@ -138,6 +140,9 @@ test.describe.serial("registrar nota de credito y ver saldo", () => {
     });
     await expect(saleRowAfter).toBeVisible({ timeout: 15_000 });
     await saleRowAfter.getByRole("button", { name: "Ver" }).click();
+    await expect(page).toHaveURL(/\/ventas\/[0-9a-f-]{36}$/i, {
+      timeout: 15_000,
+    });
 
     const saldoBandAfter = page.getByText("Saldo por pagar").locator("..");
     await expect(saldoBandAfter).toBeVisible({ timeout: 15_000 });
