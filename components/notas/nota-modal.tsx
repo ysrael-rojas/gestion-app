@@ -25,7 +25,7 @@ interface NotaModalProps {
   onOpenChange: (open: boolean) => void;
   voucherType: AdjustmentVoucherType;
   nota: Nota | null;
-  referables: ReferableComprobante[];
+  referable: ReferableComprobante | null;
   resolveEntityName: (entityId: string) => string;
   onSave: (values: NotaFormValues) => void;
 }
@@ -41,7 +41,7 @@ export function NotaModal({
   onOpenChange,
   voucherType,
   nota,
-  referables,
+  referable,
   resolveEntityName,
   onSave,
 }: NotaModalProps) {
@@ -65,7 +65,7 @@ export function NotaModal({
             <NotaForm
               voucherType={voucherType}
               nota={nota}
-              referables={referables}
+              referable={referable}
               resolveEntityName={resolveEntityName}
               onSubmit={onSave}
             />

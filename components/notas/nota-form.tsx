@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -20,27 +19,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { Nota, ReferableComprobante } from "@/components/notas/types";
-import type {
-  AdjustmentVoucherType,
-  NotaRelation,
-} from "@/lib/data/nota-options";
-import {
-  NOTE_MOTIVES,
-  NOTA_RELATIONS,
-} from "@/lib/data/nota-options";
+import type { AdjustmentVoucherType } from "@/lib/data/nota-options";
+import { NOTE_MOTIVES } from "@/lib/data/nota-options";
 import { VOUCHER_TYPES, getOptionLabel } from "@/lib/data/sale-options";
 import {
   notaSchema,
   type NotaFormInput,
   type NotaFormValues,
 } from "@/lib/schemas/nota";
-import { formatCurrency, getTodayLocalDate } from "@/lib/utils";
+import { formatCurrency, formatDate, getTodayLocalDate } from "@/lib/utils";
 import { calculateAmounts } from "@/lib/ventas/amounts";
 
 interface NotaFormProps {
   voucherType: AdjustmentVoucherType;
   nota?: Nota | null;
-  referables: ReferableComprobante[];
+  referable: ReferableComprobante | null;
   resolveEntityName: (entityId: string) => string;
   onSubmit: (values: NotaFormValues) => void;
 }
@@ -53,13 +46,9 @@ const VOUCHER_NUMBER_PLACEHOLDERS: Record<AdjustmentVoucherType, string> = {
   COMPROBANTE_RETENCION: "R001-000001",
 };
 
-const relationItems = NOTA_RELATIONS.map((option) => ({
-  value: option.value,
-  label: option.label,
-}));
-
 function createEmptyValues(
-  voucherType: AdjustmentVoucherType
+  voucherType: AdjustmentVoucherType,
+  referable: ReferableComprobante | null
 ): NotaFormInput {
   return {
     issueDate: getTodayLocalDate(),
@@ -67,7 +56,7 @@ function createEmptyValues(
     voucherNumber: "",
     total: "",
     motiveCode: "",
-    referencedComprobanteId: "",
+    referencedComprobanteId: referable?.id ?? "",
   };
 }
 
@@ -85,15 +74,17 @@ function valuesFromNota(
   };
 }
 
-function initialRelation(
-  voucherType: AdjustmentVoucherType,
-  nota: Nota | null
-): NotaRelation {
-  if (nota) {
-    return nota.voucherKind === "VENTA" ? "EMITIDA" : "RECIBIDA";
-  }
-
-  return voucherType === "COMPROBANTE_RETENCION" ? "RECIBIDA" : "EMITIDA";
+/**
+ * Datos de la ficha del referenciado: completos cuando está en la lista de
+ * referenciables; mínimos (los guardados en la nota) cuando ya no está.
+ */
+interface ReferencedFicha {
+  entityName: string;
+  typeLabel: string | null;
+  number: string | null;
+  issueDate: string | null;
+  total: number | null;
+  balance: number | null;
 }
 
 function FieldError({ message }: { message?: string }) {
@@ -130,34 +121,21 @@ function FormGroup({
 export function NotaForm({
   voucherType,
   nota = null,
-  referables,
+  referable,
   resolveEntityName,
   onSubmit,
 }: NotaFormProps) {
   const isRetencion = voucherType === "COMPROBANTE_RETENCION";
-  const isEditing = nota !== null;
 
   // El contenido del modal se remonta por apertura, así que los valores
-  // iniciales (vacíos o de la nota editada) se resuelven una sola vez aquí.
+  // iniciales (vacíos, del referable elegido o de la nota editada) se
+  // resuelven una sola vez aquí.
   const form = useForm<NotaFormInput, unknown, NotaFormValues>({
     resolver: zodResolver(notaSchema),
     defaultValues: nota
       ? valuesFromNota(voucherType, nota)
-      : createEmptyValues(voucherType),
+      : createEmptyValues(voucherType, referable),
   });
-
-  const [relation, setRelation] = useState<NotaRelation>(() =>
-    initialRelation(voucherType, nota)
-  );
-
-  const relationKind = relation === "EMITIDA" ? "VENTA" : "COMPRA";
-  const relationReferables = referables.filter(
-    (referable) => referable.voucherKind === relationKind
-  );
-  const referableItems = relationReferables.map((referable) => ({
-    value: referable.id,
-    label: `${referable.voucherNumber} — ${resolveEntityName(referable.entityId)}`,
-  }));
 
   const total = useWatch({ control: form.control, name: "total" });
   const numericTotal = Number(total);
@@ -165,22 +143,14 @@ export function NotaForm({
     Number.isFinite(numericTotal) ? numericTotal : 0
   );
 
-  const referencedId = useWatch({
-    control: form.control,
-    name: "referencedComprobanteId",
-  });
-  const selectedReferable =
-    referables.find((referable) => referable.id === referencedId) ?? null;
-
   // El tope de créditos ya incluye la nota que se edita: se excluye para que el
   // disponible refleje lo que queda sin ella.
-  const ownCredit =
-    nota && nota.voucherType !== "NOTA_DEBITO" ? nota.total : 0;
-  const appliedCredit = selectedReferable
-    ? Math.max(0, selectedReferable.creditAmount - ownCredit)
+  const ownCredit = nota && nota.voucherType !== "NOTA_DEBITO" ? nota.total : 0;
+  const appliedCredit = referable
+    ? Math.max(0, referable.creditAmount - ownCredit)
     : 0;
-  const availableTop = selectedReferable
-    ? Math.max(0, selectedReferable.total - appliedCredit)
+  const availableTop = referable
+    ? Math.max(0, referable.total - appliedCredit)
     : 0;
 
   const registrationDate = nota?.registrationDate ?? getTodayLocalDate();
@@ -188,12 +158,72 @@ export function NotaForm({
   const motiveOptions = !isRetencion ? NOTE_MOTIVES[voucherType] : null;
   const consumesCreditTop = voucherType !== "NOTA_DEBITO";
 
+  const ficha: ReferencedFicha | null = referable
+    ? {
+        entityName: resolveEntityName(referable.entityId),
+        typeLabel: getOptionLabel(VOUCHER_TYPES, referable.voucherType),
+        number: referable.voucherNumber,
+        issueDate: referable.issueDate,
+        total: referable.total,
+        balance: referable.balance,
+      }
+    : nota
+      ? {
+          entityName: resolveEntityName(nota.entityId),
+          typeLabel: nota.referencedType
+            ? getOptionLabel(VOUCHER_TYPES, nota.referencedType)
+            : null,
+          number: nota.referencedNumber,
+          issueDate: null,
+          total: null,
+          balance: null,
+        }
+      : null;
+
   return (
     <form
       id={NOTA_FORM_ID}
       onSubmit={form.handleSubmit(onSubmit)}
       className="flex flex-col gap-6"
     >
+      {ficha ? (
+        <div className="flex flex-col gap-1 rounded-lg bg-muted px-3 py-2 text-sm">
+          <p className="font-medium">
+            {ficha.entityName} — {ficha.typeLabel ? `${ficha.typeLabel} ` : ""}
+            {ficha.number ?? "—"}
+          </p>
+          {ficha.issueDate ? (
+            <p className="text-muted-foreground">
+              Fecha de emisión: {formatDate(ficha.issueDate)}
+            </p>
+          ) : null}
+          {ficha.total !== null ? (
+            <p className="text-muted-foreground">
+              Total del comprobante: {formatCurrency(ficha.total)}
+            </p>
+          ) : null}
+          {ficha.balance !== null ? (
+            <p className="text-muted-foreground">
+              Saldo: {formatCurrency(ficha.balance)}
+            </p>
+          ) : null}
+          {referable ? (
+            consumesCreditTop ? (
+              <p className="text-muted-foreground">
+                Tope disponible para este documento:{" "}
+                {formatCurrency(availableTop)}
+              </p>
+            ) : (
+              <p className="text-muted-foreground">
+                Una nota de débito aumenta el saldo del comprobante.
+              </p>
+            )
+          ) : null}
+        </div>
+      ) : (
+        <FieldError message={errors.referencedComprobanteId?.message} />
+      )}
+
       <FormGroup title="Datos del comprobante">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="issueDate">Fecha de emisión</Label>
@@ -218,102 +248,7 @@ export function NotaForm({
         </div>
 
         <input type="hidden" {...form.register("voucherType")} />
-
-        {!isRetencion ? (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="relation">Relación</Label>
-            <Select
-              value={relation}
-              items={relationItems}
-              disabled={isEditing}
-              onValueChange={(value) => {
-                setRelation((value ?? "EMITIDA") as NotaRelation);
-                form.setValue("referencedComprobanteId", "");
-              }}
-            >
-              <SelectTrigger id="relation" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {NOTA_RELATIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {isEditing ? (
-              <p className="text-xs text-muted-foreground">
-                La referencia y el tipo de una nota no se pueden cambiar.
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-
-        <Controller
-          control={form.control}
-          name="referencedComprobanteId"
-          render={({ field }) => (
-            <div className="flex flex-col gap-1.5 sm:col-span-2">
-              <Label htmlFor="referencedComprobanteId">
-                Comprobante referenciado
-              </Label>
-              <Select
-                value={field.value ? field.value : null}
-                items={referableItems}
-                onValueChange={(value) => field.onChange(value ?? "")}
-              >
-                <SelectTrigger
-                  id="referencedComprobanteId"
-                  className="w-full"
-                  aria-invalid={!!errors.referencedComprobanteId}
-                >
-                  <SelectValue placeholder="Selecciona el comprobante" />
-                </SelectTrigger>
-                <SelectContent>
-                  {relationReferables.map((referable) => (
-                    <SelectItem key={referable.id} value={referable.id}>
-                      {`${referable.voucherNumber} — ${resolveEntityName(
-                        referable.entityId
-                      )}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FieldError message={errors.referencedComprobanteId?.message} />
-            </div>
-          )}
-        />
-
-        {selectedReferable ? (
-          <div
-            role="status"
-            className="flex flex-col gap-1 rounded-lg bg-muted px-3 py-2 text-sm sm:col-span-2"
-          >
-            <p className="font-medium">
-              {resolveEntityName(selectedReferable.entityId)} —{" "}
-              {getOptionLabel(VOUCHER_TYPES, selectedReferable.voucherType)}{" "}
-              {selectedReferable.voucherNumber}
-            </p>
-            <p className="text-muted-foreground">
-              Total del comprobante: {formatCurrency(selectedReferable.total)}
-            </p>
-            <p className="text-muted-foreground">
-              Créditos y retenciones aplicados:{" "}
-              {formatCurrency(appliedCredit)}
-            </p>
-            {consumesCreditTop ? (
-              <p className="text-muted-foreground">
-                Tope disponible para este documento:{" "}
-                {formatCurrency(availableTop)}
-              </p>
-            ) : (
-              <p className="text-muted-foreground">
-                Una nota de débito aumenta el saldo del comprobante.
-              </p>
-            )}
-          </div>
-        ) : null}
+        <input type="hidden" {...form.register("referencedComprobanteId")} />
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="voucherNumber">Nro comprobante</Label>
