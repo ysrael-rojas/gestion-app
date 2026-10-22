@@ -7,7 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
  * Seed requerido en la DB de desarrollo antes de correr este test:
  *   - 1 usuario con credenciales válidas en `.env`: `USUARIO` y `PASSWORD`.
  *   - 1 venta (voucher_kind = "VENTA") con status "PENDIENTE" y saldo > 0,
- *     visible en la primera página de `/ventas/listado`. El test elige la
+ *     visible en la primera página de `/ventas`. El test elige la
  *     primera fila con botón "Registrar pago" (Wallet), así que no exige un
  *     número concreto.
  *   - 1 caja activa (tipo CASH_BOX) — por defecto se elige "Caja General" —
@@ -68,7 +68,7 @@ test.describe.serial("registrar pago y ver saldo", () => {
 
     // 1. Iniciar sesión e ir al listado de ventas.
     await login(page);
-    await page.goto("/ventas/listado");
+    await page.goto("/ventas");
 
     // 2. Tomar la primera venta PENDIENTE (fila con botón Wallet "Registrar pago").
     const row = page
@@ -109,7 +109,7 @@ test.describe.serial("registrar pago y ver saldo", () => {
     });
 
     // 4. Volver al listado y verificar que el comprobante quedó PAGADO.
-    await page.goto("/ventas/listado");
+    await page.goto("/ventas");
     const rowAfter = page.getByRole("row", { name: new RegExp(voucherNumber) });
     await expect(rowAfter).toBeVisible({ timeout: 15_000 });
     await expect(rowAfter).toContainText("Pagado");

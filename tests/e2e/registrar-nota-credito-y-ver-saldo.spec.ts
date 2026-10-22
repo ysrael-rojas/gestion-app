@@ -12,7 +12,7 @@ import { expect, test, type Page } from "@playwright/test";
  * Seed requerido en la DB de desarrollo antes de correr este test:
  *   - 1 usuario con credenciales válidas en `.env`: `USUARIO` y `PASSWORD`.
  *   - 1 venta (voucher_kind = "VENTA") con status "PENDIENTE" y visible en la
- *     primera página de `/ventas/listado` (fila con botón "Registrar pago").
+ *     primera página de `/ventas` (fila con botón "Registrar pago").
  *     El test elige la primera fila con Wallet, así que no exige un número
  *     concreto; su tope disponible (total − NC y retenciones ya aplicadas)
  *     debe ser ≥ 10.00.
@@ -66,7 +66,7 @@ test.describe.serial("registrar nota de credito y ver saldo", () => {
 
     // 1. Elegir la primera venta PENDIENTE y leer su saldo actual.
     await login(page);
-    await page.goto("/ventas/listado");
+    await page.goto("/ventas");
 
     const saleRow = page
       .getByRole("row")
@@ -132,7 +132,7 @@ test.describe.serial("registrar nota de credito y ver saldo", () => {
     await expect(noteRow).toContainText(saleNumber);
 
     // 4. El saldo de la venta bajó exactamente por el monto de la nota.
-    await page.goto("/ventas/listado");
+    await page.goto("/ventas");
     const saleRowAfter = page.getByRole("row", {
       name: new RegExp(saleNumber),
     });
