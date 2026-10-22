@@ -1,16 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Wallet } from "lucide-react";
+import { Wallet } from "lucide-react";
 
 import { useClientes } from "@/components/clientes/clientes-provider";
 import { useCompras } from "@/components/compras/compras-provider";
 import { NestedPaymentDrawers } from "@/components/comprobantes/nested-payment-drawers";
 import { PaymentHistorySection } from "@/components/comprobantes/payment-history-section";
-import type { Voucher, VoucherKind } from "@/components/comprobantes/types";
+import type { VoucherKind } from "@/components/comprobantes/types";
+import { useVoucher } from "@/components/comprobantes/use-voucher";
 import { VoucherAmountsBand } from "@/components/comprobantes/voucher-amounts-band";
 import { ReceiptDialog } from "@/components/pagos/receipt-dialog";
+import { BackLink } from "@/components/shared/back-link";
 import { PaymentStatusBadge } from "@/components/shared/payment-status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +23,6 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { useVentas } from "@/components/ventas/ventas-provider";
-import { getVoucherById } from "@/lib/comprobantes/vouchers";
 import {
   getOptionLabel,
   PAYMENT_TYPES,
@@ -44,38 +45,6 @@ function DetailField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function BackLink({ href }: { href: string }) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex w-fit items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-    >
-      <ArrowLeft className="size-4" />
-      Volver
-    </Link>
-  );
-}
-
-async function loadVoucher(
-  voucherId: string,
-  voucherKind: VoucherKind
-): Promise<{ voucher: Voucher | null; error: string | null }> {
-  try {
-    return {
-      voucher: await getVoucherById(voucherId, voucherKind),
-      error: null,
-    };
-  } catch (loadError) {
-    return {
-      voucher: null,
-      error:
-        loadError instanceof Error
-          ? loadError.message
-          : "No se pudo cargar el comprobante. Intenta nuevamente.",
-    };
-  }
-}
-
 export function VoucherDetalleView({
   voucherKind,
   voucherId,
@@ -83,9 +52,10 @@ export function VoucherDetalleView({
   const { clients } = useClientes();
   const { refresh: refreshSales } = useVentas();
   const { refresh: refreshPurchases } = useCompras();
-  const [voucher, setVoucher] = useState<Voucher | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { voucher, isLoading, error, reload } = useVoucher(
+    voucherId,
+    voucherKind
+  );
   const [wizardOpen, setWizardOpen] = useState(false);
   const [printingPaymentId, setPrintingPaymentId] = useState<string | null>(
     null
@@ -94,32 +64,6 @@ export function VoucherDetalleView({
   const isSale = voucherKind === "VENTA";
   const basePath = isSale ? "/ventas" : "/compras";
   const entityLabel = isSale ? "Cliente" : "Proveedor";
-
-  const reload = useCallback(async () => {
-    const result = await loadVoucher(voucherId, voucherKind);
-    setVoucher(result.voucher);
-    setError(result.error);
-  }, [voucherId, voucherKind]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    void (async () => {
-      const result = await loadVoucher(voucherId, voucherKind);
-
-      if (!isMounted) {
-        return;
-      }
-
-      setVoucher(result.voucher);
-      setError(result.error);
-      setIsLoading(false);
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [voucherId, voucherKind]);
 
   const entityName = voucher
     ? clients.find((client) => client.id === voucher.entityId)?.name ??
