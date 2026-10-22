@@ -88,16 +88,21 @@ Convenciones:
 
 ## Acceptance criteria
 
-- [ ] `/ventas` y `/compras` muestran el listado con filtros por URL igual que antes; el navbar marca "Ventas" activa en `/ventas`, `/ventas/nuevo`, `/ventas/[id]` y `/ventas/[id]/editar` (ídem "Compras").
+- [x] `/ventas` y `/compras` muestran el listado con filtros por URL igual que antes; el navbar marca "Ventas" activa en `/ventas`, `/ventas/nuevo`, `/ventas/[id]` y `/ventas/[id]/editar` (ídem "Compras").
 - [ ] "Registrar venta" del listado navega a `/ventas/nuevo`; la página muestra Volver + título "Registrar venta" y las tres secciones (Datos del comprobante, Montos, Condición de pago); guardar redirige al detalle del comprobante creado con toast "Venta registrada".
+> ⏸️ No verificado (mutación): la navegación, el título y las tres secciones están comprobados en vivo; el guardado → redirección + toast exige crear un comprobante en la BD, prohibido en esta verificación.
 - [ ] El botón Editar de una fila navega a `/ventas/[id]/editar` con el formulario precargado; guardar redirige al detalle con toast "Venta actualizada".
-- [ ] El botón Ver de una fila navega a `/ventas/[id]`: cabecera con Volver, título con tipo + número, entidad y badge de estado; banda con Total/Abonado/Saldo; pestañas "Datos del comprobante" e "Historial de pagos" con el recibo imprimible.
+> ⏸️ No verificado (mutación): la navegación y la precarga (fecha, tipo, número, cliente, total, condición, estado) están comprobadas en vivo; el guardado → redirección + toast exige escribir en la BD.
+- [x] El botón Ver de una fila navega a `/ventas/[id]`: cabecera con Volver, título con tipo + número, entidad y badge de estado; banda con Total/Abonado/Saldo; pestañas "Datos del comprobante" e "Historial de pagos" con el recibo imprimible.
 - [ ] En el detalle de un comprobante PENDIENTE existe "Registrar pago" que abre el wizard de 4 drawers (SPEC 25) y al registrar actualiza banda, badge e historial sin recargar la página.
-- [ ] Un `id` inexistente o anulado en la URL muestra un estado "no encontrado" con botón Volver, sin crash.
+> ⏸️ No verificado (mutación): el botón existe y abre el drawer 1/4 (comprobante + fecha) y se cierra sin efectos; el "al registrar actualiza" exige registrar un pago real.
+- [x] Un `id` inexistente o anulado en la URL muestra un estado "no encontrado" con botón Volver, sin crash.
 - [ ] Reglas intactas: FACTURA exige RUC en ventas (no en compras); campos bloqueados cuando `paidAmount > 0`; rechazos de BD (numeración duplicada, inmutabilidad de SPEC 36/39) llegan con mensaje en español.
-- [ ] El botón Imprimir muerto ya no existe en ninguna columna; el botón `Wallet` del listado sigue abriendo el wizard en el listado.
-- [ ] Los archivos `sale-modal`, `purchase-modal`, `sale-detail-modal`, `purchase-detail-modal`, `sale-form` y `purchase-form` ya no existen en el repo.
+> ⏸️ No verificado (mutación): RUC solo en VENTA y `isPaidLocked` están comprobados en vivo y con `voucher-form.test.tsx`; el aviso de rechazo de BD al guardar no se ejercitó porque requiere escribir en la BD (solo se revisó el camino `mapError` → `toast.error`).
+- [x] El botón Imprimir muerto ya no existe en ninguna columna; el botón `Wallet` del listado sigue abriendo el wizard en el listado.
+- [x] Los archivos `sale-modal`, `purchase-modal`, `sale-detail-modal`, `purchase-detail-modal`, `sale-form` y `purchase-form` ya no existen en el repo.
 - [ ] `npm run lint`, `npm test` y `npm run build` pasan; los e2e adaptados pasan contra el dev server con el seed documentado.
+> ⏸️ No verificado (e2e): `lint`, `test` (422) y `build` pasan; los e2e no se ejecutaron porque registran pagos/notas reales. Se revisó que estén adaptados a `/ventas` y al flujo "Ver" → página de detalle.
 
 ## Decisions
 
@@ -130,3 +135,47 @@ Convenciones:
 - Deep links con prefill, baja/anulación de comprobantes y cambios de esquema.
 
 Cada uno de esos, si llega, va en su propia spec.
+
+## Verificación
+
+**Fecha:** 2026-10-22 · **Rama:** `spec-41-paginas-ventas-compras` (commits `20a39ba`…`6335cbb`) · **Verificador:** agente `spec-verifier`.
+
+### Comandos ejecutados
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run lint` | ✅ sin errores ni warnings |
+| `npm test` | ✅ 47 archivos, 422 tests |
+| `npm run build` | ✅ incluye `/ventas`, `/ventas/nuevo`, `/ventas/[id]`, `/ventas/[id]/editar`, `/compras`, `/compras/nuevo`, `/compras/[id]`, `/compras/[id]/editar` |
+
+Comprobaciones de código: `getVoucherById` (fila de `comprobante` + `voucher_balance`, filtros tipo base/`deleted_at`, `PGRST116` → `null`), `voucherFormSchema` con `entityId`, `useVoucher`, `types.ts` con `Voucher` compartido, guard RUC solo en VENTA, `isPaidLocked`, navbar por prefijo (`isPathActive`), columnas de ventas y compras con Ver/Editar/Wallet y sin `Printer`, y ausencia de los 6 archivos de modales/formularios viejos (búsqueda global; solo quedan `Printer` legítimos en `payment-history-section` y `payments-columns`).
+
+Recomendaciones de Next.js 16 contrastadas con Context7 (`/vercel/next.js`): `PageProps<"/ruta">` + `await params` en las páginas dinámicas y `searchParams` como `Promise` en los listados — coinciden con la implementación.
+
+### Pantallas probadas (Playwright, dev server en `:3000` con `USUARIO`/`PASSWORD` de `.env`)
+
+- `/ventas`: listado con filtros (Desde/Hasta/Estado pago), buscador, Ver/Editar/Wallet por fila, sin Imprimir; navbar "Ventas" activo (`aria-current="page"`, pill verde). Filtros por URL `?estado=PENDIENTE&desde=2026-09-01` filtran filas correctamente.
+- `/ventas/nuevo`: Volver + "Registrar venta", secciones "Datos del comprobante", "Montos", "Condición de pago", botones Cancelar/Registrar, selector de cliente con RUC visible y aviso "Para emitir factura, el cliente debe tener RUC"; al elegir cliente con RUC el tipo pasa a Factura y el aviso desaparece. Sin guardar.
+- `/ventas/[id]` (FF01-00011, PENDIENTE): título "Factura FF01-00011", "Cliente: …", badge "Pendiente", banda Total/Abonado/Saldo, tabs "Datos del comprobante"/"Historial de pagos".
+- `/ventas/[id]` (FF01-00014, PAGADO): tab Historial con 3 recibos y "Imprimir recibo" → diálogo "Recibo" con vista previa 80 mm (solo lectura).
+- `/ventas/[id]/editar`: formulario precargado (fecha, tipo, número, cliente, total, condición, estado) y título "Editar venta"; en un comprobante con pagos aparece el aviso de bloqueo y los campos fecha/número/cliente/total quedan deshabilitados.
+- Wizard "Registrar pago" abierto desde el detalle y desde el listado (Wallet) y cerrado con Cancelar: sin cambios en banda, badge ni datos.
+- `id` inexistente en `/ventas/[id]`, `/ventas/[id]/editar`, `/compras/[id]` y `/compras/[id]/editar`: "Comprobante no encontrado" + Volver, HTTP 200, sin crash.
+- `/compras`: listado con filtros y "Registrar compra"; `/compras/nuevo`: "Registrar compra", secciones y selector de proveedor, sin aviso de RUC (el guard es solo de ventas).
+- Consola del navegador: 0 errores en `/ventas`, `/ventas/nuevo`, detalle y edición tras la corrección descrita abajo.
+
+Capturas en `.playwright-mcp/` / raíz del repo: `spec41-ventas-nuevo.png`, `spec41-ventas-nuevo-cliente-selector.png`, `spec41-venta-detalle-pendiente.png`, `spec41-venta-detalle-historial.png`, `spec41-detalle-recibo-dialog.png`, `spec41-venta-editar-precargado.png`, `spec41-venta-editar-bloqueado.png`, `spec41-detalle-wizard-paso1.png`, `spec41-detalle-no-encontrado.png`, `spec41-compras-nuevo.png`.
+
+### Criterios no verificados y motivo
+
+- Guardado → detalle + toast ("Venta registrada"/"Venta actualizada"): requiere crear/editar un comprobante (mutación de BD, prohibida en esta verificación).
+- "Al registrar un pago actualiza banda, badge e historial sin recargar": requiere registrar un pago real.
+- Rechazos de BD (numeración duplicada, inmutabilidad) en español: solo se revisó el camino `mapError` → `toast.error`; no se provocó el error.
+- e2e `registrar-pago-y-ver-saldo` y `registrar-nota-credito-y-ver-saldo`: no ejecutados (crean pagos/notas reales). Revisión estática: usan `/ventas`, el botón "Ver" y esperan la URL `/ventas/[id]`, la banda y el tab "Historial de pagos".
+
+### Hallazgos
+
+1. **Corregido — error de consola de Base UI en el formulario.** El botón "Cancelar" de `voucher-form-view.tsx` se renderizaba con `Button render={<Link …>}` y emitía `A component that acts as a button expected a native <button>…`. Según la documentación de Base UI (Context7), un enlace no debe renderizarse con el `render` de `Button`: ahora es un `<Link>` con `buttonVariants({ variant: "outline" })`. Consola limpia y `lint`/`test`/`build` en verde tras el cambio (pasa igual en el formulario de compras, que comparte la vista).
+2. **Entorno — el dev server tiene la tabla de rutas obsoleta.** En `:3000`, `/compras/nuevo` y `/compras/[id]/editar` devuelven 404 aunque los archivos existen y el build los genera; el `app-paths-manifest` de `.next/dev` no incluye `compras/[id]/editar` y aún lista rutas borradas (`ventas/listado`, `compras/listado`). Verificado sobre el build de producción (`next start -p 3100`, ya detenido): ambas rutas responden 200. Se resuelve reiniciando el dev server; no es un defecto de código.
+3. **Datos de desarrollo:** 6 entidades, todas cliente (`is_supplier = false`) y 0 compras, por lo que el selector de proveedor muestra "No hay entidades disponibles" y el listado de compras está vacío. Es estado de la BD, no regresión: el formulario de compras usa el mismo `listSuppliers()` de antes.
+4. Observación menor (fuera de alcance, SPEC 24): en FF01-00014 la banda muestra "SALDO POR PAGAR −S/ 50.00" (saldo negativo por notas aplicadas); la banda no se tocó en esta spec.
