@@ -13,12 +13,13 @@ import {
 } from "@/components/comprobantes/voucher-form";
 import { useVoucher } from "@/components/comprobantes/use-voucher";
 import { BackLink } from "@/components/shared/back-link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useVentas } from "@/components/ventas/ventas-provider";
 import type { PurchaseFormValues } from "@/lib/schemas/purchase";
 import type { SaleFormValues } from "@/lib/schemas/sale";
 import type { VoucherFormValues } from "@/lib/schemas/voucher";
+import { cn } from "@/lib/utils";
 
 interface VoucherFormViewProps {
   voucherKind: VoucherKind;
@@ -154,13 +155,16 @@ export function VoucherFormView({
       />
 
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          render={<Link href={basePath} />}
-          disabled={isSaving}
+        {/* Un enlace no se renderiza con `Button` (Base UI): se estiliza el <a>. */}
+        <Link
+          href={basePath}
+          className={cn(
+            buttonVariants({ variant: "outline" }),
+            isSaving && "pointer-events-none opacity-50"
+          )}
         >
           Cancelar
-        </Button>
+        </Link>
         <Button type="submit" form={VOUCHER_FORM_ID} disabled={isSaving}>
           {isSaving
             ? "Guardando…"
