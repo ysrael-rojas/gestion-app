@@ -1,6 +1,6 @@
 # SPEC 41 — Páginas de registro, edición y detalle para comprobantes de ventas y compras
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 07, SPEC 08, SPEC 11, SPEC 24, SPEC 25, SPEC 36
 > **Date:** 2026-10-22
 > **Objective:** Migrar el registro, edición y visualización de comprobantes de ventas y compras de modales a páginas con rutas propias (`/ventas`, `/ventas/nuevo`, `/ventas/[id]`, `/ventas/[id]/editar` y su espejo en compras), unificando los clones de venta y compra en un único árbol de componentes compartidos parametrizado por tipo de comprobante.
@@ -89,20 +89,15 @@ Convenciones:
 ## Acceptance criteria
 
 - [x] `/ventas` y `/compras` muestran el listado con filtros por URL igual que antes; el navbar marca "Ventas" activa en `/ventas`, `/ventas/nuevo`, `/ventas/[id]` y `/ventas/[id]/editar` (ídem "Compras").
-- [ ] "Registrar venta" del listado navega a `/ventas/nuevo`; la página muestra Volver + título "Registrar venta" y las tres secciones (Datos del comprobante, Montos, Condición de pago); guardar redirige al detalle del comprobante creado con toast "Venta registrada".
-> ⏸️ No verificado (mutación): la navegación, el título y las tres secciones están comprobados en vivo; el guardado → redirección + toast exige crear un comprobante en la BD, prohibido en esta verificación.
-- [ ] El botón Editar de una fila navega a `/ventas/[id]/editar` con el formulario precargado; guardar redirige al detalle con toast "Venta actualizada".
-> ⏸️ No verificado (mutación): la navegación y la precarga (fecha, tipo, número, cliente, total, condición, estado) están comprobadas en vivo; el guardado → redirección + toast exige escribir en la BD.
+- [x] "Registrar venta" del listado navega a `/ventas/nuevo`; la página muestra Volver + título "Registrar venta" y las tres secciones (Datos del comprobante, Montos, Condición de pago); guardar redirige al detalle del comprobante creado con toast "Venta registrada". Verificado en vivo con la venta `FT01-90001` (S/ 180).
+- [x] El botón Editar de una fila navega a `/ventas/[id]/editar` con el formulario precargado; guardar redirige al detalle con toast "Venta actualizada". Verificado en vivo: precarga completa y cambio de total de S/ 150 a S/ 180.
 - [x] El botón Ver de una fila navega a `/ventas/[id]`: cabecera con Volver, título con tipo + número, entidad y badge de estado; banda con Total/Abonado/Saldo; pestañas "Datos del comprobante" e "Historial de pagos" con el recibo imprimible.
-- [ ] En el detalle de un comprobante PENDIENTE existe "Registrar pago" que abre el wizard de 4 drawers (SPEC 25) y al registrar actualiza banda, badge e historial sin recargar la página.
-> ⏸️ No verificado (mutación): el botón existe y abre el drawer 1/4 (comprobante + fecha) y se cierra sin efectos; el "al registrar actualiza" exige registrar un pago real.
+- [x] En el detalle de un comprobante PENDIENTE existe "Registrar pago" que abre el wizard de 4 drawers (SPEC 25) y al registrar actualiza banda, badge e historial sin recargar la página. Verificado con pago total (`RI-000016`, S/ 180) y parcial (`RI-000017`, S/ 1.00): la misma URL actualiza banda, badge e historial.
 - [x] Un `id` inexistente o anulado en la URL muestra un estado "no encontrado" con botón Volver, sin crash.
-- [ ] Reglas intactas: FACTURA exige RUC en ventas (no en compras); campos bloqueados cuando `paidAmount > 0`; rechazos de BD (numeración duplicada, inmutabilidad de SPEC 36/39) llegan con mensaje en español.
-> ⏸️ No verificado (mutación): RUC solo en VENTA y `isPaidLocked` están comprobados en vivo y con `voucher-form.test.tsx`; el aviso de rechazo de BD al guardar no se ejercitó porque requiere escribir en la BD (solo se revisó el camino `mapError` → `toast.error`).
+- [x] Reglas intactas: FACTURA exige RUC en ventas (no en compras); campos bloqueados cuando `paidAmount > 0`; rechazos de BD (numeración duplicada, inmutabilidad de SPEC 36/39) llegan con mensaje en español. Verificado en vivo: el duplicado `FF01-00014` devolvió "Ya registraste una venta con ese número de comprobante.".
 - [x] El botón Imprimir muerto ya no existe en ninguna columna; el botón `Wallet` del listado sigue abriendo el wizard en el listado.
 - [x] Los archivos `sale-modal`, `purchase-modal`, `sale-detail-modal`, `purchase-detail-modal`, `sale-form` y `purchase-form` ya no existen en el repo.
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan; los e2e adaptados pasan contra el dev server con el seed documentado.
-> ⏸️ No verificado (e2e): `lint`, `test` (422) y `build` pasan; los e2e no se ejecutaron porque registran pagos/notas reales. Se revisó que estén adaptados a `/ventas` y al flujo "Ver" → página de detalle.
+- [x] `npm run lint`, `npm test` y `npm run build` pasan; los e2e adaptados pasan contra el dev server con el seed documentado. Verificado: 422 tests, build con las 8 rutas y 3/3 e2e en verde.
 
 ## Decisions
 
@@ -138,7 +133,7 @@ Cada uno de esos, si llega, va en su propia spec.
 
 ## Verificación
 
-**Fecha:** 2026-10-22 · **Rama:** `spec-41-paginas-ventas-compras` (commits `20a39ba`…`6335cbb`) · **Verificador:** agente `spec-verifier`.
+**Fecha:** 2026-10-22 · **Rama:** `spec-41-paginas-ventas-compras` (commits `20a39ba`…`6335cbb`, fix `6dce6f5`, verificación `5310fa9`) · **Verificación:** agente `spec-verifier` + pruebas de mutación y e2e asistidas.
 
 ### Comandos ejecutados
 
@@ -164,18 +159,29 @@ Recomendaciones de Next.js 16 contrastadas con Context7 (`/vercel/next.js`): `Pa
 - `/compras`: listado con filtros y "Registrar compra"; `/compras/nuevo`: "Registrar compra", secciones y selector de proveedor, sin aviso de RUC (el guard es solo de ventas).
 - Consola del navegador: 0 errores en `/ventas`, `/ventas/nuevo`, detalle y edición tras la corrección descrita abajo.
 
-Capturas en `.playwright-mcp/` / raíz del repo: `spec41-ventas-nuevo.png`, `spec41-ventas-nuevo-cliente-selector.png`, `spec41-venta-detalle-pendiente.png`, `spec41-venta-detalle-historial.png`, `spec41-detalle-recibo-dialog.png`, `spec41-venta-editar-precargado.png`, `spec41-venta-editar-bloqueado.png`, `spec41-detalle-wizard-paso1.png`, `spec41-detalle-no-encontrado.png`, `spec41-compras-nuevo.png`.
+Capturas en `.playwright-mcp/`: `spec41-ventas-nuevo.png`, `spec41-ventas-nuevo-cliente-selector.png`, `spec41-venta-detalle-pendiente.png`, `spec41-venta-detalle-historial.png`, `spec41-detalle-recibo-dialog.png`, `spec41-venta-editar-precargado.png`, `spec41-venta-editar-bloqueado.png`, `spec41-detalle-wizard-paso1.png`, `spec41-detalle-no-encontrado.png`, `spec41-compras-nuevo.png`, `spec41-venta-registrada.png`, `spec41-venta-editada.png`, `spec41-rechazo-duplicado.png`, `spec41-pago-registrado.png`, `spec41-pago-historial.png`, `spec41-pago-parcial-historial.png`.
 
-### Criterios no verificados y motivo
+### Verificación final con mutaciones y e2e (2026-10-22)
 
-- Guardado → detalle + toast ("Venta registrada"/"Venta actualizada"): requiere crear/editar un comprobante (mutación de BD, prohibida en esta verificación).
-- "Al registrar un pago actualiza banda, badge e historial sin recargar": requiere registrar un pago real.
-- Rechazos de BD (numeración duplicada, inmutabilidad) en español: solo se revisó el camino `mapError` → `toast.error`; no se provocó el error.
-- e2e `registrar-pago-y-ver-saldo` y `registrar-nota-credito-y-ver-saldo`: no ejecutados (crean pagos/notas reales). Revisión estática: usan `/ventas`, el botón "Ver" y esperan la URL `/ventas/[id]`, la banda y el tab "Historial de pagos".
+Con autorización del usuario se probaron los flujos que escriben en la BD:
+
+- **Alta:** `/ventas/nuevo` → `FT01-90001` (Factura, BODEGA LA ESPERANZA EIRL, S/ 180, contado). Guardó, redirigió a `/ventas/1b9f6068-…` y mostró "Venta registrada".
+- **Edición:** `/ventas/1b9f6068-…/editar` con formulario precargado; total S/ 150 → S/ 180, guardó, redirigió al detalle y mostró "Venta actualizada".
+- **Rechazo de BD:** intento de guardar `FF01-00014` duplicado en la venta anterior; toast "Ya registraste una venta con ese número de comprobante." y la edición permaneció abierta, sin cambios.
+- **Pago total desde el detalle:** wizard 4/4, método Efectivo, cuenta Caja General, S/ 180 → `RI-000016`; banda Abonado S/ 180 / Saldo S/ 0, badge Pagado e historial con el recibo.
+- **Pago parcial en FF01-00010:** S/ 1.00 → `RI-000017`; banda Abonado S/ 1 / Saldo S/ 4,129 y el historial se actualizó en la misma página, sin recargar.
+- **e2e:** `npm run test:e2e` → **3/3 en 46.4 s**. `registrar-nota-credito-y-ver-saldo` creó `FC01-635889` (S/ 10) sobre FF01-00011; `registrar-pago-y-ver-saldo` pagó el saldo restante de FF01-00011 (`RI-000018`, S/ 1,465) y verificó el detalle; `validacion-reparto-en-vivo` pasó sin mutar.
+- **Comandos:** `npm run lint`, `npm test` (422) y `npm run build` re-ejecutados tras el fix: verdes.
+
+Datos de prueba creados: venta `FT01-90001` (Pagada), pagos `RI-000016`, `RI-000017` y `RI-000018`, y nota de crédito `FC01-635889`. El dev server de `:3000` se reinició y ya sirve `/compras/nuevo` y `/compras/[id]/editar`.
+
+### Criterios pendientes
+
+Ninguno. Los 10 criterios de aceptación quedaron verificados con evidencia.
 
 ### Hallazgos
 
 1. **Corregido — error de consola de Base UI en el formulario.** El botón "Cancelar" de `voucher-form-view.tsx` se renderizaba con `Button render={<Link …>}` y emitía `A component that acts as a button expected a native <button>…`. Según la documentación de Base UI (Context7), un enlace no debe renderizarse con el `render` de `Button`: ahora es un `<Link>` con `buttonVariants({ variant: "outline" })`. Consola limpia y `lint`/`test`/`build` en verde tras el cambio (pasa igual en el formulario de compras, que comparte la vista).
-2. **Entorno — el dev server tiene la tabla de rutas obsoleta.** En `:3000`, `/compras/nuevo` y `/compras/[id]/editar` devuelven 404 aunque los archivos existen y el build los genera; el `app-paths-manifest` de `.next/dev` no incluye `compras/[id]/editar` y aún lista rutas borradas (`ventas/listado`, `compras/listado`). Verificado sobre el build de producción (`next start -p 3100`, ya detenido): ambas rutas responden 200. Se resuelve reiniciando el dev server; no es un defecto de código.
+2. **Entorno — tabla de rutas obsoleta del dev server (resuelto).** En `:3000`, `/compras/nuevo` y `/compras/[id]/editar` devolvían 404 aunque los archivos existen y el build los genera; el `app-paths-manifest` de `.next/dev` no incluía `compras/[id]/editar` y aún listaba rutas borradas (`ventas/listado`, `compras/listado`). Se reinició el dev server el 2026-10-22 y ambas rutas responden correctamente; no era un defecto de código.
 3. **Datos de desarrollo:** 6 entidades, todas cliente (`is_supplier = false`) y 0 compras, por lo que el selector de proveedor muestra "No hay entidades disponibles" y el listado de compras está vacío. Es estado de la BD, no regresión: el formulario de compras usa el mismo `listSuppliers()` de antes.
 4. Observación menor (fuera de alcance, SPEC 24): en FF01-00014 la banda muestra "SALDO POR PAGAR −S/ 50.00" (saldo negativo por notas aplicadas); la banda no se tocó en esta spec.
