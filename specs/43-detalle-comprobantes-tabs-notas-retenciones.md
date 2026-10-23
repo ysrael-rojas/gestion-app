@@ -83,6 +83,7 @@ isUnsettled: boolean;   // voucher.balance > 0 → tab de pagos en rose
 - **Sí:** mano de pagos desde `voucher.paidAmount` (ya disponible, sin query extra). **No:** contar filas del historial.
 - **Sí:** labels "Datos", "Historial de pagos", "Notas de crédito/débito", "Retenciones". **No:** mantener "Datos del comprobante" (SPEC 24) — el usuario pidió el nombre corto.
 - **Sí:** reutilizar `Tabs`/`TabsTrigger` de shadcn (soporta iconos vía `data-icon` y color por `className`). **No:** componente nuevo de tabs.
+- **Post-implementación (2026-10-23):** a pedido del usuario, los tabs pasan a **pills de botones** (`default` activo / `ghost` inactivo) con **una card por sección** (card `bg-muted/30` + título), replicando el modelo de Configuración → Métodos de pago. El tab de pagos activo usa la variante `destructive` cuando queda saldo; la señal rose/emerald vive en el texto del pill inactivo. Se elimina la card externa que envolvía banda + tabs (ya no hay card dentro de card).
 
 ## Risks
 
