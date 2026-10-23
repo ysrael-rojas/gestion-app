@@ -1,24 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const { getPaymentHistory } = await vi.hoisted(async () => {
-  return { getPaymentHistory: vi.fn() };
-});
-
-vi.mock("@/lib/pagos/pagos", () => ({ getPaymentHistory }));
-
-vi.mock("sonner", () => ({
-  toast: {
-    error: vi.fn(),
-    success: vi.fn(),
-  },
-}));
-
-import { render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PaymentHistorySection } from "@/components/comprobantes/payment-history-section";
 import type { PaymentHistoryEntry } from "@/components/pagos/types";
 
-const sampleEntry = (overrides: Partial<PaymentHistoryEntry> = {}): PaymentHistoryEntry => ({
+const sampleEntry = (
+  overrides: Partial<PaymentHistoryEntry> = {}
+): PaymentHistoryEntry => ({
   allocationId: "a-1",
   paymentId: "p-1",
   receiptNumber: "RI-000001",
@@ -38,89 +26,67 @@ const sampleEntry = (overrides: Partial<PaymentHistoryEntry> = {}): PaymentHisto
 });
 
 describe("PaymentHistorySection", () => {
-  beforeEach(() => {
-    vi.mocked(getPaymentHistory).mockReset();
+  it("muestra skeletons mientras entries es null", () => {
+    render(<PaymentHistorySection entries={null} onPrint={vi.fn()} />);
+
+    expect(screen.getAllByRole("row")).toHaveLength(1 + 3); // header + 3 skeletons
   });
 
-  it("muestra estado de carga con skeletons inicialmente", () => {
-    vi.mocked(getPaymentHistory).mockReturnValue(new Promise(() => {}));
+  it("muestra el estado vacío cuando no hay pagos", () => {
+    render(<PaymentHistorySection entries={[]} onPrint={vi.fn()} />);
 
+    expect(
+      screen.getByText("Aún no se han registrado pagos para este comprobante.")
+    ).toBeInTheDocument();
+  });
+
+  it("renderiza una fila por entrada, incluidas las anuladas", () => {
     render(
       <PaymentHistorySection
-        comprobanteId="c-1"
-        direction="INGRESO"
+        entries={[
+          sampleEntry(),
+          sampleEntry({
+            allocationId: "a-2",
+            paymentId: "p-2",
+            receiptNumber: "RI-000002",
+            amount: 30,
+            status: "ANULADO",
+            voidedAt: "2026-10-23T06:10:00Z",
+            voidReason: "Prueba",
+          }),
+        ]}
         onPrint={vi.fn()}
-      />,
+      />
     );
 
-    expect(screen.getAllByRole("row")).toHaveLength(1 + 3); // header + 3 skeleton rows
+    expect(screen.getByText("RI-000001")).toBeInTheDocument();
+    expect(screen.getByText("RI-000002")).toBeInTheDocument();
+    expect(screen.getAllByRole("row")).toHaveLength(3); // header + 2
   });
 
-  it("muestra estado vacío cuando getPaymentHistory devuelve []", async () => {
-    vi.mocked(getPaymentHistory).mockResolvedValue([]);
-
-    render(
-      <PaymentHistorySection
-        comprobanteId="c-1"
-        direction="INGRESO"
-        onPrint={vi.fn()}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(
-        screen.getByText("Aún no se han registrado pagos para este comprobante."),
-      ).toBeInTheDocument();
-    });
-  });
-
-  it("renderiza una fila por entrada con el botón Imprimir recibo", async () => {
-    vi.mocked(getPaymentHistory).mockResolvedValue([
-      sampleEntry(),
-      sampleEntry({
-        allocationId: "a-2",
-        paymentId: "p-2",
-        receiptNumber: "RI-000002",
-        amount: 30,
-      }),
-    ]);
+  it("el botón Imprimir recibo entrega el id del pago", async () => {
     const onPrint = vi.fn();
+    render(<PaymentHistorySection entries={[sampleEntry()]} onPrint={onPrint} />);
 
-    render(
-      <PaymentHistorySection
-        comprobanteId="c-1"
-        direction="INGRESO"
-        onPrint={onPrint}
-      />,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText("RI-000001")).toBeInTheDocument();
-      expect(screen.getByText("RI-000002")).toBeInTheDocument();
+    const [printButton] = screen.getAllByRole("button", {
+      name: /imprimir recibo/i,
     });
+    await userEvent.click(printButton!);
 
-    const printButtons = screen.getAllByRole("button", { name: /imprimir recibo/i });
-    expect(printButtons).toHaveLength(2);
-
-    await userEvent.click(printButtons[0]!);
     expect(onPrint).toHaveBeenCalledWith("p-1");
   });
 
-  it("muestra mensaje de error y emite toast.error cuando la consulta falla", async () => {
-    const toast = (await import("sonner")).toast;
-    vi.mocked(getPaymentHistory).mockRejectedValue(new Error("boom"));
-
+  it("muestra el error como alerta", () => {
     render(
       <PaymentHistorySection
-        comprobanteId="c-1"
-        direction="INGRESO"
+        entries={[]}
+        error="No se pudo cargar el historial de pagos."
         onPrint={vi.fn()}
-      />,
+      />
     );
 
-    await waitFor(() => {
-      expect(screen.getByRole("alert")).toHaveTextContent("boom");
-      expect(toast.error).toHaveBeenCalledWith("boom");
-    });
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "No se pudo cargar el historial de pagos."
+    );
   });
 });

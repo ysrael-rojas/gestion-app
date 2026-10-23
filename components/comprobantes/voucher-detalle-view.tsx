@@ -30,10 +30,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useVentas } from "@/components/ventas/ventas-provider";
+import type { PaymentHistoryEntry } from "@/components/pagos/types";
 import {
   listVoucherAdjustments,
   type VoucherAdjustment,
 } from "@/lib/comprobantes/notas";
+import { getPaymentHistory } from "@/lib/pagos/pagos";
+import { toast } from "sonner";
 import {
   getOptionLabel,
   PAYMENT_TYPES,
@@ -58,12 +61,12 @@ function DetailField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TabHand({ active }: { active: boolean }) {
+function TabHand({ solid }: { solid: boolean }) {
   return (
     <Hand
       className={cn(
-        "size-3.5",
-        !active && "text-amber-600 dark:text-amber-400"
+        "size-4",
+        solid ? "text-white" : "text-amber-600 dark:text-amber-400"
       )}
       aria-hidden
     />
@@ -90,6 +93,27 @@ export function VoucherDetalleView({
     null
   );
   const [adjustmentsError, setAdjustmentsError] = useState<string | null>(null);
+  const [paymentHistory, setPaymentHistory] = useState<
+    PaymentHistoryEntry[] | null
+  >(null);
+  const [paymentHistoryError, setPaymentHistoryError] = useState<string | null>(
+    null
+  );
+
+  const loadPaymentHistory = useCallback(async () => {
+    try {
+      setPaymentHistory(await getPaymentHistory(voucherId));
+      setPaymentHistoryError(null);
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : "No se pudo cargar el historial de pagos. Intenta nuevamente.";
+      setPaymentHistory([]);
+      setPaymentHistoryError(message);
+      toast.error(message);
+    }
+  }, [voucherId]);
 
   const loadAdjustments = useCallback(async () => {
     try {
@@ -111,11 +135,17 @@ export function VoucherDetalleView({
     })();
   }, [loadAdjustments]);
 
+  useEffect(() => {
+    void (async () => {
+      await loadPaymentHistory();
+    })();
+  }, [loadPaymentHistory]);
+
   const isSale = voucherKind === "VENTA";
   const basePath = isSale ? "/ventas" : "/compras";
   const entityLabel = isSale ? "Cliente" : "Proveedor";
 
-  const hasPayments = voucher?.paidAmount ? voucher.paidAmount > 0 : false;
+  const hasPayments = (paymentHistory ?? []).length > 0;
   const isUnsettled = voucher ? voucher.balance > 0 : false;
   const notasCount = (adjustments ?? []).filter(
     (adjustment) => adjustment.voucherType !== "COMPROBANTE_RETENCION"
@@ -215,20 +245,18 @@ export function VoucherDetalleView({
         </Button>
 
         <Button
-          variant={
-            activeTab === "pagos"
-              ? isUnsettled
-                ? "destructive"
-                : "default"
-              : "ghost"
-          }
+          variant={activeTab === "pagos" ? "default" : "ghost"}
           size="sm"
           onClick={() => setActiveTab("pagos")}
-          className={activeTab === "pagos" ? undefined : paymentsTone}
+          className={cn(
+            activeTab === "pagos"
+              ? isUnsettled && "bg-rose-600! text-white! hover:bg-rose-600!"
+              : paymentsTone
+          )}
         >
           <HandCoins />
           Historial de pagos
-          {hasPayments ? <TabHand active={activeTab === "pagos"} /> : null}
+          {hasPayments ? <TabHand solid={activeTab === "pagos"} /> : null}
         </Button>
 
         <Button
@@ -238,7 +266,7 @@ export function VoucherDetalleView({
         >
           <NotebookPen />
           Notas de crédito/débito
-          {notasCount > 0 ? <TabHand active={activeTab === "notas"} /> : null}
+          {notasCount > 0 ? <TabHand solid={activeTab === "notas"} /> : null}
         </Button>
 
         <Button
@@ -249,7 +277,7 @@ export function VoucherDetalleView({
           <Percent />
           Retenciones
           {retencionesCount > 0 ? (
-            <TabHand active={activeTab === "retenciones"} />
+            <TabHand solid={activeTab === "retenciones"} />
           ) : null}
         </Button>
       </div>
@@ -305,8 +333,8 @@ export function VoucherDetalleView({
 
       {activeTab === "pagos" ? (
         <PaymentHistorySection
-          comprobanteId={voucher.id}
-          direction={isSale ? "INGRESO" : "EGRESO"}
+          entries={paymentHistory}
+          error={paymentHistoryError}
           onPrint={setPrintingPaymentId}
         />
       ) : null}
@@ -352,6 +380,7 @@ export function VoucherDetalleView({
           onRegistered={async () => {
             await reload();
             await loadAdjustments();
+            await loadPaymentHistory();
             await (isSale ? refreshSales() : refreshPurchases());
           }}
         />

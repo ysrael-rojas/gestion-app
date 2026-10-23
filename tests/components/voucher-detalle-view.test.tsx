@@ -1,16 +1,16 @@
 ﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { listVoucherAdjustments, useVoucher, reload } = vi.hoisted(() => ({
-  listVoucherAdjustments: vi.fn(),
-  useVoucher: vi.fn(),
-  reload: vi.fn(),
-}));
+const { listVoucherAdjustments, getPaymentHistory, useVoucher, reload } =
+  vi.hoisted(() => ({
+    listVoucherAdjustments: vi.fn(),
+    getPaymentHistory: vi.fn(),
+    useVoucher: vi.fn(),
+    reload: vi.fn(),
+  }));
 
 vi.mock("@/lib/comprobantes/notas", () => ({ listVoucherAdjustments }));
+vi.mock("@/lib/pagos/pagos", () => ({ getPaymentHistory }));
 vi.mock("@/components/comprobantes/use-voucher", () => ({ useVoucher }));
-vi.mock("@/components/comprobantes/payment-history-section", () => ({
-  PaymentHistorySection: () => <p>historial stub</p>,
-}));
 vi.mock("@/components/comprobantes/nested-payment-drawers", () => ({
   NestedPaymentDrawers: () => <p>wizard stub</p>,
 }));
@@ -31,6 +31,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { VoucherDetalleView } from "@/components/comprobantes/voucher-detalle-view";
 import type { Voucher } from "@/components/comprobantes/types";
+import type { PaymentHistoryEntry } from "@/components/pagos/types";
 import type { VoucherAdjustment } from "@/lib/comprobantes/notas";
 
 const voucher = (overrides: Partial<Voucher> = {}): Voucher => ({
@@ -64,6 +65,27 @@ const note = (
   ...overrides,
 });
 
+const historyEntry = (
+  overrides: Partial<PaymentHistoryEntry> = {}
+): PaymentHistoryEntry => ({
+  allocationId: "al-1",
+  paymentId: "p-1",
+  receiptNumber: "RI-000001",
+  paymentDate: "2026-10-10",
+  direction: "INGRESO",
+  methodName: "Efectivo",
+  cashAccountName: "Caja principal",
+  categoryName: "Cobranza de venta",
+  reference: null,
+  paymentAmount: 100,
+  amount: 100,
+  status: "EN_REVISION",
+  voidedAt: null,
+  voidReason: null,
+  notes: null,
+  ...overrides,
+});
+
 function renderView(kind: "VENTA" | "COMPRA") {
   return render(<VoucherDetalleView voucherKind={kind} voucherId="v-1" />);
 }
@@ -87,7 +109,10 @@ function handOf(tab: HTMLElement) {
 describe("VoucherDetalleView", () => {
   beforeEach(() => {
     listVoucherAdjustments.mockReset();
+    getPaymentHistory.mockReset();
     reload.mockReset();
+    listVoucherAdjustments.mockResolvedValue([]);
+    getPaymentHistory.mockResolvedValue([]);
     useVoucher.mockReturnValue({
       voucher: voucher(),
       isLoading: false,
@@ -97,11 +122,11 @@ describe("VoucherDetalleView", () => {
   });
 
   it("muestra los 4 tabs con icono y sin mano en Datos", async () => {
-    listVoucherAdjustments.mockResolvedValue([]);
     renderView("VENTA");
 
     await waitFor(() => {
       expect(listVoucherAdjustments).toHaveBeenCalledWith("v-1");
+      expect(getPaymentHistory).toHaveBeenCalledWith("v-1");
     });
 
     const tabs = tabButtons();
@@ -114,11 +139,49 @@ describe("VoucherDetalleView", () => {
     });
   });
 
-  it("marca pagos en rose y pone mano cuando hay pagos, notas y retenciones", async () => {
+  it("pone mano en pagos cuando el historial tiene filas, aunque el saldo esté en cero", async () => {
+    // Caso real: el único pago está anulado → paidAmount 0 pero el historial
+    // sí lista filas (SPEC 43, corrección posterior).
+    useVoucher.mockReturnValue({
+      voucher: voucher({ status: "PENDIENTE", paidAmount: 0, balance: 1000 }),
+      isLoading: false,
+      error: null,
+      reload,
+    });
+    getPaymentHistory.mockResolvedValue([historyEntry({ status: "ANULADO" })]);
+
+    renderView("VENTA");
+
+    const pagos = tabButton(/Historial de pagos/);
+    await waitFor(() => {
+      expect(handOf(pagos)).not.toBeNull();
+    });
+  });
+
+  it("sin filas en el historial no hay mano en pagos", async () => {
+    useVoucher.mockReturnValue({
+      voucher: voucher({ paidAmount: 0, balance: 1000 }),
+      isLoading: false,
+      error: null,
+      reload,
+    });
+
+    renderView("VENTA");
+
+    await waitFor(() => {
+      expect(getPaymentHistory).toHaveBeenCalled();
+    });
+
+    expect(handOf(tabButton(/Historial de pagos/))).toBeNull();
+  });
+
+  it("marca pagos en rose y pone manos en notas y retenciones", async () => {
     listVoucherAdjustments.mockResolvedValue([
       note(),
       note({ id: "a-2", voucherType: "COMPROBANTE_RETENCION", total: 30 }),
     ]);
+    getPaymentHistory.mockResolvedValue([historyEntry()]);
+
     renderView("VENTA");
 
     const pagos = tabButton(/Historial de pagos/);
@@ -131,17 +194,19 @@ describe("VoucherDetalleView", () => {
     expect(handOf(tabButton("Retenciones"))).not.toBeNull();
   });
 
-  it("al abrir pagos pendiente el pill activo es rojo", async () => {
-    listVoucherAdjustments.mockResolvedValue([]);
+  it("el pill activo de pagos pendiente es rojo con la misma forma que los demás", async () => {
+    getPaymentHistory.mockResolvedValue([historyEntry()]);
     renderView("VENTA");
 
     await userEvent.click(tabButton(/Historial de pagos/));
 
-    expect(tabButton(/Historial de pagos/)).toHaveClass(/bg-destructive/);
+    const pagos = tabButton(/Historial de pagos/);
+    expect(pagos).toHaveClass(/bg-rose-600/);
+    expect(pagos).toHaveClass(/border-\[3px\]/);
+    expect(pagos).toHaveClass(/shadow-\[4px_4px/);
   });
 
-  it("en saldado el tab de pagos pasa a emerald (también con saldo negativo)", async () => {
-    listVoucherAdjustments.mockResolvedValue([]);
+  it("en saldado el tab de pagos pasa a emerald (también con saldo negativo)", () => {
     useVoucher.mockReturnValue({
       voucher: voucher({ status: "PAGADO", balance: -50, paidAmount: 1000 }),
       isLoading: false,
@@ -154,33 +219,11 @@ describe("VoucherDetalleView", () => {
     expect(tabButton(/Historial de pagos/)).toHaveClass("text-emerald-600");
   });
 
-  it("no pone manos cuando no hay registros", async () => {
-    listVoucherAdjustments.mockResolvedValue([]);
-    useVoucher.mockReturnValue({
-      voucher: voucher({ paidAmount: 0, balance: 1000 }),
-      isLoading: false,
-      error: null,
-      reload,
-    });
-
-    renderView("VENTA");
-
-    await waitFor(() => {
-      expect(listVoucherAdjustments).toHaveBeenCalled();
-    });
-
-    tabButtons().forEach((tab) => {
-      expect(handOf(tab)).toBeNull();
-    });
-  });
-
   it("muestra la card de datos con su título por defecto", () => {
-    listVoucherAdjustments.mockResolvedValue([]);
     renderView("VENTA");
 
     expect(screen.getByText("Datos del comprobante")).toBeInTheDocument();
     expect(screen.getByText("Fecha de emisión")).toBeInTheDocument();
-    expect(screen.queryByText("historial stub")).not.toBeInTheDocument();
   });
 
   it("lista las notas al abrir su tab", async () => {
@@ -195,8 +238,16 @@ describe("VoucherDetalleView", () => {
     );
   });
 
+  it("el historial lista las filas cargadas por la vista", async () => {
+    getPaymentHistory.mockResolvedValue([historyEntry()]);
+    renderView("VENTA");
+
+    await userEvent.click(tabButton(/Historial de pagos/));
+
+    expect(await screen.findByText("RI-000001")).toBeInTheDocument();
+  });
+
   it("en compras el tab de retenciones explica el vacío", async () => {
-    listVoucherAdjustments.mockResolvedValue([]);
     renderView("COMPRA");
 
     await userEvent.click(tabButton("Retenciones"));
