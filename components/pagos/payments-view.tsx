@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   createColumnHelper,
@@ -13,7 +14,7 @@ import {
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -26,7 +27,6 @@ import {
 } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import { usePagos } from "@/components/pagos/pagos-provider";
-import { PaymentModal } from "@/components/pagos/payment-modal";
 import { PaymentDetailModal } from "@/components/pagos/payment-detail-modal";
 import { ReceiptDialog } from "@/components/pagos/receipt-dialog";
 import { PaymentsListingsToolbar } from "@/components/pagos/payments-listings-toolbar";
@@ -46,7 +46,6 @@ import type {
 } from "@/components/pagos/types";
 import { listOpenVouchers, listUnassignedPayments } from "@/lib/pagos/cartera";
 import { isOverdue } from "@/lib/pagos/saldos";
-import type { PaymentFormValues } from "@/lib/schemas/payment";
 import { formatCurrency, formatDate, getTodayLocalDate } from "@/lib/utils";
 import {
   applyListadoFilters,
@@ -62,6 +61,7 @@ interface ViewLabels {
   subtitle: string;
   search: string;
   empty: string;
+  basePath: string;
 }
 
 const VIEW_LABELS: Record<PaymentDirection, ViewLabels> = {
@@ -70,12 +70,14 @@ const VIEW_LABELS: Record<PaymentDirection, ViewLabels> = {
     subtitle: "Registra y administra los cobros a clientes",
     search: "Buscar ingresos...",
     empty: "No hay ingresos registrados",
+    basePath: "/pagos/ingresos",
   },
   EGRESO: {
     title: "Egresos",
     subtitle: "Registra y administra los pagos a proveedores",
     search: "Buscar egresos...",
     empty: "No hay egresos registrados",
+    basePath: "/pagos/egresos",
   },
 };
 
@@ -217,25 +219,20 @@ function VouchersTable({
 interface PaymentsViewProps {
   direction: PaymentDirection;
   filters: ListadoFilters<string>;
-  initialEntityId?: string;
-  initialComprobanteId?: string;
   initialFilter?: PaymentsFilter;
 }
 
 export function PaymentsView({
   direction,
   filters,
-  initialEntityId,
-  initialComprobanteId,
   initialFilter,
 }: PaymentsViewProps) {
-  const { payments, isLoading, addPayment } = usePagos();
+  const { payments, isLoading } = usePagos();
   const resolveName = useEntityNameResolver(direction);
   const router = useRouter();
   const pathname = usePathname();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
-  const [modalOpen, setModalOpen] = useState(Boolean(initialEntityId));
   const [viewingPaymentId, setViewingPaymentId] = useState<string | null>(null);
   const [detailMode, setDetailMode] = useState<"view" | "annul">("view");
   const [printingPaymentId, setPrintingPaymentId] = useState<string | null>(null);
@@ -298,20 +295,6 @@ export function PaymentsView({
     setDetailMode("annul");
     setViewingPaymentId(payment.id);
   }, []);
-
-  async function handleSave(values: PaymentFormValues) {
-    try {
-      await addPayment(values);
-      toast.success("Pago registrado");
-      setModalOpen(false);
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "No se pudo registrar el pago. Intenta nuevamente."
-      );
-    }
-  }
 
   const data = useMemo<PaymentsRow[]>(
     () => {
@@ -382,7 +365,9 @@ export function PaymentsView({
 
       <div className="flex flex-col gap-4">
         <PaymentsListingsToolbar>
-          <Button onClick={() => setModalOpen(true)}>Registrar pago</Button>
+          <Link href={`${labels.basePath}/nuevo`} className={buttonVariants()}>
+            Registrar pago
+          </Link>
         </PaymentsListingsToolbar>
 
         {filter !== "todas" ? (
@@ -482,15 +467,6 @@ export function PaymentsView({
           </div>
         )}
       </div>
-
-      <PaymentModal
-        open={modalOpen}
-        onOpenChange={setModalOpen}
-        direction={direction}
-        onSave={handleSave}
-        initialEntityId={initialEntityId}
-        initialComprobanteId={initialComprobanteId}
-      />
 
       <PaymentDetailModal
         open={viewingPaymentId !== null}

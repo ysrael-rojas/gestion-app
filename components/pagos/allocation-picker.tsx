@@ -26,6 +26,8 @@ interface AllocationPickerProps {
   onChange: (allocations: AllocationInput[]) => void;
   initialComprobanteId?: string;
   onSuggestAmount?: (amount: number) => void;
+  /** Reporta los comprobantes cargados (para resúmenes en vivo). */
+  onVouchersChange?: (vouchers: VoucherBalance[]) => void;
 }
 
 const SKELETON_ROWS = 3;
@@ -42,10 +44,15 @@ export function AllocationPicker({
   onChange,
   initialComprobanteId,
   onSuggestAmount,
+  onVouchersChange,
 }: AllocationPickerProps) {
   const [vouchers, setVouchers] = useState<VoucherBalance[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const preselectedRef = useRef(false);
+
+  useEffect(() => {
+    onVouchersChange?.(vouchers);
+  }, [vouchers, onVouchersChange]);
 
   useEffect(() => {
     let isMounted = true;
