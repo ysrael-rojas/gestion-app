@@ -10,8 +10,9 @@ import { expect, test, type Page } from "@playwright/test";
  *     "TEXTILES DEL NORTE SRL" (configurable con E2E_ENTITY_NAME), cuya
  *     factura aparece primera en el picker por vencimiento.
  *
- * Este test NO registra pagos: solo abre el formulario de "Registrar pago",
- * manipula importes y verifica los mensajes inline. Es re-ejecutable.
+ * Este test NO registra pagos: solo abre la página de "Registrar pago"
+ * (SPEC 42), manipula importes y verifica los mensajes inline. Es
+ * re-ejecutable.
  */
 
 try {
@@ -42,24 +43,28 @@ test.describe.serial("validación en vivo del reparto", () => {
     await login(page);
     await page.goto("/pagos/ingresos");
 
-    // Abrir el formulario de pago (botón del encabezado de la vista).
-    await page.getByRole("button", { name: "Registrar pago" }).click();
-    const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible({ timeout: 15_000 });
+    // "Registrar pago" ya no abre un modal: navega a la página dedicada.
+    await page.getByRole("link", { name: "Registrar pago" }).click();
+    await expect(page).toHaveURL(/\/pagos\/ingresos\/nuevo/, {
+      timeout: 15_000,
+    });
+    await expect(
+      page.getByRole("heading", { name: "Registrar ingreso" })
+    ).toBeVisible();
 
     // Elegir la entidad: el picker carga sus facturas con saldo.
-    await dialog.getByLabel(/Cliente\/Proveedor/).fill("TEXTILES");
+    await page.getByLabel(/Cliente\/Proveedor/).fill("TEXTILES");
     await page.getByRole("option", { name: ENTITY_NAME }).click();
 
-    const checkboxes = dialog.getByRole("checkbox");
+    const checkboxes = page.getByRole("checkbox");
     await expect(checkboxes.first()).toBeVisible({ timeout: 15_000 });
 
     // Importe del pago: 100 soles.
-    await dialog.getByLabel("Importe", { exact: true }).fill("100");
+    await page.getByLabel("Importe", { exact: true }).fill("100");
 
     // Seleccionar la primera factura: el reparto se clampea a 100.
     await checkboxes.first().check();
-    const rowAmount = dialog.getByLabel(/Importe a asignar a/).first();
+    const rowAmount = page.getByLabel(/Importe a asignar a/).first();
     await expect(rowAmount).toHaveValue("100");
 
     // Intentar repartir más que el importe: el error aparece inline, sin
@@ -75,8 +80,8 @@ test.describe.serial("validación en vivo del reparto", () => {
       page.getByText(/El reparto supera el importe del pago/)
     ).toBeHidden();
 
-    // Cerrar sin registrar: el test no deja mutaciones.
-    await dialog.getByRole("button", { name: "Cancelar" }).click();
-    await expect(dialog).toBeHidden();
+    // Salir sin registrar: el test no deja mutaciones.
+    await page.getByRole("link", { name: "Cancelar" }).click();
+    await expect(page).toHaveURL(/\/pagos\/ingresos$/);
   });
 });
