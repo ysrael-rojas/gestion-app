@@ -256,4 +256,35 @@ describe("VoucherDetalleView", () => {
       await screen.findByText(/hoy solo se reciben sobre ventas/i)
     ).toBeInTheDocument();
   });
+
+  it("compras comparte el mismo modelo: 4 pills, mano y estado del pago", async () => {
+    useVoucher.mockReturnValue({
+      voucher: voucher({ paidAmount: 100, balance: 400 }),
+      isLoading: false,
+      error: null,
+      reload,
+    });
+    getPaymentHistory.mockResolvedValue([
+      historyEntry({ direction: "EGRESO", status: "ANULADO" }),
+    ]);
+    listVoucherAdjustments.mockResolvedValue([]);
+
+    renderView("COMPRA");
+
+    expect(tabButtons()).toHaveLength(4);
+
+    const pagos = tabButton(/Historial de pagos/);
+    await waitFor(() => {
+      expect(handOf(pagos)).not.toBeNull();
+    });
+    expect(pagos).toHaveClass("text-rose-600");
+
+    await userEvent.click(pagos);
+    expect(pagos).toHaveClass(/bg-rose-600/);
+
+    expect(screen.queryByText("Datos del comprobante")).not.toBeInTheDocument();
+    expect(
+      await screen.findByText("RI-000001")
+    ).toBeInTheDocument();
+  });
 });
