@@ -1,6 +1,6 @@
 # SPEC 43 — Tabs completos en el detalle de comprobantes (notas y retenciones)
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 24, SPEC 39, SPEC 41
 > **Date:** 2026-10-23
 > **Objective:** Reorganizar la vista de detalle de comprobantes de ventas y compras en 4 tabs con icono (Datos, Historial de pagos, Notas de crédito/débito, Retenciones), con indicador de contenido por tab y el tab de pagos coloreado según su estado de pago, sin cambios de esquema.
@@ -61,16 +61,16 @@ isUnsettled: boolean;   // voucher.balance > 0 → tab de pagos en rose
 
 ## Acceptance criteria
 
-- [ ] `/ventas/[id]` y `/compras/[id]` muestran los 4 tabs con su icono; "Datos" activa por defecto y sin mano.
-- [ ] El tab Historial de pagos se mantiene en rose mientras `balance > 0` y pasa a emerald al saldarse (saldo negativo cuenta como saldado).
-- [ ] La mano `Hand` ámbar aparece en Historial de pagos / Notas / Retenciones solo cuando hay registros; desaparece si no los hay.
-- [ ] El tab Notas lista las NC/ND aplicadas (tipo, número, emisión, motivo, total) con Σ NC y Σ ND.
-- [ ] El tab Retenciones lista las aplicadas (número, emisión, total retenido) con Σ retenido.
-- [ ] En compras el tab Retenciones existe con su vacío explicativo (no se oculta).
-- [ ] Registrar un pago desde el detalle actualiza en vivo color del tab, mano de pagos, banda y badge sin recargar la página.
-- [ ] Datos e Historial conservan su contenido actual: misma grid de campos y misma tabla con impresión de recibos.
-- [ ] La query filtra solo ajustes no borrados del comprobante y separa NC/ND de retenciones por `voucher_type`.
-- [ ] `npm run lint`, `npm test`, `npm run build` pasan y los e2e existentes siguen en verde.
+- [x] `/ventas/[id]` y `/compras/[id]` muestran los 4 tabs con su icono; "Datos" activa por defecto y sin mano. Verificado en FF01-00004/00012 y en una compra con datos sintéticos; `voucher-detalle-view.test.tsx` cubre ambos tipos.
+- [x] El tab Historial de pagos se mantiene en rose mientras `balance > 0` y pasa a emerald al saldarse (saldo negativo cuenta como saldado). Verificado en vivo: FF01-00004 (rose, saldo 526), FF01-00012 (emerald, saldo 0) y FF01-00014 (emerald con saldo −50).
+- [x] La mano `Hand` ámbar aparece en Historial de pagos / Notas / Retenciones solo cuando hay registros; desaparece si no los hay. Verificado en navegador y con tests de la vista.
+- [x] El tab Notas lista las NC/ND aplicadas (tipo, número, emisión, motivo, total) con Σ NC y Σ ND. Verificado en FF01-00012: 3 notas de crédito, Σ S/ 30.00.
+- [x] El tab Retenciones lista las aplicadas (número, emisión, total retenido) con Σ retenido. Cubierto por `voucher-adjustments-section.test.tsx` (la BD de desarrollo no tiene retenciones registradas).
+- [x] En compras el tab Retenciones existe con su vacío explicativo (no se oculta). Verificado en navegador con una compra sintética (stub de red) y en el test de la vista con `voucherKind="COMPRA"`.
+- [x] Registrar un pago desde el detalle actualiza en vivo color del tab, mano de pagos, banda y badge sin recargar la página. E2E `registrar-pago-y-ver-saldo` en verde (RI-000021 sobre FF01-00010) y comprobación posterior: banda, badge "Pagado", tab en emerald y manos visibles.
+- [x] Datos e Historial conservan su contenido actual: misma grid de campos y misma tabla con impresión de recibos. La grid no cambió y el E2E de pago sigue usando el tab "Historial de pagos".
+- [x] La query filtra solo ajustes no borrados del comprobante y separa NC/ND de retenciones por `voucher_type`. Cubierto por `notas.test.ts` (`listVoucherAdjustments`).
+- [x] `npm run lint`, `npm test`, `npm run build` pasan y los e2e existentes siguen en verde. 443 tests, build con `/ventas/[id]` y `/compras/[id]`; e2e de pago y de nota de crédito 2/2.
 
 ## Decisions
 
