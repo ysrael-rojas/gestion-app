@@ -1,6 +1,6 @@
 # SPEC 42 — Página dedicada para registrar pagos (ingresos y egresos)
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 09, SPEC 25, SPEC 37
 > **Date:** 2026-10-22
 > **Objective:** Registrar pagos de ingresos y egresos en una página dedicada de dos columnas con resumen en vivo del reparto, reemplazando el modal actual.
@@ -59,17 +59,17 @@ sinAsignar: number;       // amount − asignado
 
 ## Acceptance criteria
 
-- [ ] "Registrar pago" en `/pagos/ingresos` y `/pagos/egresos` navega a `/pagos/{ingresos|egresos}/nuevo`; ya no abre ningún modal.
-- [ ] En desktop (≥lg) la página muestra dos columnas: campos a la izquierda, `AllocationPicker` + resumen sticky a la derecha; en pantallas menores se apilan.
-- [ ] El resumen refleja en vivo importe, total asignado, sin asignar y el nuevo saldo de cada comprobante marcado.
-- [ ] `?entityId=` precarga el Cliente/Proveedor y `?comprobanteId=` preselecciona el comprobante con su saldo, como hoy hace el modal.
-- [ ] Las validaciones de SPEC 37 siguen intactas: `superRefine` del schema y error inline "El reparto supera el importe del pago".
-- [ ] "Registrar" guarda con la misma RPC, muestra el toast "Pago registrado" y vuelve al listado con el pago visible (refresco del provider).
-- [ ] "Cancelar" y el link de volver regresan al listado sin registrar nada.
-- [ ] `/pagos/ingresos?entityId=X` redirige a `/pagos/ingresos/nuevo?entityId=X` (ídem egresos).
-- [ ] `PaymentDetailModal`, `ReceiptDialog` y el wizard de ventas/compras funcionan sin cambios.
-- [ ] El e2e `validacion-reparto-en-vivo` pasa por la página nueva.
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan.
+- [x] "Registrar pago" en `/pagos/ingresos` y `/pagos/egresos` navega a `/pagos/{ingresos|egresos}/nuevo`; ya no abre ningún modal. Verificado en vivo: el listado navega a la página y `getByRole("dialog")` no encuentra nada.
+- [x] En desktop (≥lg) la página muestra dos columnas: campos a la izquierda, `AllocationPicker` + resumen sticky a la derecha; en pantallas menores se apilan. Verificado con Playwright a 1440×900 (`position: sticky` en el aside, resumen a la derecha) y a 390×844 (apilado con el resumen al final).
+- [x] El resumen refleja en vivo importe, total asignado, sin asignar y el nuevo saldo de cada comprobante marcado. Verificado con S/ 100: importe 100, asignado 100, sin asignar 0 y Factura FF01-00004 de S/ 526 a S/ 426.
+- [x] `?entityId=` precarga el Cliente/Proveedor y `?comprobanteId=` preselecciona el comprobante con su saldo, como hoy hace el modal. Cubierto por `payments-create-view.test.tsx` (importe sugerido = saldo del comprobante pedido).
+- [x] Las validaciones de SPEC 37 siguen intactas: `superRefine` del schema y error inline "El reparto supera el importe del pago". Cubierto por test de componente y por el e2e migrado.
+- [x] "Registrar" guarda con la misma RPC, muestra el toast "Pago registrado" y vuelve al listado con el pago visible (refresco del provider). Verificado en vivo con el anticipo `RI-000019` (S/ 1.00), anulado después para dejar la BD como estaba.
+- [x] "Cancelar" y el link de volver regresan al listado sin registrar nada. Cubierto por el e2e (Cancelar vuelve a `/pagos/ingresos`) y por `BackLink` en la cabecera.
+- [x] `/pagos/ingresos?entityId=X` redirige a `/pagos/ingresos/nuevo?entityId=X` (ídem egresos). Verificado en vivo, incluido `comprobanteId`.
+- [x] `PaymentDetailModal`, `ReceiptDialog` y el wizard de ventas/compras funcionan sin cambios. `PaymentDetailModal` se usó en vivo para anular el pago de prueba; el wizard y el recibo conservan su código y sus tests.
+- [x] El e2e `validacion-reparto-en-vivo` pasa por la página nueva. 1/1 en verde contra el dev server con el seed documentado.
+- [x] `npm run lint`, `npm test` y `npm run build` pasan. 427 tests, build con las rutas `/pagos/ingresos/nuevo` y `/pagos/egresos/nuevo`.
 
 ## Decisions
 
