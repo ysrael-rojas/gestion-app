@@ -1,8 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Wallet } from "lucide-react";
+import {
+  FileText,
+  Hand,
+  HandCoins,
+  NotebookPen,
+  Percent,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 
 import { useClientes } from "@/components/clientes/clientes-provider";
 import { useCompras } from "@/components/compras/compras-provider";
@@ -10,6 +18,7 @@ import { NestedPaymentDrawers } from "@/components/comprobantes/nested-payment-d
 import { PaymentHistorySection } from "@/components/comprobantes/payment-history-section";
 import type { VoucherKind } from "@/components/comprobantes/types";
 import { useVoucher } from "@/components/comprobantes/use-voucher";
+import { VoucherAdjustmentsSection } from "@/components/comprobantes/voucher-adjustments-section";
 import { VoucherAmountsBand } from "@/components/comprobantes/voucher-amounts-band";
 import { ReceiptDialog } from "@/components/pagos/receipt-dialog";
 import { BackLink } from "@/components/shared/back-link";
@@ -24,12 +33,16 @@ import {
 } from "@/components/ui/tabs";
 import { useVentas } from "@/components/ventas/ventas-provider";
 import {
+  listVoucherAdjustments,
+  type VoucherAdjustment,
+} from "@/lib/comprobantes/notas";
+import {
   getOptionLabel,
   PAYMENT_TYPES,
   SALE_STATUSES,
   VOUCHER_TYPES,
 } from "@/lib/data/sale-options";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 interface VoucherDetalleViewProps {
   voucherKind: VoucherKind;
@@ -42,6 +55,42 @@ function DetailField({ label, value }: { label: string; value: string }) {
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="text-sm font-medium">{value || "—"}</span>
     </div>
+  );
+}
+
+function TabLabel({
+  icon: Icon,
+  label,
+  shortLabel,
+  showHand = false,
+  className,
+}: {
+  icon: LucideIcon;
+  label: string;
+  /** Etiqueta corta para pantallas angostas (el nombre accesible cambia con el breakpoint). */
+  shortLabel?: string;
+  showHand?: boolean;
+  className?: string;
+}) {
+  return (
+    <span className={cn("inline-flex items-center gap-2", className)}>
+      <Icon className="size-4" aria-hidden />
+      {shortLabel ? (
+        <>
+          <span className="sm:hidden">{shortLabel}</span>
+          <span className="hidden sm:inline">{label}</span>
+        </>
+      ) : (
+        label
+      )}
+      {/* Indicador decorativo: el nombre accesible del tab no cambia. */}
+      {showHand ? (
+        <Hand
+          className="size-3.5 text-amber-600 dark:text-amber-400"
+          aria-hidden
+        />
+      ) : null}
+    </span>
   );
 }
 
@@ -60,10 +109,48 @@ export function VoucherDetalleView({
   const [printingPaymentId, setPrintingPaymentId] = useState<string | null>(
     null
   );
+  const [adjustments, setAdjustments] = useState<VoucherAdjustment[] | null>(
+    null
+  );
+  const [adjustmentsError, setAdjustmentsError] = useState<string | null>(null);
+
+  const loadAdjustments = useCallback(async () => {
+    try {
+      setAdjustments(await listVoucherAdjustments(voucherId));
+      setAdjustmentsError(null);
+    } catch (loadError) {
+      setAdjustments([]);
+      setAdjustmentsError(
+        loadError instanceof Error
+          ? loadError.message
+          : "No se pudieron cargar las notas ni las retenciones."
+      );
+    }
+  }, [voucherId]);
+
+  useEffect(() => {
+    void (async () => {
+      await loadAdjustments();
+    })();
+  }, [loadAdjustments]);
 
   const isSale = voucherKind === "VENTA";
   const basePath = isSale ? "/ventas" : "/compras";
   const entityLabel = isSale ? "Cliente" : "Proveedor";
+
+  const hasPayments = voucher?.paidAmount ? voucher.paidAmount > 0 : false;
+  const isUnsettled = voucher ? voucher.balance > 0 : false;
+  const notasCount = (adjustments ?? []).filter(
+    (adjustment) => adjustment.voucherType !== "COMPROBANTE_RETENCION"
+  ).length;
+  const retencionesCount = (adjustments ?? []).filter(
+    (adjustment) => adjustment.voucherType === "COMPROBANTE_RETENCION"
+  ).length;
+  // Rose mientras queda saldo; emerald al quedar saldado (saldo negativo cuenta
+  // como saldado, p. ej. cuando una ND deja el saldo por debajo de cero).
+  const paymentsTone = isUnsettled
+    ? "text-rose-600 dark:text-rose-400"
+    : "text-emerald-600 dark:text-emerald-400";
 
   const entityName = voucher
     ? clients.find((client) => client.id === voucher.entityId)?.name ??
@@ -139,9 +226,34 @@ export function VoucherDetalleView({
           />
 
           <Tabs defaultValue="datos">
-            <TabsList>
-              <TabsTrigger value="datos">Datos del comprobante</TabsTrigger>
-              <TabsTrigger value="pagos">Historial de pagos</TabsTrigger>
+            <TabsList className="h-auto! w-fit max-w-full flex-wrap justify-start">
+              <TabsTrigger value="datos">
+                <TabLabel icon={FileText} label="Datos" />
+              </TabsTrigger>
+              <TabsTrigger value="pagos">
+                <TabLabel
+                  icon={HandCoins}
+                  label="Historial de pagos"
+                  shortLabel="Pagos"
+                  showHand={hasPayments}
+                  className={paymentsTone}
+                />
+              </TabsTrigger>
+              <TabsTrigger value="notas">
+                <TabLabel
+                  icon={NotebookPen}
+                  label="Notas de crédito/débito"
+                  shortLabel="Notas"
+                  showHand={notasCount > 0}
+                />
+              </TabsTrigger>
+              <TabsTrigger value="retenciones">
+                <TabLabel
+                  icon={Percent}
+                  label="Retenciones"
+                  showHand={retencionesCount > 0}
+                />
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="datos">
@@ -207,6 +319,24 @@ export function VoucherDetalleView({
                 onPrint={setPrintingPaymentId}
               />
             </TabsContent>
+
+            <TabsContent value="notas">
+              <VoucherAdjustmentsSection
+                group="notas"
+                adjustments={adjustments}
+                error={adjustmentsError}
+                voucherKind={voucherKind}
+              />
+            </TabsContent>
+
+            <TabsContent value="retenciones">
+              <VoucherAdjustmentsSection
+                group="retenciones"
+                adjustments={adjustments}
+                error={adjustmentsError}
+                voucherKind={voucherKind}
+              />
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
@@ -233,6 +363,7 @@ export function VoucherDetalleView({
           balance={voucher.balance}
           onRegistered={async () => {
             await reload();
+            await loadAdjustments();
             await (isSale ? refreshSales() : refreshPurchases());
           }}
         />

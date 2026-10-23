@@ -99,21 +99,23 @@ export function VoucherAdjustmentsSection({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-3">
-        {isNotes ? (
-          <>
-            <TotalItem label="Notas de crédito" value={creditTotal} />
-            <TotalItem label="Notas de débito" value={debitTotal} />
-          </>
-        ) : (
-          <TotalItem label="Retenido" value={retainedTotal} />
-        )}
-      </div>
+      {rows.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-3">
+          {isNotes ? (
+            <>
+              <TotalItem label="Notas de crédito" value={creditTotal} />
+              <TotalItem label="Notas de débito" value={debitTotal} />
+            </>
+          ) : (
+            <TotalItem label="Retenido" value={retainedTotal} />
+          )}
+        </div>
+      ) : null}
 
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">{emptyMessage}</p>
       ) : (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
