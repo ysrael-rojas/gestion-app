@@ -11,6 +11,7 @@ import {
   createNotaRecord,
   listNotas,
   listReferableComprobantes,
+  listVoucherAdjustments,
   updateNotaRecord,
 } from "@/lib/comprobantes/notas";
 import type { NotaFormValues } from "@/lib/schemas/nota";
@@ -120,6 +121,93 @@ describe("notas.ts", () => {
       mock.queueTable("comprobante", { data: [], error: null });
 
       await expect(listNotas("NOTA_CREDITO")).rejects.toThrow(
+        "No se pudo completar la operación con la base de datos. Intenta nuevamente."
+      );
+    });
+  });
+
+  describe("listVoucherAdjustments", () => {
+    it("mapea notas de crédito, débito y retenciones del comprobante", async () => {
+      mock.queueTable("comprobante", {
+        data: [
+          notaRow(),
+          notaRow({
+            id: "n-2",
+            voucher_type: "NOTA_DEBITO",
+            voucher_number: "FD01-000001",
+            total: 50,
+          }),
+          notaRow({
+            id: "r-1",
+            voucher_type: "COMPROBANTE_RETENCION",
+            voucher_number: "R001-000001",
+            motive_code: null,
+            total: 30,
+          }),
+        ],
+        error: null,
+      });
+
+      const adjustments = await listVoucherAdjustments("s-1");
+
+      expect(adjustments).toEqual([
+        {
+          id: "n-1",
+          voucherType: "NOTA_CREDITO",
+          voucherNumber: "FC01-000001",
+          issueDate: "2026-10-17",
+          motiveCode: "01",
+          total: 118,
+        },
+        {
+          id: "n-2",
+          voucherType: "NOTA_DEBITO",
+          voucherNumber: "FD01-000001",
+          issueDate: "2026-10-17",
+          motiveCode: "01",
+          total: 50,
+        },
+        {
+          id: "r-1",
+          voucherType: "COMPROBANTE_RETENCION",
+          voucherNumber: "R001-000001",
+          issueDate: "2026-10-17",
+          motiveCode: null,
+          total: 30,
+        },
+      ]);
+    });
+
+    it("filtra por comprobante, excluye borrados y solo pide tipos de ajuste", async () => {
+      mock.setTable("comprobante", { data: [], error: null });
+
+      await listVoucherAdjustments("s-1");
+
+      const filters = mock.filterCalls.map((call) => [
+        call.method,
+        ...call.args,
+      ]);
+
+      expect(filters).toEqual(
+        expect.arrayContaining([
+          ["eq", "referenced_comprobante_id", "s-1"],
+          [
+            "in",
+            "voucher_type",
+            ["NOTA_CREDITO", "NOTA_DEBITO", "COMPROBANTE_RETENCION"],
+          ],
+          ["is", "deleted_at", null],
+        ])
+      );
+    });
+
+    it("lanza error traducido cuando la consulta falla", async () => {
+      mock.queueTable("comprobante", {
+        data: null,
+        error: { code: "42501", message: "permission denied" },
+      });
+
+      await expect(listVoucherAdjustments("s-1")).rejects.toThrow(
         "No se pudo completar la operación con la base de datos. Intenta nuevamente."
       );
     });
