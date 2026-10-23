@@ -68,6 +68,18 @@ function renderView(kind: "VENTA" | "COMPRA") {
   return render(<VoucherDetalleView voucherKind={kind} voucherId="v-1" />);
 }
 
+function tabButtons() {
+  return within(
+    screen.getByRole("group", { name: "Secciones del comprobante" })
+  ).getAllByRole("button");
+}
+
+function tabButton(name: RegExp | string) {
+  return within(
+    screen.getByRole("group", { name: "Secciones del comprobante" })
+  ).getByRole("button", { name });
+}
+
 function handOf(tab: HTMLElement) {
   return tab.querySelector("svg.lucide-hand");
 }
@@ -92,10 +104,10 @@ describe("VoucherDetalleView", () => {
       expect(listVoucherAdjustments).toHaveBeenCalledWith("v-1");
     });
 
-    const tabs = screen.getAllByRole("tab");
+    const tabs = tabButtons();
     expect(tabs).toHaveLength(4);
-    expect(screen.getByRole("tab", { name: "Datos" })).toBeInTheDocument();
-    expect(handOf(tabs[0]!)).toBeNull();
+    expect(tabButton("Datos")).toBeInTheDocument();
+    expect(handOf(tabButton("Datos"))).toBeNull();
 
     tabs.forEach((tab) => {
       expect(tab.querySelector("svg")).not.toBeNull();
@@ -109,18 +121,23 @@ describe("VoucherDetalleView", () => {
     ]);
     renderView("VENTA");
 
-    const pagos = screen.getByRole("tab", { name: /Historial de pagos/ });
+    const pagos = tabButton(/Historial de pagos/);
     await waitFor(() => {
       expect(handOf(pagos)).not.toBeNull();
     });
-    expect(within(pagos).getByText("Historial de pagos").parentElement).toHaveClass(
-      "text-rose-600"
-    );
+    expect(pagos).toHaveClass("text-rose-600");
 
-    expect(handOf(screen.getByRole("tab", { name: /Notas/ }))).not.toBeNull();
-    expect(
-      handOf(screen.getByRole("tab", { name: "Retenciones" }))
-    ).not.toBeNull();
+    expect(handOf(tabButton(/Notas/))).not.toBeNull();
+    expect(handOf(tabButton("Retenciones"))).not.toBeNull();
+  });
+
+  it("al abrir pagos pendiente el pill activo es rojo", async () => {
+    listVoucherAdjustments.mockResolvedValue([]);
+    renderView("VENTA");
+
+    await userEvent.click(tabButton(/Historial de pagos/));
+
+    expect(tabButton(/Historial de pagos/)).toHaveClass(/bg-destructive/);
   });
 
   it("en saldado el tab de pagos pasa a emerald (también con saldo negativo)", async () => {
@@ -134,11 +151,7 @@ describe("VoucherDetalleView", () => {
 
     renderView("VENTA");
 
-    expect(
-      within(
-        screen.getByRole("tab", { name: /Historial de pagos/ })
-      ).getByText("Historial de pagos").parentElement
-    ).toHaveClass("text-emerald-600");
+    expect(tabButton(/Historial de pagos/)).toHaveClass("text-emerald-600");
   });
 
   it("no pone manos cuando no hay registros", async () => {
@@ -156,16 +169,25 @@ describe("VoucherDetalleView", () => {
       expect(listVoucherAdjustments).toHaveBeenCalled();
     });
 
-    screen.getAllByRole("tab").forEach((tab) => {
+    tabButtons().forEach((tab) => {
       expect(handOf(tab)).toBeNull();
     });
+  });
+
+  it("muestra la card de datos con su título por defecto", () => {
+    listVoucherAdjustments.mockResolvedValue([]);
+    renderView("VENTA");
+
+    expect(screen.getByText("Datos del comprobante")).toBeInTheDocument();
+    expect(screen.getByText("Fecha de emisión")).toBeInTheDocument();
+    expect(screen.queryByText("historial stub")).not.toBeInTheDocument();
   });
 
   it("lista las notas al abrir su tab", async () => {
     listVoucherAdjustments.mockResolvedValue([note()]);
     renderView("VENTA");
 
-    await userEvent.click(screen.getByRole("tab", { name: /Notas/ }));
+    await userEvent.click(tabButton(/Notas/));
 
     expect(await screen.findByText("FC01-000001")).toBeInTheDocument();
     expect(screen.getByText("Notas de crédito").parentElement).toHaveTextContent(
@@ -177,7 +199,7 @@ describe("VoucherDetalleView", () => {
     listVoucherAdjustments.mockResolvedValue([]);
     renderView("COMPRA");
 
-    await userEvent.click(screen.getByRole("tab", { name: "Retenciones" }));
+    await userEvent.click(tabButton("Retenciones"));
 
     expect(
       await screen.findByText(/hoy solo se reciben sobre ventas/i)

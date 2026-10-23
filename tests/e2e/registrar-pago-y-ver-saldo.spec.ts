@@ -126,7 +126,7 @@ test.describe.serial("registrar pago y ver saldo", () => {
     await expect(saldoBand).toBeVisible({ timeout: 15_000 });
     await expect(saldoBand).toContainText("0.00");
 
-    await page.getByRole("tab", { name: "Historial de pagos" }).click();
+    await page.getByRole("button", { name: /Historial de pagos/ }).click();
     await expect(page.locator("text=/RI-\\d{6}/").first()).toBeVisible({
       timeout: 10_000,
     });

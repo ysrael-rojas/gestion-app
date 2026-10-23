@@ -9,7 +9,6 @@ import {
   NotebookPen,
   Percent,
   Wallet,
-  type LucideIcon,
 } from "lucide-react";
 
 import { useClientes } from "@/components/clientes/clientes-provider";
@@ -24,13 +23,12 @@ import { ReceiptDialog } from "@/components/pagos/receipt-dialog";
 import { BackLink } from "@/components/shared/back-link";
 import { PaymentStatusBadge } from "@/components/shared/payment-status-badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useVentas } from "@/components/ventas/ventas-provider";
 import {
   listVoucherAdjustments,
@@ -49,6 +47,8 @@ interface VoucherDetalleViewProps {
   voucherId: string;
 }
 
+type DetailTab = "datos" | "pagos" | "notas" | "retenciones";
+
 function DetailField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-1">
@@ -58,39 +58,15 @@ function DetailField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TabLabel({
-  icon: Icon,
-  label,
-  shortLabel,
-  showHand = false,
-  className,
-}: {
-  icon: LucideIcon;
-  label: string;
-  /** Etiqueta corta para pantallas angostas (el nombre accesible cambia con el breakpoint). */
-  shortLabel?: string;
-  showHand?: boolean;
-  className?: string;
-}) {
+function TabHand({ active }: { active: boolean }) {
   return (
-    <span className={cn("inline-flex items-center gap-2", className)}>
-      <Icon className="size-4" aria-hidden />
-      {shortLabel ? (
-        <>
-          <span className="sm:hidden">{shortLabel}</span>
-          <span className="hidden sm:inline">{label}</span>
-        </>
-      ) : (
-        label
+    <Hand
+      className={cn(
+        "size-3.5",
+        !active && "text-amber-600 dark:text-amber-400"
       )}
-      {/* Indicador decorativo: el nombre accesible del tab no cambia. */}
-      {showHand ? (
-        <Hand
-          className="size-3.5 text-amber-600 dark:text-amber-400"
-          aria-hidden
-        />
-      ) : null}
-    </span>
+      aria-hidden
+    />
   );
 }
 
@@ -109,6 +85,7 @@ export function VoucherDetalleView({
   const [printingPaymentId, setPrintingPaymentId] = useState<string | null>(
     null
   );
+  const [activeTab, setActiveTab] = useState<DetailTab>("datos");
   const [adjustments, setAdjustments] = useState<VoucherAdjustment[] | null>(
     null
   );
@@ -217,129 +194,140 @@ export function VoucherDetalleView({
         </div>
       </div>
 
-      <Card>
-        <CardContent className="flex flex-col gap-4">
-          <VoucherAmountsBand
-            total={voucher.total}
-            paidAmount={voucher.paidAmount}
-            balance={voucher.balance}
-          />
+      <VoucherAmountsBand
+        total={voucher.total}
+        paidAmount={voucher.paidAmount}
+        balance={voucher.balance}
+      />
 
-          <Tabs defaultValue="datos">
-            <TabsList className="h-auto! w-fit max-w-full flex-wrap justify-start">
-              <TabsTrigger value="datos">
-                <TabLabel icon={FileText} label="Datos" />
-              </TabsTrigger>
-              <TabsTrigger value="pagos">
-                <TabLabel
-                  icon={HandCoins}
-                  label="Historial de pagos"
-                  shortLabel="Pagos"
-                  showHand={hasPayments}
-                  className={paymentsTone}
-                />
-              </TabsTrigger>
-              <TabsTrigger value="notas">
-                <TabLabel
-                  icon={NotebookPen}
-                  label="Notas de crédito/débito"
-                  shortLabel="Notas"
-                  showHand={notasCount > 0}
-                />
-              </TabsTrigger>
-              <TabsTrigger value="retenciones">
-                <TabLabel
-                  icon={Percent}
-                  label="Retenciones"
-                  showHand={retencionesCount > 0}
-                />
-              </TabsTrigger>
-            </TabsList>
+      <div
+        role="group"
+        aria-label="Secciones del comprobante"
+        className="flex flex-wrap gap-1"
+      >
+        <Button
+          variant={activeTab === "datos" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("datos")}
+        >
+          <FileText />
+          Datos
+        </Button>
 
-            <TabsContent value="datos">
-              <Card className="bg-muted/30 ring-0">
-                <CardContent>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <DetailField
-                      label="Fecha de emisión"
-                      value={formatDate(voucher.issueDate)}
-                    />
-                    <DetailField
-                      label="Fecha de registro"
-                      value={formatDate(voucher.registrationDate)}
-                    />
-                    <DetailField
-                      label="Tipo de comprobante"
-                      value={getOptionLabel(
-                        VOUCHER_TYPES,
-                        voucher.voucherType
-                      )}
-                    />
-                    <DetailField
-                      label="Nro comprobante"
-                      value={voucher.voucherNumber}
-                    />
-                    <div className="sm:col-span-2">
-                      <DetailField label={entityLabel} value={entityName} />
-                    </div>
-                    <DetailField
-                      label="Condición"
-                      value={getOptionLabel(
-                        PAYMENT_TYPES,
-                        voucher.paymentType
-                      )}
-                    />
-                    <DetailField
-                      label="Días de crédito"
-                      value={
-                        voucher.creditDays != null
-                          ? String(voucher.creditDays)
-                          : ""
-                      }
-                    />
-                    <DetailField
-                      label="Fecha de vencimiento"
-                      value={
-                        voucher.dueDate ? formatDate(voucher.dueDate) : ""
-                      }
-                    />
-                    <DetailField
-                      label="Estado"
-                      value={getOptionLabel(SALE_STATUSES, voucher.status)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+        <Button
+          variant={
+            activeTab === "pagos"
+              ? isUnsettled
+                ? "destructive"
+                : "default"
+              : "ghost"
+          }
+          size="sm"
+          onClick={() => setActiveTab("pagos")}
+          className={activeTab === "pagos" ? undefined : paymentsTone}
+        >
+          <HandCoins />
+          Historial de pagos
+          {hasPayments ? <TabHand active={activeTab === "pagos"} /> : null}
+        </Button>
 
-            <TabsContent value="pagos">
-              <PaymentHistorySection
-                comprobanteId={voucher.id}
-                direction={isSale ? "INGRESO" : "EGRESO"}
-                onPrint={setPrintingPaymentId}
+        <Button
+          variant={activeTab === "notas" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("notas")}
+        >
+          <NotebookPen />
+          Notas de crédito/débito
+          {notasCount > 0 ? <TabHand active={activeTab === "notas"} /> : null}
+        </Button>
+
+        <Button
+          variant={activeTab === "retenciones" ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setActiveTab("retenciones")}
+        >
+          <Percent />
+          Retenciones
+          {retencionesCount > 0 ? (
+            <TabHand active={activeTab === "retenciones"} />
+          ) : null}
+        </Button>
+      </div>
+
+      {activeTab === "datos" ? (
+        <Card className="bg-muted/30 ring-0">
+          <CardHeader>
+            <CardTitle>Datos del comprobante</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <DetailField
+                label="Fecha de emisión"
+                value={formatDate(voucher.issueDate)}
               />
-            </TabsContent>
-
-            <TabsContent value="notas">
-              <VoucherAdjustmentsSection
-                group="notas"
-                adjustments={adjustments}
-                error={adjustmentsError}
-                voucherKind={voucherKind}
+              <DetailField
+                label="Fecha de registro"
+                value={formatDate(voucher.registrationDate)}
               />
-            </TabsContent>
-
-            <TabsContent value="retenciones">
-              <VoucherAdjustmentsSection
-                group="retenciones"
-                adjustments={adjustments}
-                error={adjustmentsError}
-                voucherKind={voucherKind}
+              <DetailField
+                label="Tipo de comprobante"
+                value={getOptionLabel(VOUCHER_TYPES, voucher.voucherType)}
               />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+              <DetailField
+                label="Nro comprobante"
+                value={voucher.voucherNumber}
+              />
+              <div className="sm:col-span-2">
+                <DetailField label={entityLabel} value={entityName} />
+              </div>
+              <DetailField
+                label="Condición"
+                value={getOptionLabel(PAYMENT_TYPES, voucher.paymentType)}
+              />
+              <DetailField
+                label="Días de crédito"
+                value={
+                  voucher.creditDays != null ? String(voucher.creditDays) : ""
+                }
+              />
+              <DetailField
+                label="Fecha de vencimiento"
+                value={voucher.dueDate ? formatDate(voucher.dueDate) : ""}
+              />
+              <DetailField
+                label="Estado"
+                value={getOptionLabel(SALE_STATUSES, voucher.status)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {activeTab === "pagos" ? (
+        <PaymentHistorySection
+          comprobanteId={voucher.id}
+          direction={isSale ? "INGRESO" : "EGRESO"}
+          onPrint={setPrintingPaymentId}
+        />
+      ) : null}
+
+      {activeTab === "notas" ? (
+        <VoucherAdjustmentsSection
+          group="notas"
+          adjustments={adjustments}
+          error={adjustmentsError}
+          voucherKind={voucherKind}
+        />
+      ) : null}
+
+      {activeTab === "retenciones" ? (
+        <VoucherAdjustmentsSection
+          group="retenciones"
+          adjustments={adjustments}
+          error={adjustmentsError}
+          voucherKind={voucherKind}
+        />
+      ) : null}
 
       {wizardOpen ? (
         <NestedPaymentDrawers
