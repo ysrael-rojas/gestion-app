@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import {
@@ -71,12 +72,8 @@ export interface PaymentFormProps {
   onSubmit: (values: PaymentFormValues) => void;
   initialEntityId?: string;
   initialComprobanteId?: string;
-  /**
-   * Composición libre de las secciones (`PaymentFieldsSection`,
-   * `PaymentAllocationSection`, resumen). Sin children, el formulario usa el
-   * layout apilado clásico (campos arriba, asignación abajo).
-   */
-  children?: React.ReactNode;
+  /** Secciones que arma la página: campos, asignación y resumen. */
+  children: React.ReactNode;
 }
 
 interface OptionItem {
@@ -152,7 +149,8 @@ function FieldError({ message }: { message?: string }) {
   }
 
   return (
-    <p role="alert" className="text-sm text-destructive">
+    // tabIndex -1: la página puede llevar el foco aquí cuando el envío falla.
+    <p role="alert" tabIndex={-1} className="text-sm text-destructive">
       {message}
     </p>
   );
@@ -176,6 +174,9 @@ export function PaymentForm({
   const form = useForm<PaymentFormInput, unknown, PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
     defaultValues: createEmptyValues(direction, initialEntityId),
+    // El foco a los errores lo maneja el efecto de abajo (los mensajes son
+    // focusables); el foco automático de RHF no alcanza a los Select de Base UI.
+    shouldFocusError: false,
   });
 
   useEffect(() => {
@@ -307,6 +308,40 @@ export function PaymentForm({
     setVouchers(next);
   }, []);
 
+  // Envío rechazado por zod: cuando los mensajes ya están en el DOM se lleva
+  // el foco al primero. En móvil la barra de acciones queda al final del
+  // scroll, así que sin esto el usuario no ve por qué no se guardó.
+  const submitCount = form.formState.submitCount;
+  const errorCount = Object.keys(form.formState.errors).length;
+  const handledSubmitCount = useRef(0);
+
+  useEffect(() => {
+    if (submitCount === 0 || submitCount === handledSubmitCount.current) {
+      return;
+    }
+
+    if (errorCount === 0) {
+      return;
+    }
+
+    handledSubmitCount.current = submitCount;
+
+    const firstAlert = document.querySelector<HTMLElement>(
+      `#${PAYMENT_FORM_ID} [role="alert"]`
+    );
+
+    if (!firstAlert) {
+      return;
+    }
+
+    // jsdom (tests) no implementa scrollIntoView.
+    if (typeof firstAlert.scrollIntoView === "function") {
+      firstAlert.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    firstAlert.focus({ preventScroll: true });
+  }, [submitCount, errorCount]);
+
   const contextValue: PaymentFormContextValue = {
     form,
     direction,
@@ -335,12 +370,7 @@ export function PaymentForm({
         onSubmit={form.handleSubmit(onSubmit)}
         className="flex flex-col gap-6"
       >
-        {children ?? (
-          <>
-            <PaymentFieldsSection />
-            <PaymentAllocationSection />
-          </>
-        )}
+        {children}
       </form>
     </PaymentFormContext.Provider>
   );

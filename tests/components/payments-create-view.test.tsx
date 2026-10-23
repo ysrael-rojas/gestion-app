@@ -177,6 +177,18 @@ describe("PaymentsCreateView", () => {
     ).toBeInTheDocument();
   });
 
+  it("al enviar con datos faltantes lleva el foco al primer error", async () => {
+    renderView({});
+
+    await userEvent.click(screen.getByRole("button", { name: "Registrar" }));
+
+    const alerts = await screen.findAllByRole("alert");
+    expect(alerts.length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(document.activeElement).toBe(alerts[0]);
+    });
+  });
+
   it("ofrece Cancelar hacia el listado y Registrar como submit del formulario", () => {
     renderView({});
 
