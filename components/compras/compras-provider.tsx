@@ -24,8 +24,8 @@ interface ComprasContextValue {
   isLoading: boolean;
   error: string | null;
   balanceError: BalanceLoadError | null;
-  addPurchase: (values: PurchaseFormValues) => Promise<void>;
-  updatePurchase: (id: string, values: PurchaseFormValues) => Promise<void>;
+  addPurchase: (values: PurchaseFormValues) => Promise<Purchase>;
+  updatePurchase: (id: string, values: PurchaseFormValues) => Promise<Purchase>;
   refresh: () => Promise<void>;
 }
 
@@ -85,16 +85,18 @@ export function ComprasProvider({ children }: { children: React.ReactNode }) {
 
   const addPurchase = useCallback(
     async (values: PurchaseFormValues) => {
-      await createPurchaseRecord(values);
+      const purchase = await createPurchaseRecord(values);
       await refresh();
+      return purchase;
     },
     [refresh]
   );
 
   const updatePurchase = useCallback(
     async (id: string, values: PurchaseFormValues) => {
-      await updatePurchaseRecord(id, values);
+      const purchase = await updatePurchaseRecord(id, values);
       await refresh();
+      return purchase;
     },
     [refresh]
   );

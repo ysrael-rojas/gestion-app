@@ -4,6 +4,24 @@ import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import type { Client } from "@/components/clientes/types";
+import { useClientes } from "@/components/clientes/clientes-provider";
+import type {
+  PaymentType,
+  Voucher,
+  VoucherKind,
+  VoucherType,
+} from "@/components/comprobantes/types";
+import {
+  EntityAutocomplete,
+  toEntityAutocompleteItems,
+} from "@/components/shared/entity-autocomplete";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -13,22 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  EntityAutocomplete,
-  toEntityAutocompleteItems,
-} from "@/components/shared/entity-autocomplete";
-import type { Client } from "@/components/clientes/types";
-import type {
-  PaymentType,
-  Purchase,
-  VoucherType,
-} from "@/components/compras/types";
+import { listSuppliers } from "@/lib/clientes/entidades";
 import {
   DEFAULT_CREDIT_DAYS,
   DEFAULT_SALE_STATUS,
@@ -36,28 +39,28 @@ import {
   SALE_STATUSES,
   VOUCHER_TYPES,
 } from "@/lib/data/sale-options";
-import { listSuppliers } from "@/lib/clientes/entidades";
 import {
-  purchaseSchema,
-  type PurchaseFormInput,
-  type PurchaseFormValues,
-} from "@/lib/schemas/purchase";
+  voucherFormSchema,
+  type VoucherFormInput,
+  type VoucherFormValues,
+} from "@/lib/schemas/voucher";
 import { formatCurrency, getTodayLocalDate } from "@/lib/utils";
 import { calculateAmounts, calculateDueDate } from "@/lib/ventas/amounts";
 
-interface PurchaseFormProps {
-  purchase?: Purchase | null;
-  onSubmit: (values: PurchaseFormValues) => void;
+interface VoucherFormProps {
+  voucherKind: VoucherKind;
+  voucher?: Voucher | null;
+  onSubmit: (values: VoucherFormValues) => void;
 }
 
-export const PURCHASE_FORM_ID = "purchase-form";
+export const VOUCHER_FORM_ID = "voucher-form";
 
-function createEmptyValues(): PurchaseFormInput {
+function createEmptyValues(): VoucherFormInput {
   return {
     issueDate: getTodayLocalDate(),
     voucherType: "" as VoucherType,
     voucherNumber: "",
-    supplierId: "",
+    entityId: "",
     total: "",
     paymentType: "" as PaymentType,
     creditDays: "",
@@ -75,7 +78,7 @@ const paymentTypeItems = PAYMENT_TYPES.map((option) => ({
   label: option.label,
 }));
 
-const purchaseStatusItems = SALE_STATUSES.map((option) => ({
+const statusItems = SALE_STATUSES.map((option) => ({
   value: option.value,
   label: option.label,
 }));
@@ -111,16 +114,25 @@ function FormGroup({
   );
 }
 
-export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
+export function VoucherForm({
+  voucherKind,
+  voucher,
+  onSubmit,
+}: VoucherFormProps) {
+  const isSale = voucherKind === "VENTA";
+  const entityLabel = isSale ? "Cliente" : "Proveedor";
+  const entityPlaceholder = isSale ? "Buscar cliente..." : "Buscar proveedor...";
+  const entityErrorLabel = isSale ? "cliente" : "proveedor";
+
+  const { clients, isLoading: isClientsLoading } = useClientes();
   const [suppliers, setSuppliers] = useState<Client[]>([]);
   const [isSuppliersLoading, setIsSuppliersLoading] = useState(true);
 
-  const form = useForm<PurchaseFormInput, unknown, PurchaseFormValues>({
-    resolver: zodResolver(purchaseSchema),
-    defaultValues: createEmptyValues(),
-  });
-
   useEffect(() => {
+    if (isSale) {
+      return;
+    }
+
     let isMounted = true;
 
     void (async () => {
@@ -144,24 +156,29 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isSale]);
+
+  const form = useForm<VoucherFormInput, unknown, VoucherFormValues>({
+    resolver: zodResolver(voucherFormSchema),
+    defaultValues: createEmptyValues(),
+  });
 
   useEffect(() => {
     form.reset(
-      purchase
+      voucher
         ? {
-            issueDate: purchase.issueDate,
-            voucherType: purchase.voucherType,
-            voucherNumber: purchase.voucherNumber,
-            supplierId: purchase.supplierId,
-            total: purchase.total,
-            paymentType: purchase.paymentType,
-            creditDays: purchase.creditDays ?? "",
-            status: purchase.status,
+            issueDate: voucher.issueDate,
+            voucherType: voucher.voucherType,
+            voucherNumber: voucher.voucherNumber,
+            entityId: voucher.entityId,
+            total: voucher.total,
+            paymentType: voucher.paymentType,
+            creditDays: voucher.creditDays ?? "",
+            status: voucher.status,
           }
         : createEmptyValues()
     );
-  }, [purchase, form]);
+  }, [voucher, form]);
 
   const total = useWatch({ control: form.control, name: "total" });
   const numericTotal = Number(total);
@@ -176,21 +193,42 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
   const isCredit = paymentType === "CREDITO";
   const numericCreditDays = Number(creditDays);
   const dueDate =
-    isCredit && issueDate && Number.isFinite(numericCreditDays) && numericCreditDays >= 1
+    isCredit &&
+    issueDate &&
+    Number.isFinite(numericCreditDays) &&
+    numericCreditDays >= 1
       ? calculateDueDate(issueDate, numericCreditDays)
       : "";
 
-  const registrationDate = purchase?.registrationDate ?? getTodayLocalDate();
-  const supplierItems = toEntityAutocompleteItems(suppliers);
+  const registrationDate = voucher?.registrationDate ?? getTodayLocalDate();
+  const entities = isSale ? clients : suppliers;
+  const entityItems = toEntityAutocompleteItems(entities);
+  const isEntityLoading = isSale ? isClientsLoading : isSuppliersLoading;
 
-  const isPaidLocked = (purchase?.paidAmount ?? 0) > 0;
+  const entityId = useWatch({ control: form.control, name: "entityId" });
+  const selectedEntity =
+    entities.find((entity) => entity.id === entityId) ?? null;
+  const canIssueFactura = selectedEntity?.documentType === "RUC";
+  const isPaidLocked = (voucher?.paidAmount ?? 0) > 0;
 
   const errors = form.formState.errors;
 
+  function handleSubmit(values: VoucherFormValues) {
+    // En ventas una factura exige RUC; en compras el tipo queda libre.
+    if (isSale && values.voucherType === "FACTURA" && !canIssueFactura) {
+      form.setError("voucherType", {
+        message: "No se puede emitir factura a un cliente sin RUC",
+      });
+      return;
+    }
+
+    onSubmit(values);
+  }
+
   return (
     <form
-      id={PURCHASE_FORM_ID}
-      onSubmit={form.handleSubmit(onSubmit)}
+      id={VOUCHER_FORM_ID}
+      onSubmit={form.handleSubmit(handleSubmit)}
       className="flex flex-col gap-6"
     >
       {isPaidLocked ? (
@@ -198,8 +236,9 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
           role="status"
           className="rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground"
         >
-          Este comprobante tiene pagos registrados: importe, número, proveedor
-          y fecha quedan bloqueados. Anula los pagos si necesitas corregirlo.
+          Este comprobante tiene pagos registrados: importe, número,{" "}
+          {entityErrorLabel} y fecha quedan bloqueados. Anula los pagos si
+          necesitas corregirlo.
         </p>
       ) : null}
 
@@ -245,12 +284,25 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {VOUCHER_TYPES.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+                    <SelectItem
+                      key={option.value}
+                      value={option.value}
+                      disabled={
+                        isSale &&
+                        option.value === "FACTURA" &&
+                        !canIssueFactura
+                      }
+                    >
                       {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {isSale && !canIssueFactura ? (
+                <p className="text-xs text-muted-foreground">
+                  Para emitir factura, el cliente debe tener RUC.
+                </p>
+              ) : null}
               <FieldError message={errors.voucherType?.message} />
             </div>
           )}
@@ -270,31 +322,31 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
 
         <Controller
           control={form.control}
-          name="supplierId"
+          name="entityId"
           render={({ field }) => (
             <div className="flex flex-col gap-1.5 sm:col-span-2">
-              <Label htmlFor="supplierId">Proveedor</Label>
+              <Label htmlFor="entityId">{entityLabel}</Label>
               <EntityAutocomplete
-                id="supplierId"
-                items={supplierItems}
+                id="entityId"
+                items={entityItems}
                 value={field.value ? field.value : null}
                 onValueChange={(value) => {
                   field.onChange(value);
 
-                  const supplier =
-                    suppliers.find((item) => item.id === value) ?? null;
+                  const entity =
+                    entities.find((item) => item.id === value) ?? null;
 
                   form.setValue(
                     "voucherType",
-                    supplier?.documentType === "RUC" ? "FACTURA" : "BOLETA"
+                    entity?.documentType === "RUC" ? "FACTURA" : "BOLETA"
                   );
                 }}
-                placeholder="Buscar proveedor..."
-                isLoading={isSuppliersLoading}
+                placeholder={entityPlaceholder}
+                isLoading={isEntityLoading}
                 isDisabled={isPaidLocked}
-                aria-invalid={!!errors.supplierId}
+                aria-invalid={!!errors.entityId}
               />
-              <FieldError message={errors.supplierId?.message} />
+              <FieldError message={errors.entityId?.message} />
             </div>
           )}
         />
@@ -332,7 +384,7 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
         </div>
       </FormGroup>
 
-      <FormGroup title="Pago y estado">
+      <FormGroup title="Condición de pago">
         <Controller
           control={form.control}
           name="paymentType"
@@ -404,7 +456,7 @@ export function PurchaseForm({ purchase, onSubmit }: PurchaseFormProps) {
               <Label htmlFor="status">Estado</Label>
               <Select
                 value={field.value ? field.value : null}
-                items={purchaseStatusItems}
+                items={statusItems}
                 onValueChange={(value) => field.onChange(value ?? undefined)}
               >
                 <SelectTrigger id="status" className="w-full">

@@ -47,9 +47,14 @@ type NavGroup = {
 };
 
 const directLinks: NavLink[] = [
-  { label: "Ventas", href: "/ventas/listado", icon: Receipt },
-  { label: "Compras", href: "/compras/listado", icon: ShoppingCart },
+  { label: "Ventas", href: "/ventas", icon: Receipt },
+  { label: "Compras", href: "/compras", icon: ShoppingCart },
 ];
+
+/** Marca activa la entrada también en sus rutas hijas (/ventas/nuevo, /ventas/[id]...). */
+function isPathActive(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 const groups: NavGroup[] = [
   {
@@ -113,7 +118,7 @@ export function AppNavbar() {
               {directLinks.map((item) => (
                 <NavigationMenuItem key={item.href}>
                   <NavigationMenuLink
-                    active={pathname === item.href}
+                    active={isPathActive(pathname, item.href)}
                     render={<Link href={item.href} />}
                     className={cn(navigationMenuTriggerStyle(), "gap-2")}
                   >

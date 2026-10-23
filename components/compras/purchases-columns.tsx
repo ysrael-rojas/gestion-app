@@ -14,7 +14,7 @@ import {
   sortFn_text,
   tableFeatures,
 } from "@tanstack/react-table";
-import { ArrowUpDown, Eye, Pencil, Printer, Wallet } from "lucide-react";
+import { ArrowUpDown, Eye, Pencil, Wallet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -210,15 +210,6 @@ export function getPurchasesColumns({
                   <TooltipContent>Registrar pago</TooltipContent>
                 </Tooltip>
               ) : null}
-              <Tooltip>
-                <TooltipTrigger
-                  render={<Button variant="ghost" size="icon-sm" />}
-                >
-                  <Printer />
-                  <span className="sr-only">Imprimir</span>
-                </TooltipTrigger>
-                <TooltipContent>Imprimir</TooltipContent>
-              </Tooltip>
               <Tooltip>
                 <TooltipTrigger
                   render={

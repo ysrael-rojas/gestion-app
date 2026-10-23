@@ -24,8 +24,8 @@ interface VentasContextValue {
   isLoading: boolean;
   error: string | null;
   balanceError: BalanceLoadError | null;
-  addSale: (values: SaleFormValues) => Promise<void>;
-  updateSale: (id: string, values: SaleFormValues) => Promise<void>;
+  addSale: (values: SaleFormValues) => Promise<Sale>;
+  updateSale: (id: string, values: SaleFormValues) => Promise<Sale>;
   refresh: () => Promise<void>;
 }
 
@@ -84,16 +84,18 @@ export function VentasProvider({ children }: { children: React.ReactNode }) {
 
   const addSale = useCallback(
     async (values: SaleFormValues) => {
-      await createSaleRecord(values);
+      const sale = await createSaleRecord(values);
       await refresh();
+      return sale;
     },
     [refresh]
   );
 
   const updateSale = useCallback(
     async (id: string, values: SaleFormValues) => {
-      await updateSaleRecord(id, values);
+      const sale = await updateSaleRecord(id, values);
       await refresh();
+      return sale;
     },
     [refresh]
   );

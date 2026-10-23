@@ -3,7 +3,7 @@ import { parseListadoFilters } from "@/lib/filters/listado-filters";
 
 export default async function VentasListadoPage({
   searchParams,
-}: PageProps<"/ventas/listado">) {
+}: PageProps<"/ventas">) {
   const params = await searchParams;
   const filters = parseListadoFilters(params);
 

@@ -1,9 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+const state = vi.hoisted(() => ({ pathname: "/ventas" }));
+
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/ventas/listado",
+  usePathname: () => state.pathname,
 }));
 
 vi.mock("@/components/auth/sign-out-button", () => ({
@@ -13,6 +15,10 @@ vi.mock("@/components/auth/sign-out-button", () => ({
 import { AppNavbar } from "@/components/app-navbar";
 
 describe("AppNavbar", () => {
+  beforeEach(() => {
+    state.pathname = "/ventas";
+  });
+
   it("ordena las entradas de izquierda a derecha: Ventas, Compras, Notas y retenciones, Maestro, Pagos, Caja y bancos", () => {
     render(<AppNavbar />);
 
@@ -40,11 +46,21 @@ describe("AppNavbar", () => {
 
     expect(screen.getByRole("link", { name: /Ventas/ })).toHaveAttribute(
       "href",
-      "/ventas/listado"
+      "/ventas"
     );
     expect(screen.getByRole("link", { name: /Compras/ })).toHaveAttribute(
       "href",
-      "/compras/listado"
+      "/compras"
+    );
+  });
+
+  it("marca Ventas como activa también en sus rutas hijas", () => {
+    state.pathname = "/ventas/nuevo";
+
+    render(<AppNavbar />);
+
+    expect(screen.getByRole("link", { name: /Ventas/ })).toHaveAttribute(
+      "data-active"
     );
   });
 

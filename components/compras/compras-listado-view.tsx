@@ -1,52 +1,40 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { useClientes } from "@/components/clientes/clientes-provider";
 import { NestedPaymentDrawers } from "@/components/comprobantes/nested-payment-drawers";
 import { ListingsToolbar } from "@/components/shared/listings-toolbar";
-import { PurchaseDetailModal } from "@/components/compras/purchase-detail-modal";
-import { PurchaseModal } from "@/components/compras/purchase-modal";
 import { PurchasesDataTable } from "@/components/compras/purchases-data-table";
 import { useCompras } from "@/components/compras/compras-provider";
 import type { Purchase } from "@/components/compras/types";
 import type { ListadoFilters } from "@/lib/filters/listado-filters";
-import type { PurchaseFormValues } from "@/lib/schemas/purchase";
 
 interface ComprasListadoViewProps {
   filters: ListadoFilters;
 }
 
-function getErrorMessage(error: unknown): string {
-  return error instanceof Error
-    ? error.message
-    : "No se pudo guardar la compra. Intenta nuevamente.";
-}
-
 export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
+  const router = useRouter();
   const { clients } = useClientes();
-  const { purchases, isLoading, balanceError, addPurchase, updatePurchase, refresh } =
-    useCompras();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
-  const [viewingPurchase, setViewingPurchase] = useState<Purchase | null>(null);
+  const { purchases, isLoading, balanceError, refresh } = useCompras();
   const [paymentPurchase, setPaymentPurchase] = useState<Purchase | null>(null);
 
-  function openCreate() {
-    setEditingPurchase(null);
-    setModalOpen(true);
-  }
+  const openEdit = useCallback(
+    (purchase: Purchase) => {
+      router.push(`/compras/${purchase.id}/editar`);
+    },
+    [router]
+  );
 
-  const openEdit = useCallback((purchase: Purchase) => {
-    setEditingPurchase(purchase);
-    setModalOpen(true);
-  }, []);
-
-  const openView = useCallback((purchase: Purchase) => {
-    setViewingPurchase(purchase);
-  }, []);
+  const openView = useCallback(
+    (purchase: Purchase) => {
+      router.push(`/compras/${purchase.id}`);
+    },
+    [router]
+  );
 
   const openRegisterPayment = useCallback((purchase: Purchase) => {
     setPaymentPurchase(purchase);
@@ -55,23 +43,6 @@ export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
   const resolveSupplierName = (supplierId: string) =>
     clients.find((client) => client.id === supplierId)?.name ??
     "Proveedor no encontrado";
-
-  async function handleSave(values: PurchaseFormValues) {
-    try {
-      if (editingPurchase) {
-        await updatePurchase(editingPurchase.id, values);
-        toast.success("Compra actualizada");
-      } else {
-        await addPurchase(values);
-        toast.success("Compra registrada");
-      }
-
-      setModalOpen(false);
-      setEditingPurchase(null);
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  }
 
   return (
     <main className="container mx-auto flex flex-col gap-6 p-6">
@@ -83,7 +54,9 @@ export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
       </div>
 
       <ListingsToolbar>
-        <Button onClick={openCreate}>Registrar compra</Button>
+        <Button onClick={() => router.push("/compras/nuevo")}>
+          Registrar compra
+        </Button>
       </ListingsToolbar>
 
       <PurchasesDataTable
@@ -95,29 +68,6 @@ export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
         onView={openView}
         onEdit={openEdit}
         onRegisterPayment={openRegisterPayment}
-      />
-
-      <PurchaseModal
-        open={modalOpen}
-        onOpenChange={(open) => {
-          setModalOpen(open);
-          if (!open) {
-            setEditingPurchase(null);
-          }
-        }}
-        purchase={editingPurchase}
-        onSave={handleSave}
-      />
-
-      <PurchaseDetailModal
-        open={viewingPurchase !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setViewingPurchase(null);
-          }
-        }}
-        purchase={viewingPurchase}
-        clients={clients}
       />
 
       {paymentPurchase ? (
