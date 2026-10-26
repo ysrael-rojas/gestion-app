@@ -1,15 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-const { CLIENTS, SUPPLIERS } = vi.hoisted(() => ({
+const { CLIENTS, SUPPLIERS, SERIES } = vi.hoisted(() => ({
   CLIENTS: [
     {
       id: "c-ruc",
       documentType: "RUC" as const,
       documentNumber: "20123456789",
       name: "Distribuidora Norte SAC",
-      address: "",
+      address: "Av. Los Álamos 123, Lima",
       phone: "",
       contactName: "",
       billingEmail: "",
@@ -62,6 +62,42 @@ const { CLIENTS, SUPPLIERS } = vi.hoisted(() => ({
       managementEmail: "",
     },
   ],
+  SERIES: [
+    {
+      id: "s-factura",
+      voucherType: "FACTURA" as const,
+      code: "F001",
+      lastNumber: 0,
+      isDefault: true,
+      deletedAt: null,
+    },
+    {
+      id: "s-boleta",
+      voucherType: "BOLETA" as const,
+      code: "B001",
+      lastNumber: 5,
+      isDefault: true,
+      deletedAt: null,
+    },
+    {
+      id: "s-nota",
+      voucherType: "NOTA_VENTA" as const,
+      code: "NV01",
+      lastNumber: 0,
+      isDefault: true,
+      deletedAt: null,
+    },
+  ],
+}));
+
+vi.mock("@/lib/comprobantes/series", () => ({
+  listSeries: vi.fn(async () => SERIES),
+  suggestVoucherNumber: (series: { code: string; lastNumber: number }) =>
+    `${series.code}-${String(series.lastNumber + 1).padStart(6, "0")}`,
+  advanceSeriesNumber: vi.fn(),
+  createSeries: vi.fn(),
+  updateSeries: vi.fn(),
+  softDeleteSeries: vi.fn(),
 }));
 
 vi.mock("@/lib/clientes/entidades", () => ({
@@ -78,6 +114,7 @@ import {
   VOUCHER_FORM_ID,
   VoucherForm,
 } from "@/components/comprobantes/voucher-form";
+import { listSeries } from "@/lib/comprobantes/series";
 
 const baseVoucher = (overrides: Partial<Voucher> = {}): Voucher => ({
   id: "v-1",
@@ -295,5 +332,163 @@ describe("VoucherForm — montos derivados", () => {
 
     expect(subtotalInput.value).toContain("100.00");
     expect(igvInput.value).toContain("18.00");
+  });
+});
+
+function expectRequiredMark(label: string) {
+  const labelElement = screen.getByText(label);
+  const badge = labelElement.parentElement?.querySelector(
+    '[data-slot="badge"]'
+  );
+
+  expect(badge).not.toBeNull();
+  expect(badge?.textContent).toBe("Requerido");
+  expect(badge?.className).toContain("text-destructive");
+}
+
+describe("VoucherForm — SPEC 44: requeridos y dirección", () => {
+  it("marca con asterisco rojo los campos requeridos", async () => {
+    renderForm("VENTA", null);
+    await screen.findByPlaceholderText("Buscar cliente...");
+
+    expectRequiredMark("Tipo de comprobante");
+    expectRequiredMark("Nro comprobante");
+    expectRequiredMark("Cliente");
+    expectRequiredMark("Total");
+    expectRequiredMark("Condición");
+  });
+
+  it("mantiene el ítem 'Selecciona un tipo' en la lista aunque haya selección", async () => {
+    renderForm("VENTA", null);
+
+    const user = await pickEntity(
+      "Buscar cliente...",
+      "Distribuidora Norte SAC"
+    );
+
+    expect(await screen.findByText("Factura")).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText("Tipo de comprobante"));
+
+    expect(
+      await screen.findByRole("option", { name: "Selecciona un tipo" })
+    ).toBeInTheDocument();
+  });
+
+  it("muestra el error rojo al enviar sin tipo de comprobante", async () => {
+    const user = userEvent.setup();
+    renderForm("VENTA", null);
+
+    await screen.findByPlaceholderText("Buscar cliente...");
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+
+    expect(
+      await screen.findByText("Selecciona el tipo de comprobante")
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Tipo de comprobante")).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    );
+  });
+
+  it("muestra la dirección del cliente en solo lectura", async () => {
+    renderForm("VENTA", null);
+
+    await pickEntity("Buscar cliente...", "Distribuidora Norte SAC");
+
+    expect(await screen.findByLabelText("Dirección")).toHaveValue(
+      "Av. Los Álamos 123, Lima"
+    );
+    expect(screen.getByLabelText("Dirección")).toHaveAttribute("readonly");
+  });
+});
+
+describe("VoucherForm — SPEC 44: sugerencia de numeración", () => {
+  beforeEach(() => {
+    vi.mocked(listSeries).mockReset();
+    vi.mocked(listSeries).mockImplementation(async () => SERIES);
+  });
+
+  it("sugiere la serie por defecto según el tipo autoseleccionado", async () => {
+    renderForm("VENTA", null);
+
+    await pickEntity("Buscar cliente...", "Distribuidora Norte SAC");
+
+    expect(await screen.findByDisplayValue("F001-000001")).toBeInTheDocument();
+  });
+
+  it("sugiere el correlativo siguiente de la serie de boleta", async () => {
+    renderForm("VENTA", null);
+
+    await pickEntity("Buscar cliente...", "Bodega María");
+
+    expect(await screen.findByDisplayValue("B001-000006")).toBeInTheDocument();
+  });
+
+  it("recalcula la sugerencia al cambiar de tipo", async () => {
+    renderForm("VENTA", null);
+
+    const user = await pickEntity(
+      "Buscar cliente...",
+      "Distribuidora Norte SAC"
+    );
+
+    await screen.findByDisplayValue("F001-000001");
+
+    await user.click(screen.getByLabelText("Tipo de comprobante"));
+    await user.click(await screen.findByRole("option", { name: "Boleta" }));
+
+    expect(await screen.findByDisplayValue("B001-000006")).toBeInTheDocument();
+  });
+
+  it("deshabilita los tipos sin serie por defecto y muestra el hint", async () => {
+    vi.mocked(listSeries).mockResolvedValueOnce(
+      SERIES.filter((item) => item.voucherType !== "NOTA_VENTA")
+    );
+
+    renderForm("VENTA", null);
+
+    const user = await pickEntity("Buscar cliente...", "Bodega María");
+
+    await user.click(screen.getByLabelText("Tipo de comprobante"));
+
+    const notaVentaOption = await screen.findByRole("option", {
+      name: "Nota de venta",
+    });
+
+    expect(notaVentaOption).toHaveAttribute("aria-disabled", "true");
+    expect(
+      screen.getByText(
+        /Configura una serie por defecto para Nota de venta en Configuración/
+      )
+    ).toBeInTheDocument();
+  });
+
+  it("muestra un banner cuando no hay ninguna serie de venta", async () => {
+    vi.mocked(listSeries).mockResolvedValueOnce([]);
+
+    renderForm("VENTA", null);
+
+    expect(
+      await screen.findByText(/Aún no tienes series de venta configuradas/)
+    ).toBeInTheDocument();
+  });
+
+  it("no reemplaza el número al editar una venta existente", async () => {
+    renderForm("VENTA", baseVoucher({ voucherNumber: "F001-000042" }));
+
+    await screen.findByPlaceholderText("Buscar cliente...");
+
+    expect(screen.getByLabelText("Nro comprobante")).toHaveValue(
+      "F001-000042"
+    );
+  });
+
+  it("no sugiere numeración en compras", async () => {
+    renderForm("COMPRA", null);
+
+    await pickEntity("Buscar proveedor...", "Ferretería El Sol EIRL");
+
+    expect(screen.getByLabelText("Nro comprobante")).toHaveValue("");
   });
 });
