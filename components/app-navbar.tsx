@@ -95,6 +95,17 @@ const groups: NavGroup[] = [
       { label: "Configuración", href: "/cajas-bancos/configuracion", icon: Settings },
     ],
   },
+  {
+    label: "Configuración",
+    icon: Settings,
+    items: [
+      {
+        label: "Series de comprobantes",
+        href: "/configuracion",
+        icon: Settings,
+      },
+    ],
+  },
 ];
 
 export function AppNavbar() {

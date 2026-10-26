@@ -674,6 +674,42 @@ export type Database = {
         }
         Relationships: []
       }
+      voucher_series: {
+        Row: {
+          code: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          is_default: boolean
+          last_number: number
+          owner_id: string
+          updated_at: string
+          voucher_type: Database["public"]["Enums"]["voucher_type"]
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_default?: boolean
+          last_number?: number
+          owner_id?: string
+          updated_at?: string
+          voucher_type: Database["public"]["Enums"]["voucher_type"]
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          is_default?: boolean
+          last_number?: number
+          owner_id?: string
+          updated_at?: string
+          voucher_type?: Database["public"]["Enums"]["voucher_type"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       payment_balance: {

@@ -16,6 +16,7 @@ import { BackLink } from "@/components/shared/back-link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useVentas } from "@/components/ventas/ventas-provider";
+import { advanceSeriesNumber } from "@/lib/comprobantes/series";
 import type { PurchaseFormValues } from "@/lib/schemas/purchase";
 import type { SaleFormValues } from "@/lib/schemas/sale";
 import type { VoucherFormValues } from "@/lib/schemas/voucher";
@@ -74,6 +75,16 @@ export function VoucherFormView({
         const sale = voucherId
           ? await updateSale(voucherId, toSaleValues(values))
           : await addSale(toSaleValues(values));
+
+        try {
+          // Avance del correlativo de la serie (solo si el prefijo está
+          // registrado). Un fallo aquí no revierte la venta ya guardada.
+          await advanceSeriesNumber(values.voucherType, values.voucherNumber);
+        } catch {
+          toast.error(
+            "La venta se guardó, pero no se pudo actualizar el correlativo de la serie."
+          );
+        }
 
         toast.success(voucherId ? "Venta actualizada" : "Venta registrada");
         router.push(`/ventas/${sale.id}`);
