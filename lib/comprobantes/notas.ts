@@ -26,6 +26,22 @@ interface ReferencedInfo {
 
 const CREDIT_VOUCHER_TYPES = ["NOTA_CREDITO", "COMPROBANTE_RETENCION"] as const;
 
+const ADJUSTMENT_VOUCHER_TYPES = [
+  "NOTA_CREDITO",
+  "NOTA_DEBITO",
+  "COMPROBANTE_RETENCION",
+] as const;
+
+/** Nota de crédito/débito o retención aplicada a un comprobante base. */
+export interface VoucherAdjustment {
+  id: string;
+  voucherType: AdjustmentVoucherType;
+  voucherNumber: string;
+  issueDate: string;
+  motiveCode: string | null; // null en retenciones
+  total: number;
+}
+
 const REFERENCED_NOT_FOUND_MESSAGE = "El comprobante referenciado no existe.";
 const BASE_VOUCHER_TYPE_MESSAGE =
   "Solo puedes referenciar factura, boleta o nota de venta.";
@@ -206,6 +222,36 @@ export async function listNotas(
         : undefined
     )
   );
+}
+
+/**
+ * Ajustes (NC, ND y retenciones) aplicados a un comprobante base. Una sola
+ * consulta por `referenced_comprobante_id`; la UI separa notas de retenciones.
+ */
+export async function listVoucherAdjustments(
+  comprobanteId: string
+): Promise<VoucherAdjustment[]> {
+  const { data, error } = await supabase
+    .from("comprobante")
+    .select("id, voucher_type, voucher_number, issue_date, motive_code, total")
+    .eq("referenced_comprobante_id", comprobanteId)
+    .in("voucher_type", ADJUSTMENT_VOUCHER_TYPES)
+    .is("deleted_at", null)
+    .order("issue_date", { ascending: false })
+    .order("voucher_number", { ascending: true });
+
+  if (error) {
+    throw mapError(error);
+  }
+
+  return ((data ?? []) as ComprobanteRow[]).map((row) => ({
+    id: row.id,
+    voucherType: row.voucher_type as AdjustmentVoucherType,
+    voucherNumber: row.voucher_number,
+    issueDate: row.issue_date,
+    motiveCode: row.motive_code,
+    total: row.total,
+  }));
 }
 
 export async function listReferableComprobantes(

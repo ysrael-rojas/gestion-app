@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import {
   createColumnHelper,
   createPaginatedRowModel,
@@ -9,7 +9,6 @@ import {
   useTable,
 } from "@tanstack/react-table";
 import { Printer } from "lucide-react";
-import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,13 +35,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type {
-  PaymentDirection,
   PaymentHistoryEntry,
   PaymentStatus,
 } from "@/components/pagos/types";
 import { PAYMENT_STATUSES } from "@/lib/data/payment-options";
 import { getOptionLabel } from "@/lib/data/sale-options";
-import { getPaymentHistory } from "@/lib/pagos/pagos";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 const COLUMNS_COUNT = 6;
@@ -60,8 +57,9 @@ const historyColumnHelper = createColumnHelper<
 >();
 
 interface PaymentHistorySectionProps {
-  comprobanteId: string;
-  direction: PaymentDirection;
+  /** `null` mientras carga; array vacío cuando el comprobante no tiene pagos. */
+  entries: PaymentHistoryEntry[] | null;
+  error?: string | null;
   onPrint: (paymentId: string) => void;
 }
 
@@ -97,13 +95,12 @@ function LoadingRows() {
 }
 
 export function PaymentHistorySection({
-  comprobanteId,
-  direction,
+  entries,
+  error,
   onPrint,
 }: PaymentHistorySectionProps) {
-  const [entries, setEntries] = useState<PaymentHistoryEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const isLoading = entries === null;
+  const rows = entries ?? [];
 
   const columns = useMemo(
     () =>
@@ -159,7 +156,7 @@ export function PaymentHistorySection({
 
   const table = useTable({
     features: historyTableFeatures,
-    data: entries,
+    data: rows,
     columns,
     initialState: {
       pagination: {
@@ -168,41 +165,6 @@ export function PaymentHistorySection({
       },
     },
   });
-
-  useEffect(() => {
-    let isMounted = true;
-
-    void (async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const data = await getPaymentHistory(comprobanteId);
-
-        if (isMounted) {
-          setEntries(data);
-        }
-      } catch (err) {
-        if (isMounted) {
-          const message =
-            err instanceof Error
-              ? err.message
-              : "No se pudo cargar el historial de pagos. Intenta nuevamente.";
-          setEntries([]);
-          setError(message);
-          toast.error(message);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [comprobanteId, direction]);
 
   return (
     <TooltipProvider>
@@ -215,7 +177,7 @@ export function PaymentHistorySection({
             <p role="alert" className="text-sm text-destructive">
               {error}
             </p>
-          ) : !isLoading && entries.length === 0 ? (
+          ) : !isLoading && rows.length === 0 ? (
             <div className="flex flex-col items-center gap-1 py-6 text-center">
               <p className="text-sm font-medium">
                 Aún no se han registrado pagos para este comprobante.
