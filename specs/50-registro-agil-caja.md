@@ -1,6 +1,6 @@
 # SPEC 50 — Registro ágil de caja (movimientos sin comprobante y arqueo de caja chica persistente)
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 18, SPEC 33, SPEC 37, SPEC 48, SPEC 49
 > **Date:** 2026-10-27
 > **Objective:** Registrar movimientos de caja que no pagan ni cobran un comprobante (aporte y retiro del propietario, gastos hormiga, abonos bancarios) desde un diálogo en Detalle de Cuentas, marcarlos para que no ensucien los listados de cobros/pagos, y persistir el arqueo de caja chica en `cash_count`.
@@ -105,16 +105,16 @@ UI nueva: `components/cajas-bancos/cash-movement-modal.tsx`. Sin componentes de 
 
 ## Acceptance criteria
 
-- [ ] Desde Detalle de Cuentas, "Movimiento" abre un diálogo con la cuenta ya elegida y registra un recibo (`RI-…`/`RE-…`) sin entidad, sin asignaciones y con `is_cash_movement = true`, en la dirección y categoría elegidas.
-- [ ] La fecha propuesta es el primer día abierto de la cuenta; una fecha de periodo cerrado se rechaza en el cliente con mensaje claro y el trigger de la BD sigue bloqueándola.
-- [ ] En Ingresos/Egresos, esos recibos muestran el badge neutro "Movimiento de caja" en la columna "Saldo por asignar" y **no** tienen botón "Asignar"; un anticipo real (sin entidad, sin flag) sigue mostrando monto + "Por asignar" + botón.
-- [ ] El filtro "sin-asignar" y los buckets de cartera (`getCarteraResumen`) no incluyen movimientos de caja.
-- [ ] El recibo que genera un vale de caja chica nace marcado como movimiento de caja.
-- [ ] El cargo bancario conserva su modal y su acceso desde el extracto, y su recibo queda marcado como movimiento de caja.
-- [ ] "Aporte del propietario" y "Abono bancario" aparecen en el selector de categorías de ingreso, también para owners que ya tenían catálogo (siembra por `code`).
-- [ ] El panel de caja chica conserva el bloque clásico (contado + vales pendientes vs fondo) y añade "Guardar arqueo", que persiste en `cash_count` con denominaciones y responsable, y muestra los últimos arqueos con su resultado.
-- [ ] No cambian `private.cash_expected_balance`, `close_cash_account` ni los estados `EN_REVISION`/`PROCESADO`/`ANULADO`.
-- [ ] `lib/supabase/types.ts` regenerado vía MCP (cabecera del repo conservada), migración versionada en `supabase/migrations/`, y `npx tsc --noEmit`, `npm run lint`, `npm test` y `npm run build` en verde.
+- [x] Desde Detalle de Cuentas, "Movimiento" abre un diálogo con la cuenta ya elegida y registra un recibo (`RI-…`/`RE-…`) sin entidad, sin asignaciones y con `is_cash_movement = true`, en la dirección y categoría elegidas. Test de componente del diálogo; integración en BD: flag explícito, default `false` y vale marcado.
+- [x] La fecha propuesta es el primer día abierto de la cuenta; una fecha de periodo cerrado se rechaza en el cliente con mensaje claro y el trigger de la BD sigue bloqueándola. Test "rechaza una fecha dentro de un periodo cerrado".
+- [x] En Ingresos/Egresos, esos recibos muestran el badge neutro "Movimiento de caja" en la columna "Saldo por asignar" y **no** tienen botón "Asignar"; un anticipo real (sin entidad, sin flag) sigue mostrando monto + "Por asignar" + botón. Tests de `getAssignState` y de columnas.
+- [x] El filtro "sin-asignar" y los buckets de cartera (`getCarteraResumen`) no incluyen movimientos de caja. `listUnassignedPayments` filtra `is_cash_movement = false` y `getCarteraResumen` descarta los ids marcados; tests unitarios de ambos.
+- [x] El recibo que genera un vale de caja chica nace marcado como movimiento de caja. Integración en BD con `rollback`: `create_petty_cash_vale` → `payment.is_cash_movement = true`.
+- [x] El cargo bancario conserva su modal y su acceso desde el extracto, y su recibo queda marcado como movimiento de caja. `bankChargeToPayment` añade `isCashMovement: true`; tests del mapper.
+- [x] "Aporte del propietario" y "Abono bancario" aparecen en el selector de categorías de ingreso, también para owners que ya tenían catálogo (siembra por `code`). Tests de `DEFAULT_CATEGORIES` y de `ensureCatalogsSeeded`.
+- [x] El panel de caja chica conserva el bloque clásico (contado + vales pendientes vs fondo) y añade "Guardar arqueo", que persiste en `cash_count` con denominaciones y responsable, y muestra los últimos arqueos con su resultado. Tests del panel (historial y apertura del modal).
+- [x] No cambian `private.cash_expected_balance`, `close_cash_account` ni los estados `EN_REVISION`/`PROCESADO`/`ANULADO`. Solo se tocaron las dos RPC de creación y la columna nueva.
+- [x] `lib/supabase/types.ts` actualizado y **verificado contra `generate_typescript_types`** (las secciones de `payment` y `create_payment_with_allocations` coinciden con el generador); migración versionada en `supabase/migrations/`; `npx tsc --noEmit`, `npm run lint`, `npm test` (555 tests) y `npm run build` en verde; advisors revisados sin hallazgos nuevos de la columna.
 
 ## Decisions
 
@@ -128,6 +128,7 @@ UI nueva: `components/cajas-bancos/cash-movement-modal.tsx`. Sin componentes de 
 - **Sí:** atajo de depósito, fuera. **No:** incluirlo — "Transferir" ya lo cubre y el control de depositar el excedente es un procedimiento, no una pantalla.
 - **Sí:** el panel de caja chica mantiene la fórmula clásica y añade el arqueo persistido. **No:** reemplazarla — el fondo fijo es la lectura operativa del custodio; `cash_count` es la cifra auditable contra registros.
 - **Pase previo por `frontend-design`** (2026-10-27): concepto "un movimiento de caja es un recibo más, no un formulario de cobranza"; cero colores nuevos; importes con `tabular-nums`; labels en sentence case; la cuenta viene de la fila; silencio donde no aplica (sin "Por asignar" en movimientos). Se mantiene conscientemente el separador `·` de las descripciones de diálogo por coherencia con `CashValeModal`/`PettyCashPanel`.
+- **Corrección de implementación (2026-10-27):** el diálogo incluye un campo **Método** que el diseño original no listaba, porque `create_payment_with_allocations` lo exige. Se filtra por tipo de cuenta (Efectivo en cajas; los demás en bancos) y en una caja se preselecciona Efectivo.
 
 ## Risks
 
