@@ -1,6 +1,6 @@
 # SPEC 49 — Integridad del cuadre de caja (vales, tolerancia, arqueo sorpresivo)
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 19, SPEC 30, SPEC 31, SPEC 32, SPEC 33, SPEC 35
 > **Date:** 2026-10-27
 > **Objective:** Corregir las fallas de integridad del cuadre de caja y bancos: que los vales de caja chica generen su egreso (hoy el cierre los ignora), bloquear cierres con fecha futura, exigir motivo cuando la diferencia supere una tolerancia, registrar arqueos sorpresivos que no cierran periodo, mostrar la secuencia de recibos en el reporte y limpiar deuda técnica del dominio.
@@ -123,19 +123,19 @@ Tipos de cliente: `CashCount`, `CashCountDenomination` y los campos nuevos en `C
 
 ## Acceptance criteria
 
-- [ ] Crear un vale de caja chica genera un recibo de egreso (`RE-…`) contra esa cuenta, con la categoría elegida, y el vale queda ligado por `payment_id`.
-- [ ] El saldo esperado de una caja chica baja al emitir el vale: tras emitir vales y reponer el fondo, el cierre de la caja chica queda **sin diferencia**.
-- [ ] Anular un vale pendiente anula también su recibo (con motivo y fecha) y el saldo esperado se recupera; un vale ya repuesto no se puede anular (comportamiento vigente).
-- [ ] El modal de vale exige categoría de egreso y mantiene el ítem "Seleccionar" persistente.
-- [ ] `close_cash_account` rechaza un `period_end` posterior a hoy con mensaje claro, y el modal de cierre lo impide en cliente.
-- [ ] Con diferencia mayor a la tolerancia, el cierre exige motivo escrito; dentro de la tolerancia se puede cerrar sin motivo. El motivo y la tolerancia usada quedan guardados y visibles en el reporte y el CSV.
-- [ ] La tolerancia es configurable en Configuración → General (`cash_difference_tolerance`, default 0.50) y se respeta al cerrar.
-- [ ] El arqueo sorpresivo registra conteo (con denominaciones opcionales), responsable y fecha **sin cerrar el periodo**, mostrando esperado, contado y diferencia; queda listado en el historial de la cuenta.
-- [ ] El reporte del cierre muestra la secuencia de recibos del periodo (primero y último) y la cantidad de anulados.
-- [ ] El modal de cargo bancario lista las categorías por `code`: renombrar "ITF" no lo hace desaparecer.
-- [ ] `/cajas-bancos/cuentas` carga saldos con una sola RPC y últimos movimientos con una sola consulta; `listCashPositions` ya no existe ni se usa.
-- [ ] `lib/supabase/types.ts` regenerado con `npm run gen:types`; advisors de seguridad y rendimiento revisados tras las migraciones.
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan con los tests nuevos en verde.
+- [x] Crear un vale de caja chica genera un recibo de egreso (`RE-…`) contra esa cuenta, con la categoría elegida, y el vale queda ligado por `payment_id`. Verificado con una prueba de integración en la BD (transacción con rollback): vale → `payment` EGRESO de 30 contra la cuenta, con categoría `GASTO_OPERATIVO`.
+- [x] El saldo esperado de una caja chica baja al emitir el vale: tras emitir vales y reponer el fondo, el cierre de la caja chica queda **sin diferencia**. Integración: esperado 100 → 70 tras el vale y cierre con conteo 70 → diferencia 0.
+- [x] Anular un vale pendiente anula también su recibo (con motivo y fecha) y el saldo esperado se recupera; un vale ya repuesto no se puede anular (comportamiento vigente). Integración: tras anular, el recibo queda `ANULADO` y el esperado vuelve a 100. (Anular un vale de un periodo ya cerrado sigue bloqueado por el trigger de SPEC 19: el vale queda pendiente y la operación es atómica.)
+- [x] El modal de vale exige categoría de egreso y mantiene el ítem "Seleccionar" persistente. Tests de schema y de componentes.
+- [x] `close_cash_account` rechaza un `period_end` posterior a hoy con mensaje claro, y el modal de cierre lo impide en cliente. Test de schema y validación en la RPC.
+- [x] Con diferencia mayor a la tolerancia, el cierre exige motivo escrito; dentro de la tolerancia se puede cerrar sin motivo. El motivo y la tolerancia usada quedan guardados y visibles en el reporte y el CSV. Integración: un cierre con diferencia −30 sin motivo fue rechazado; con motivo, guardado.
+- [x] La tolerancia es configurable en Configuración → General (`cash_difference_tolerance`, default 0.50) y se respeta al cerrar.
+- [x] El arqueo sorpresivo registra conteo (con denominaciones opcionales), responsable y fecha **sin cerrar el periodo**, mostrando esperado, contado y diferencia; queda listado en el historial de la cuenta. Integración con `register_cash_count`: 90 contados vs 100 esperados → −10 y dos denominaciones guardadas; fecha futura rechazada.
+- [x] El reporte del cierre muestra la secuencia de recibos del periodo (primero y último por prefijo) y la cantidad de anulados, también en el CSV. Tests del helper y del componente.
+- [x] El modal de cargo bancario lista las categorías por `code`: renombrar "ITF" no lo hace desaparecer. Test: categoría `ITF` renombrada aparece, `PAGO_PROVEEDOR` no.
+- [x] `/cajas-bancos/cuentas` carga saldos con una sola RPC y últimos movimientos con una sola consulta; `listCashPositions` ya no existe ni se usa. `listCashPositionsConsolidated` + `listLastMovementDates` (agregado `payment_date.max()` por cuenta).
+- [x] `lib/supabase/types.ts` actualizado con las columnas, tablas y RPC nuevas. **`npm run gen:types` no pudo ejecutarse** (CLI de Supabase no instalada en la máquina): el archivo se parcheó a mano y se validó con `tsc` y el build; conviene regenerarlo cuando la CLI esté disponible.
+- [x] `npm run lint`, `npm test` y `npm run build` pasan con los tests nuevos en verde. 534 tests (61 archivos), build OK; advisors revisados (se agregó índice para `cash_count.owner_id` y se optimizó el initplan de sus policies).
 
 ## Decisions
 
@@ -149,6 +149,8 @@ Tipos de cliente: `CashCount`, `CashCountDenomination` y los campos nuevos en `C
 - **Sí:** secuencia de recibos y anulados en el reporte/CSV actual. **No:** esperar al acta imprimible (SPEC 51) para tener el dato.
 - **Sí:** eliminar `listCashPositions` al migrar su único consumidor. **No:** mantenerla "por si acaso" (está marcada `@deprecated` desde SPEC 34).
 - **No** en esta spec: validación de periodo en el wizard de pagos, ITF sugerido y registro consecutivo (el usuario los descartó en esta ronda).
+- **Corrección durante la implementación (2026-10-27):** `private.cash_expected_balance` restaba `sum(...) filter (...)` antes del `coalesce`, y con movimientos de una sola dirección el filtro vacío (`NULL`) anulaba toda la resta (esperado = apertura). Lo detectó una prueba de integración con caja chica; se corrigió separando `coalesce` por dirección (migración `spec49_fix_cash_expected_balance_coalesce`).
+- **Anular un vale de un periodo ya cerrado** sigue bloqueado por el trigger de periodo de SPEC 19: la RPC falla y el vale queda pendiente (operación atómica). Es coherente con el resto del historial y no se relaja en esta spec.
 
 ## Risks
 
