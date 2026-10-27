@@ -134,7 +134,7 @@ Tipos de cliente: `CashCount`, `CashCountDenomination` y los campos nuevos en `C
 - [x] El reporte del cierre muestra la secuencia de recibos del periodo (primero y último por prefijo) y la cantidad de anulados, también en el CSV. Tests del helper y del componente.
 - [x] El modal de cargo bancario lista las categorías por `code`: renombrar "ITF" no lo hace desaparecer. Test: categoría `ITF` renombrada aparece, `PAGO_PROVEEDOR` no.
 - [x] `/cajas-bancos/cuentas` carga saldos con una sola RPC y últimos movimientos con una sola consulta; `listCashPositions` ya no existe ni se usa. `listCashPositionsConsolidated` + `listLastMovementDates` (agregado `payment_date.max()` por cuenta).
-- [x] `lib/supabase/types.ts` actualizado con las columnas, tablas y RPC nuevas. **`npm run gen:types` no pudo ejecutarse** (CLI de Supabase no instalada en la máquina): el archivo se parcheó a mano y se validó con `tsc` y el build; conviene regenerarlo cuando la CLI esté disponible.
+- [x] `lib/supabase/types.ts` regenerado desde la BD viva con el MCP `generate_typescript_types` (34,496 caracteres, verificado byte a byte contra el generado y validado con `tsc`, `npm test` y `npm run build`), conservando la cabecera del repo. `npm run gen:types` sigue fallando mientras la CLI de Supabase no esté instalada; las 5 migraciones quedaron versionadas en `supabase/migrations/`.
 - [x] `npm run lint`, `npm test` y `npm run build` pasan con los tests nuevos en verde. 534 tests (61 archivos), build OK; advisors revisados (se agregó índice para `cash_count.owner_id` y se optimizó el initplan de sus policies).
 
 ## Decisions
