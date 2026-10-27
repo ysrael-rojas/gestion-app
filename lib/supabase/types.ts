@@ -118,8 +118,10 @@ export type Database = {
           counted_balance: number | null
           created_at: string
           difference: number | null
-          expense_total: number
+          difference_reason: string | null
+          difference_tolerance: number | null
           expected_balance: number
+          expense_total: number
           id: string
           income_total: number
           notes: string | null
@@ -138,8 +140,10 @@ export type Database = {
           counted_balance?: number | null
           created_at?: string
           difference?: number | null
-          expense_total?: number
+          difference_reason?: string | null
+          difference_tolerance?: number | null
           expected_balance: number
+          expense_total?: number
           id?: string
           income_total?: number
           notes?: string | null
@@ -158,8 +162,10 @@ export type Database = {
           counted_balance?: number | null
           created_at?: string
           difference?: number | null
-          expense_total?: number
+          difference_reason?: string | null
+          difference_tolerance?: number | null
           expected_balance?: number
+          expense_total?: number
           id?: string
           income_total?: number
           notes?: string | null
@@ -207,6 +213,88 @@ export type Database = {
             columns: ["cash_close_id"]
             isOneToOne: false
             referencedRelation: "cash_close"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_count: {
+        Row: {
+          cash_account_id: string
+          change_fund: number | null
+          count_date: string
+          counted_balance: number
+          counted_by: string | null
+          created_at: string
+          difference: number
+          expected_balance: number
+          id: string
+          is_surprise: boolean
+          notes: string | null
+          owner_id: string
+        }
+        Insert: {
+          cash_account_id: string
+          change_fund?: number | null
+          count_date?: string
+          counted_balance: number
+          counted_by?: string | null
+          created_at?: string
+          difference: number
+          expected_balance: number
+          id?: string
+          is_surprise?: boolean
+          notes?: string | null
+          owner_id?: string
+        }
+        Update: {
+          cash_account_id?: string
+          change_fund?: number | null
+          count_date?: string
+          counted_balance?: number
+          counted_by?: string | null
+          created_at?: string
+          difference?: number
+          expected_balance?: number
+          id?: string
+          is_surprise?: boolean
+          notes?: string | null
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_count_cash_account_id_fkey"
+            columns: ["cash_account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_count_denomination: {
+        Row: {
+          cash_count_id: string
+          denomination: number
+          id: string
+          quantity: number
+        }
+        Insert: {
+          cash_count_id: string
+          denomination: number
+          id?: string
+          quantity: number
+        }
+        Update: {
+          cash_count_id?: string
+          denomination?: number
+          id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_count_denomination_cash_count_id_fkey"
+            columns: ["cash_count_id"]
+            isOneToOne: false
+            referencedRelation: "cash_count"
             referencedColumns: ["id"]
           },
         ]
@@ -619,6 +707,7 @@ export type Database = {
           id: string
           owner_id: string
           paid_to: string
+          payment_id: string | null
           serial: number
           status: Database["public"]["Enums"]["vale_status"]
           vale_date: string
@@ -632,6 +721,7 @@ export type Database = {
           id?: string
           owner_id?: string
           paid_to: string
+          payment_id?: string | null
           serial: number
           status?: Database["public"]["Enums"]["vale_status"]
           vale_date?: string
@@ -645,6 +735,7 @@ export type Database = {
           id?: string
           owner_id?: string
           paid_to?: string
+          payment_id?: string | null
           serial?: number
           status?: Database["public"]["Enums"]["vale_status"]
           vale_date?: string
@@ -656,6 +747,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cash_account"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "petty_cash_vale_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "petty_cash_vale_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment_balance"
+            referencedColumns: ["payment_id"]
           },
         ]
       }
@@ -766,6 +871,7 @@ export type Database = {
           p_cash_account_id: string
           p_counted_balance: number
           p_denominations?: Json
+          p_difference_reason?: string
           p_notes: string
           p_period_end: string
         }
@@ -800,6 +906,7 @@ export type Database = {
         Args: {
           p_account_id: string
           p_amount: number
+          p_category_id: string
           p_concept: string
           p_has_receipt: boolean
           p_paid_to: string
@@ -824,6 +931,17 @@ export type Database = {
       mark_payments_processed: {
         Args: { p_payment_ids: string[] }
         Returns: number
+      }
+      register_cash_count: {
+        Args: {
+          p_cash_account_id: string
+          p_count_date: string
+          p_counted_balance: number
+          p_counted_by?: string
+          p_denominations?: Json
+          p_notes?: string
+        }
+        Returns: string
       }
       replenish_petty_cash: {
         Args: {
@@ -946,11 +1064,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -963,11 +1081,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

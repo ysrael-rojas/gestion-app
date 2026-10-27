@@ -11,10 +11,11 @@ export const DEFAULT_PAYMENT_METHODS = [
 
 // Cargos que el banco descuenta de la cuenta (SPEC 33). Se siembran como
 // categorías de egreso y son las que ofrece "Registrar cargo bancario".
-export const BANK_CHARGE_CATEGORIES = [
+// Se resuelven por `code` (SPEC 49): renombrar la categoría no rompe el combo.
+export const BANK_CHARGE_CATEGORY_CODES = [
   "ITF",
-  "Comisión bancaria",
-  "Detracción SPOT",
+  "COMISION_BANCARIA",
+  "DETRACCION_SPOT",
 ] as const;
 
 // Cada semilla lleva un `code` estable (SPEC 37): el wizard de pagos resuelve

@@ -27,6 +27,7 @@ const valeRow = (overrides: Record<string, unknown> = {}) => ({
   amount: 30,
   has_receipt: true,
   status: "PENDIENTE",
+  payment_id: "pay-1",
   created_at: "2026-10-14T00:00:00Z",
   ...overrides,
 });
@@ -41,6 +42,7 @@ const vale = (overrides: Partial<PettyCashVale> = {}): PettyCashVale => ({
   amount: 30,
   hasReceipt: true,
   status: "PENDIENTE",
+  paymentId: "pay-1",
   createdAt: "2026-10-14T00:00:00Z",
   ...overrides,
 });
@@ -111,6 +113,7 @@ describe("caja-chica.ts", () => {
 
       const created = await createVale({
         accountId: "acc-1",
+        categoryId: "cat-1",
         valeDate: "2026-10-14",
         paidTo: "Juan Pérez",
         concept: "Pasajes",
@@ -119,10 +122,12 @@ describe("caja-chica.ts", () => {
       });
 
       expect(created.serial).toBe(1);
+      expect(created.paymentId).toBe("pay-1");
       expect(mock.rpcCalls[0]).toMatchObject({
         name: "create_petty_cash_vale",
         args: {
           p_account_id: "acc-1",
+          p_category_id: "cat-1",
           p_vale_date: "2026-10-14",
           p_paid_to: "Juan Pérez",
           p_concept: "Pasajes",
@@ -144,6 +149,7 @@ describe("caja-chica.ts", () => {
       await expect(
         createVale({
           accountId: "acc-1",
+          categoryId: "cat-1",
           valeDate: "2026-10-14",
           paidTo: "Juan Pérez",
           concept: "Pasajes",

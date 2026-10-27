@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -15,7 +15,16 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { CashReceiptCategory } from "@/components/pagos/types";
+import { ensureCatalogsSeeded, listCategories } from "@/lib/caja/caja";
 import {
   createPettyCashValeSchema,
   type PettyCashValeFormInput,
@@ -37,6 +46,7 @@ interface CashValeModalProps {
 function createEmptyValues(accountId: string): PettyCashValeFormInput {
   return {
     accountId,
+    categoryId: "",
     valeDate: getTodayLocalDate(),
     paidTo: "",
     concept: "",
@@ -62,6 +72,7 @@ export function CashValeModal({
   isSaving = false,
 }: CashValeModalProps) {
   const limit = account.pettyExpenseLimit;
+  const [categories, setCategories] = useState<CashReceiptCategory[]>([]);
 
   const form = useForm<PettyCashValeFormInput, unknown, PettyCashValeFormValues>({
     resolver: zodResolver(createPettyCashValeSchema(limit)),
@@ -74,7 +85,40 @@ export function CashValeModal({
     }
   }, [open, account.id, form]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let isMounted = true;
+
+    void (async () => {
+      try {
+        // Las categorías de egreso son semillas: hay que asegurarlas antes de
+        // listarlas (mismo patrón que el cargo bancario).
+        await ensureCatalogsSeeded();
+        const nextCategories = await listCategories("EGRESO");
+
+        if (isMounted) {
+          setCategories(nextCategories);
+        }
+      } catch {
+        if (isMounted) {
+          setCategories([]);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [open]);
+
   const errors = form.formState.errors;
+  const categoryItems = categories.map((category) => ({
+    value: category.id,
+    label: category.name,
+  }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -101,6 +145,38 @@ export function CashValeModal({
             />
             <FieldError message={errors.valeDate?.message} />
           </div>
+
+          <Controller
+            control={form.control}
+            name="categoryId"
+            render={({ field }) => (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="categoryId">Categoría del gasto</Label>
+                <Select
+                  value={field.value || null}
+                  items={categoryItems}
+                  onValueChange={(value) => field.onChange(value ?? "")}
+                >
+                  <SelectTrigger id="categoryId" className="w-full">
+                    <SelectValue placeholder="Seleccionar" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={null}>Seleccionar</SelectItem>
+                    {categoryItems.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FieldError message={errors.categoryId?.message} />
+                <p className="text-xs text-muted-foreground">
+                  El vale se registra como egreso de la caja chica con esta
+                  categoría.
+                </p>
+              </div>
+            )}
+          />
 
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="paidTo">Pagado a</Label>

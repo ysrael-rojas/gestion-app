@@ -13,6 +13,7 @@ import {
   getLastClose,
   listCashPositionsConsolidated,
   listCloseDenominations,
+  listLastMovementDates,
   proposeClosePeriod,
 } from "@/lib/caja/caja";
 import { DEFAULT_CATEGORIES } from "@/lib/caja/defaults";
@@ -50,6 +51,9 @@ const closeRow = (overrides: Record<string, unknown> = {}) => ({
   expected_balance: 100,
   counted_balance: 100,
   difference: 0,
+  difference_reason: null,
+  difference_tolerance: 0.5,
+  change_fund: null,
   pen_usd_rate: null,
   notes: null,
   created_at: "2026-09-01T00:00:00Z",
@@ -248,6 +252,35 @@ describe("caja.ts", () => {
         })
       ).rejects.toThrow("El período ya está cerrado hasta 2026-10-05");
     });
+
+    it("envía el motivo de la diferencia y mapea tolerancia y motivo", async () => {
+      mock.setRpc("close_cash_account", { data: "close-1", error: null });
+      mock.setTable("cash_close", {
+        data: [
+          closeRow({
+            difference: -12.5,
+            difference_reason: "Faltante por vuelto",
+            difference_tolerance: 0.5,
+          }),
+        ],
+        error: null,
+      });
+
+      const close = await closeCashAccount({
+        cashAccountId: "acc-1",
+        periodEnd: "2026-08-31",
+        countedBalance: 87.5,
+        notes: "",
+        differenceReason: "Faltante por vuelto",
+      });
+
+      expect(mock.rpcCalls[0]).toMatchObject({
+        name: "close_cash_account",
+        args: { p_difference_reason: "Faltante por vuelto" },
+      });
+      expect(close.differenceReason).toBe("Faltante por vuelto");
+      expect(close.differenceTolerance).toBe(0.5);
+    });
   });
 
   describe("closeCashAccount con arqueo por denominaciones", () => {
@@ -374,6 +407,31 @@ describe("caja.ts", () => {
       expect(positions).toHaveLength(1);
       expect(positions[0].account.id).toBe("acc-1");
       expect(positions[0].balance).toBe(0);
+    });
+  });
+
+  describe("listLastMovementDates", () => {
+    it("mapea el último movimiento por cuenta en una sola consulta", async () => {
+      mock.setTable("payment", {
+        data: [
+          { cash_account_id: "acc-1", last_date: "2026-10-20" },
+          { cash_account_id: "acc-2", last_date: null },
+        ],
+        error: null,
+      });
+
+      const dates = await listLastMovementDates();
+
+      expect(dates).toEqual({ "acc-1": "2026-10-20" });
+    });
+
+    it("propaga el error de la consulta", async () => {
+      mock.setTable("payment", {
+        data: null,
+        error: { code: "42501", message: "permission denied" },
+      });
+
+      await expect(listLastMovementDates()).rejects.toThrow(/permisos/);
     });
   });
 });

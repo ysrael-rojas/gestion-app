@@ -6,6 +6,7 @@ import { z } from "zod";
 // así que no forma parte del formulario.
 export const pettyCashValeSchema = z.object({
   accountId: z.string().uuid("Selecciona una caja chica."),
+  categoryId: z.string().uuid("Selecciona la categoría del gasto."),
   valeDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)"),

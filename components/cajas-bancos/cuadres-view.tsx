@@ -42,6 +42,8 @@ import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { useCajasBancos } from "@/components/cajas-bancos/cajas-bancos-provider";
 import { CashCloseModal } from "@/components/cajas-bancos/cash-close-modal";
+import { CashCountModal } from "@/components/cajas-bancos/cash-count-modal";
+import { CashCountsTable } from "@/components/cajas-bancos/cash-counts-table";
 import { CuadreReport } from "@/components/cajas-bancos/cuadre-report";
 import {
   closeCashAccount,
@@ -54,6 +56,12 @@ import {
   type CloseDenomination,
 } from "@/lib/caja/caja";
 import { getPeriodicityLabel } from "@/lib/data/cash-options";
+import {
+  createCashCount,
+  listCashCounts,
+  type CashCount,
+} from "@/lib/caja/arqueos";
+import type { CashCountFormValues } from "@/lib/schemas/cash-count";
 import { createPayment, markPaymentsProcessed } from "@/lib/pagos/pagos";
 import { bankChargeToPayment } from "@/lib/caja/cargos";
 import { BankChargeModal } from "@/components/cajas-bancos/bank-charge-modal";
@@ -91,6 +99,7 @@ interface AccountState {
   lastClose: CashClose | null;
   proposed: { periodStart: string; periodEnd: string };
   closes: CashClose[];
+  counts: CashCount[];
 }
 
 const closesTableFeatures = tableFeatures({
@@ -300,6 +309,7 @@ export function CuadresView() {
     periodEnd: string;
   } | null>(null);
   const [closes, setCloses] = useState<CashClose[]>([]);
+  const [counts, setCounts] = useState<CashCount[]>([]);
   const [selectedClose, setSelectedClose] = useState<CashClose | null>(null);
   const [statement, setStatement] = useState<Payment[]>([]);
   const [transfers, setTransfers] = useState<CashTransfer[]>([]);
@@ -310,6 +320,8 @@ export function CuadresView() {
   const [isLoading, setIsLoading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [countModalOpen, setCountModalOpen] = useState(false);
+  const [isSavingCount, setIsSavingCount] = useState(false);
 
   // Derivado: si el usuario no eligió cuenta, se usa la primera.
   const accountId = selectedAccountId || accounts[0]?.id || "";
@@ -317,12 +329,13 @@ export function CuadresView() {
 
   const fetchAccount = useCallback(
     async (id: string): Promise<AccountState> => {
-      const [nextPosition, nextLastClose, nextProposed, nextCloses] =
+      const [nextPosition, nextLastClose, nextProposed, nextCloses, nextCounts] =
         await Promise.all([
           getCashPosition(id, today),
           getLastClose(id),
           proposeClosePeriod(id, today),
           listCashCloses(id),
+          listCashCounts(id),
         ]);
 
       return {
@@ -330,6 +343,7 @@ export function CuadresView() {
         lastClose: nextLastClose,
         proposed: nextProposed,
         closes: nextCloses,
+        counts: nextCounts,
       };
     },
     [today]
@@ -353,6 +367,7 @@ export function CuadresView() {
           setLastClose(state.lastClose);
           setProposed(state.proposed);
           setCloses(state.closes);
+          setCounts(state.counts);
           setSelectedClose(state.closes[0] ?? null);
         }
       } catch (error) {
@@ -434,8 +449,27 @@ export function CuadresView() {
     }
   }
 
-  async function handleMarkVerified(paymentIds: string[]) {
+  async function handleCreateCount(values: CashCountFormValues) {
+    setIsSavingCount(true);
     try {
+      const created = await createCashCount(values);
+      setCounts(await listCashCounts(values.accountId));
+      setCountModalOpen(false);
+      toast.success(
+        created.difference === 0
+          ? "Arqueo registrado: cuadrado"
+          : `Arqueo registrado: ${
+              created.difference < 0 ? "faltante" : "sobrante"
+            } de ${formatCurrency(Math.abs(created.difference))}`
+      );
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsSavingCount(false);
+    }
+  }
+
+  async function handleMarkVerified(paymentIds: string[]) {    try {
       const count = await markPaymentsProcessed(paymentIds);
       toast.success(
         count === 1
@@ -551,6 +585,13 @@ export function CuadresView() {
                 >
                   Cerrar caja
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setCountModalOpen(true)}
+                  disabled={isLoading || !account}
+                >
+                  Arqueo sorpresivo
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -562,6 +603,15 @@ export function CuadresView() {
               isLoading={isLoading}
               account={account}
               onView={setSelectedClose}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <h2 className="text-lg font-semibold">Arqueos sorpresivos</h2>
+            <CashCountsTable
+              counts={counts}
+              currency={account?.currency === "USD" ? "USD" : "PEN"}
+              isLoading={isLoading}
             />
           </div>
 
@@ -588,6 +638,14 @@ export function CuadresView() {
             defaultPeriod={proposed ?? { periodStart: today, periodEnd: today }}
             onClose={(values) => void handleClose(values)}
             isSaving={isClosing}
+          />
+
+          <CashCountModal
+            open={countModalOpen}
+            onOpenChange={setCountModalOpen}
+            account={account}
+            onDone={(values) => void handleCreateCount(values)}
+            isSaving={isSavingCount}
           />
 
           {account ? (

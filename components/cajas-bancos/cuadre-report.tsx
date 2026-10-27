@@ -37,6 +37,10 @@ import {
   buildStatementRows,
 } from "@/components/cajas-bancos/statement-table";
 import { downloadCsv, toCsv } from "@/lib/caja/csv";
+import {
+  formatReceiptRanges,
+  summarizeReceiptSequence,
+} from "@/lib/caja/reportes";
 import { getOptionLabel } from "@/lib/data/sale-options";
 import { PAYMENT_STATUSES } from "@/lib/data/payment-options";
 import {
@@ -357,6 +361,18 @@ export function CuadreReport({
     net: netCash(countedTotal, effectiveChangeFund),
   };
   const hasArqueo = denominations.length > 0 || effectiveChangeFund > 0;
+  const differenceResult =
+    close.difference === null
+      ? null
+      : close.difference === 0
+        ? "Cuadrado"
+        : close.difference < 0
+          ? "Faltante"
+          : "Sobrante";
+  // Secuencia de recibos del período (SPEC 49): primer/último por prefijo y
+  // anulados, como pide el formato de arqueo.
+  const receiptSequence = summarizeReceiptSequence(statement);
+  const receiptRangesLabel = formatReceiptRanges(receiptSequence);
 
   function handleExport() {
     const rows: (string | number | null)[][] = [
@@ -368,9 +384,14 @@ export function CuadreReport({
       ["Saldo inicial", close.openingBalance],
       ["Ingresos", close.incomeTotal],
       ["Egresos", close.expenseTotal],
+      ["Recibos del período", receiptRangesLabel],
+      ["Recibos anulados", receiptSequence.annulled],
       ["Saldo esperado", close.expectedBalance],
       [countedLabel, close.countedBalance ?? ""],
       ["Diferencia", close.difference ?? ""],
+      ["Resultado del arqueo", differenceResult ?? ""],
+      ["Tolerancia permitida", close.differenceTolerance ?? ""],
+      ["Motivo de la diferencia", close.differenceReason ?? ""],
       [],
       ...(hasArqueo
         ? ([
@@ -444,6 +465,14 @@ export function CuadreReport({
             value={formatAmount(close.expenseTotal, currency)}
           />
           <SummaryRow
+            label="Recibos del período"
+            value={receiptRangesLabel}
+          />
+          <SummaryRow
+            label="Recibos anulados"
+            value={String(receiptSequence.annulled)}
+          />
+          <SummaryRow
             label="Saldo esperado"
             value={formatAmount(close.expectedBalance, currency)}
             strong
@@ -459,6 +488,24 @@ export function CuadreReport({
                 value={formatAmount(close.difference ?? 0, currency)}
                 strong
               />
+              {differenceResult ? (
+                <SummaryRow
+                  label="Resultado del arqueo"
+                  value={differenceResult}
+                />
+              ) : null}
+              {close.differenceTolerance !== null ? (
+                <SummaryRow
+                  label="Tolerancia permitida"
+                  value={formatAmount(close.differenceTolerance, currency)}
+                />
+              ) : null}
+              {close.differenceReason ? (
+                <SummaryRow
+                  label="Motivo de la diferencia"
+                  value={close.differenceReason}
+                />
+              ) : null}
             </>
           ) : null}
           {close.penUsdRate !== null ? (

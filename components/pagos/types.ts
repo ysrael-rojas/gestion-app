@@ -112,6 +112,10 @@ export interface CashClose {
   /** Fondo de cambio congelado al cerrar (null en cierres históricos). */
   changeFund: number | null;
   difference: number | null;
+  /** Motivo escrito cuando la diferencia supera la tolerancia (SPEC 49). */
+  differenceReason: string | null;
+  /** Tolerancia vigente al cerrar (snapshot; null en cierres históricos). */
+  differenceTolerance: number | null;
   penUsdRate: number | null;
   notes: string | null;
   createdAt: string;

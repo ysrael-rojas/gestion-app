@@ -52,6 +52,8 @@ const DEFAULT_PERIODICITY: ClosingPeriodicity = "DAILY";
 const PERIODICITY_SETTING_KEY = "default_closing_periodicity";
 const PEN_USD_RATE_SETTING_KEY = "pen_usd_rate";
 const DEFAULT_PEN_USD_RATE = "3.75";
+const DIFFERENCE_TOLERANCE_SETTING_KEY = "cash_difference_tolerance";
+const DEFAULT_DIFFERENCE_TOLERANCE = 0.5;
 
 function mapError(error: { code?: string; message: string }): Error {
   if (error.code === "P0001") {
@@ -364,6 +366,12 @@ export async function ensureDefaultSettings(): Promise<void> {
   if (!settings[PEN_USD_RATE_SETTING_KEY]) {
     missing.push({ key: PEN_USD_RATE_SETTING_KEY, value: DEFAULT_PEN_USD_RATE });
   }
+  if (!settings[DIFFERENCE_TOLERANCE_SETTING_KEY]) {
+    missing.push({
+      key: DIFFERENCE_TOLERANCE_SETTING_KEY,
+      value: String(DEFAULT_DIFFERENCE_TOLERANCE),
+    });
+  }
 
   if (missing.length === 0) {
     return;
@@ -384,6 +392,21 @@ export async function getDefaultPeriodicity(): Promise<ClosingPeriodicity> {
   }
 
   return DEFAULT_PERIODICITY;
+}
+
+/** Tolerancia de redondeo/diferencia permitida al cerrar (SPEC 49). */
+export async function getCashDifferenceTolerance(): Promise<number> {
+  const settings = await getAppSettings();
+  const raw = settings[DIFFERENCE_TOLERANCE_SETTING_KEY];
+
+  if (!raw) {
+    return DEFAULT_DIFFERENCE_TOLERANCE;
+  }
+
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0
+    ? value
+    : DEFAULT_DIFFERENCE_TOLERANCE;
 }
 
 export async function getPenUsdRate(): Promise<number | null> {
@@ -447,20 +470,31 @@ export async function listCashPositionsConsolidated(
 }
 
 /**
- * @deprecated Usa `listCashPositionsConsolidated`: resuelve todos los saldos
- * con una sola RPC en lugar de una llamada por cuenta (N+1).
+ * Último movimiento (recibo) por cuenta en una sola consulta agregada, para
+ * evitar una consulta por cuenta en el Detalle de Cuentas (SPEC 49).
  */
-export async function listCashPositions(
-  asOf: string
-): Promise<CashAccountPosition[]> {
-  const accounts = await listCashAccounts();
+export async function listLastMovementDates(): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from("payment")
+    .select("cash_account_id, last_date:payment_date.max()");
 
-  return Promise.all(
-    accounts.map(async (account) => ({
-      account,
-      balance: await getCashPosition(account.id, asOf),
-    }))
-  );
+  if (error) {
+    throw mapError(error);
+  }
+
+  const rows = (data ?? []) as unknown as Array<{
+    cash_account_id: string;
+    last_date: string | null;
+  }>;
+  const entries: Record<string, string> = {};
+
+  for (const row of rows) {
+    if (row.last_date) {
+      entries[row.cash_account_id] = row.last_date;
+    }
+  }
+
+  return entries;
 }
 
 /** Ingresos y egresos (sin anulados) de un período, para el resultado del mes. */
@@ -490,23 +524,6 @@ export async function getCashAccountStatement(
   return listAccountStatement(accountId, from, to);
 }
 
-export async function getLastMovementDate(
-  cashAccountId: string
-): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("payment")
-    .select("payment_date")
-    .eq("cash_account_id", cashAccountId)
-    .order("payment_date", { ascending: false })
-    .limit(1);
-
-  if (error) {
-    throw mapError(error);
-  }
-
-  return data?.[0]?.payment_date ?? null;
-}
-
 // ---------------------------------------------------------------------------
 // Cierres de caja
 // ---------------------------------------------------------------------------
@@ -525,6 +542,8 @@ function mapCashCloseRow(row: CashCloseRow): CashClose {
     countedBalance: row.counted_balance,
     changeFund: row.change_fund,
     difference: row.difference,
+    differenceReason: row.difference_reason,
+    differenceTolerance: row.difference_tolerance,
     penUsdRate: row.pen_usd_rate,
     notes: row.notes,
     createdAt: row.created_at,
@@ -633,6 +652,7 @@ export async function closeCashAccount(
     p_counted_balance: countedBalance as number,
     p_notes: values.notes || "",
     p_denominations: denominations.length > 0 ? denominations : null,
+    p_difference_reason: values.differenceReason || "",
   });
 
   if (error) {

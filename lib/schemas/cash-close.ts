@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { isPenDenomination } from "@/lib/caja/denominaciones";
+import { getTodayLocalDate } from "@/lib/utils";
 
 // El conteo físico es opcional (obligatorio solo en cajas, a nivel de UI).
 // Cadena vacía o ausente -> undefined; un valor se coacciona a número.
@@ -54,18 +55,32 @@ export const cashCloseDenominationsSchema = z
     });
   });
 
-export const cashCloseSchema = z.object({
-  cashAccountId: z.string().uuid("Selecciona una cuenta."),
-  periodEnd: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)"),
-  countedBalance: optionalCountedBalance,
-  notes: z.string().trim().max(200).optional(),
-  // Confirmación explícita para cerrar una caja con la grilla en cero (solo UI).
-  emptyCashConfirmed: z.boolean().optional(),
-  // Solo cajas: conteo por denominación. En bancos no se envía.
-  denominations: cashCloseDenominationsSchema.optional(),
-});
+export const cashCloseSchema = z
+  .object({
+    cashAccountId: z.string().uuid("Selecciona una cuenta."),
+    periodEnd: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida (YYYY-MM-DD)"),
+    countedBalance: optionalCountedBalance,
+    notes: z.string().trim().max(200).optional(),
+    // Motivo escrito cuando la diferencia supera la tolerancia (SPEC 49).
+    // La obligatoriedad se valida en el modal (depende del saldo esperado) y
+    // la RPC la exige como última línea de defensa.
+    differenceReason: z.string().trim().max(300).optional(),
+    // Confirmación explícita para cerrar una caja con la grilla en cero (solo UI).
+    emptyCashConfirmed: z.boolean().optional(),
+    // Solo cajas: conteo por denominación. En bancos no se envía.
+    denominations: cashCloseDenominationsSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.periodEnd > getTodayLocalDate()) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["periodEnd"],
+        message: "La fecha de cierre no puede ser futura.",
+      });
+    }
+  });
 
 export type CashCloseFormInput = z.input<typeof cashCloseSchema>;
 export type CashCloseFormValues = z.output<typeof cashCloseSchema>;

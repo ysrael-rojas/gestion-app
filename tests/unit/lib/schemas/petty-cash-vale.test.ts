@@ -9,8 +9,11 @@ import {
 const ACCOUNT_ID = "550e8400-e29b-41d4-a716-446655440000";
 const OTHER_ACCOUNT_ID = "550e8400-e29b-41d4-a716-446655440001";
 
+const CATEGORY_ID = "550e8400-e29b-41d4-a716-446655440002";
+
 const validVale = () => ({
   accountId: ACCOUNT_ID,
+  categoryId: CATEGORY_ID,
   valeDate: "2026-10-14",
   paidTo: "Juan Pérez",
   concept: "Pasajes",
@@ -51,6 +54,25 @@ describe("pettyCashValeSchema", () => {
       const paths = result.error.issues.map((issue) => issue.path.join("."));
       expect(paths).toContain("paidTo");
       expect(paths).toContain("concept");
+    }
+  });
+
+  it("exige la categoría del gasto (el vale genera un egreso)", () => {
+    const missing = pettyCashValeSchema.safeParse({
+      ...validVale(),
+      categoryId: "",
+    });
+    const invalid = pettyCashValeSchema.safeParse({
+      ...validVale(),
+      categoryId: "pasajes",
+    });
+
+    expect(missing.success).toBe(false);
+    expect(invalid.success).toBe(false);
+    if (!missing.success) {
+      expect(missing.error.issues.map((issue) => issue.path.join("."))).toContain(
+        "categoryId"
+      );
     }
   });
 
