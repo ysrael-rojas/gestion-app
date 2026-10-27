@@ -39,6 +39,7 @@ const vale = (overrides: Partial<PettyCashVale> = {}): PettyCashVale => ({
   amount: 30,
   hasReceipt: true,
   status: "PENDIENTE",
+  paymentId: null,
   createdAt: "2026-10-14T00:00:00Z",
   ...overrides,
 });

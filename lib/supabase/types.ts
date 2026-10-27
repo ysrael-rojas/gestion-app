@@ -619,6 +619,7 @@ export type Database = {
           id: string
           owner_id: string
           paid_to: string
+          payment_id: string | null
           serial: number
           status: Database["public"]["Enums"]["vale_status"]
           vale_date: string
@@ -632,6 +633,7 @@ export type Database = {
           id?: string
           owner_id?: string
           paid_to: string
+          payment_id?: string | null
           serial: number
           status?: Database["public"]["Enums"]["vale_status"]
           vale_date?: string
@@ -645,6 +647,7 @@ export type Database = {
           id?: string
           owner_id?: string
           paid_to?: string
+          payment_id?: string | null
           serial?: number
           status?: Database["public"]["Enums"]["vale_status"]
           vale_date?: string
@@ -655,6 +658,13 @@ export type Database = {
             columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "cash_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "petty_cash_vale_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment"
             referencedColumns: ["id"]
           },
         ]
@@ -800,6 +810,7 @@ export type Database = {
         Args: {
           p_account_id: string
           p_amount: number
+          p_category_id: string
           p_concept: string
           p_has_receipt: boolean
           p_paid_to: string

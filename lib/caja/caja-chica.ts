@@ -21,6 +21,8 @@ export interface PettyCashVale {
   amount: number;
   hasReceipt: boolean;
   status: ValeStatus;
+  /** Recibo de egreso generado por la RPC (SPEC 49); null en vales históricos. */
+  paymentId: string | null;
   createdAt: string;
 }
 
@@ -56,6 +58,7 @@ function mapRow(row: PettyCashValeRow): PettyCashVale {
     amount: row.amount,
     hasReceipt: row.has_receipt,
     status: row.status,
+    paymentId: row.payment_id,
     createdAt: row.created_at,
   };
 }
@@ -115,6 +118,7 @@ export async function createVale(
 ): Promise<PettyCashVale> {
   const { data, error } = await supabase.rpc("create_petty_cash_vale", {
     p_account_id: values.accountId,
+    p_category_id: values.categoryId,
     p_vale_date: values.valeDate,
     p_paid_to: values.paidTo,
     p_concept: values.concept,
