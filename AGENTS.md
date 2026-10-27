@@ -34,6 +34,7 @@ Para validar cambios: `npm run lint` + `npm test` + `npm run build`.
   2. **El dev server debe estar accesible en `http://localhost:3000`.** El config lo arranca automáticamente con `reuseExistingServer: true`; si ya hay un dev server corriendo, lo reusa.
   3. Credenciales Supabase válidas en `.env` y seed manual en la DB (el e2e `tests/e2e/registrar-pago-y-ver-saldo.spec.ts` documenta el seed exacto en su comentario inicial).
 - **`npm run gen:types`:** regenera `lib/supabase/types.ts` con `scripts/gen-types.mjs` desde el CLI oficial de Supabase. Requiere `supabase` instalado globalmente y `supabase link --project-ref hurattoyvarlfdydvugd`. El script escribe en un temporal y solo reemplaza el archivo si el comando termina bien y la salida no está vacía; si falla, conserva el `types.ts` anterior y sale con código 1.
+  - **Alternativa sin CLI (MCP):** con el MCP de Supabase disponible, `generate_typescript_types` devuelve el `types.ts` generado desde la BD viva (campo `types`). Al reemplazar el archivo hay que reponer la cabecera `// GENERATED — NO EDITAR — npm run gen:types` (el generador no la incluye) y validar con `npx tsc --noEmit`, `npm test` y `npm run build`.
 
 ## Estructura y alias
 
