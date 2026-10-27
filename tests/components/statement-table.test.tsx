@@ -30,6 +30,7 @@ const payment = (overrides: Partial<Payment> = {}): Payment => ({
   status: "EN_REVISION",
   voidReason: null,
   voidedAt: null,
+  isCashMovement: false,
   ...overrides,
 });
 

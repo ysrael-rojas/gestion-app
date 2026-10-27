@@ -266,4 +266,48 @@ describe("PettyCashPanel", () => {
     );
     expect(screen.getByRole("button", { name: "Reponer fondo" })).toBeDisabled();
   });
+
+  it("muestra los últimos arqueos guardados", async () => {
+    mock.setTable("petty_cash_vale", { data: [], error: null });
+    mock.setTable("cash_count", {
+      data: [
+        {
+          id: "count-1",
+          owner_id: "owner-1",
+          cash_account_id: "11111111-1111-4111-8111-111111111111",
+          count_date: "2026-10-20",
+          counted_balance: 100,
+          expected_balance: 100,
+          difference: 0,
+          change_fund: 100,
+          counted_by: "Ana Ríos",
+          is_surprise: true,
+          notes: null,
+          created_at: "2026-10-20T10:00:00Z",
+        },
+      ],
+      error: null,
+    });
+
+    renderPanel();
+
+    expect(await screen.findByText("Últimos arqueos")).toBeInTheDocument();
+    expect(screen.getByText("Cuadrado")).toBeInTheDocument();
+    expect(screen.getByText("Ana Ríos")).toBeInTheDocument();
+  });
+
+  it("abre el arqueo persistente desde Guardar arqueo", async () => {
+    const user = userEvent.setup();
+    mock.setTable("petty_cash_vale", { data: [], error: null });
+
+    renderPanel();
+
+    await user.click(
+      await screen.findByRole("button", { name: "Guardar arqueo" })
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: /Arqueo sorpresivo/ })
+    ).toBeInTheDocument();
+  });
 });

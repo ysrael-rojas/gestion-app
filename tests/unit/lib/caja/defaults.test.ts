@@ -29,4 +29,11 @@ describe("DEFAULT_CATEGORIES", () => {
       expect(new Set(codes).size).toBe(codes.length);
     }
   });
+
+  it("incluye las categorías de movimiento de caja (SPEC 50)", () => {
+    const codes = DEFAULT_CATEGORIES.INGRESO.map((seed) => seed.code);
+
+    expect(codes).toContain("APORTE_PROPIETARIO");
+    expect(codes).toContain("ABONO_BANCARIO");
+  });
 });

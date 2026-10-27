@@ -4,7 +4,8 @@ import type { PaymentFormValues } from "@/lib/schemas/payment";
 /**
  * Un cargo bancario (ITF, comisión, detracción) se registra como un recibo de
  * egreso sin entidad ni asignaciones: no paga una factura, lo descuenta el
- * banco de la cuenta (SPEC 33).
+ * banco de la cuenta (SPEC 33). SPEC 50 lo marca como movimiento de caja para
+ * que no se ofrezca para asignar.
  */
 export function bankChargeToPayment(
   values: BankChargeFormValues
@@ -20,5 +21,6 @@ export function bankChargeToPayment(
     reference: values.reference,
     notes: values.notes,
     allocations: [],
+    isCashMovement: true,
   };
 }

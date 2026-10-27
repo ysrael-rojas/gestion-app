@@ -67,6 +67,7 @@ function mapPaymentRow(row: PaymentRowWithRefs): Payment {
     voidReason: row.void_reason,
     voidedAt: row.voided_at,
     notes: row.notes,
+    isCashMovement: row.is_cash_movement,
   };
 }
 
@@ -441,6 +442,7 @@ export async function createPayment(
         comprobante_id: item.comprobanteId,
         amount: item.amount,
       })),
+      p_is_cash_movement: values.isCashMovement ?? false,
     }
   );
 

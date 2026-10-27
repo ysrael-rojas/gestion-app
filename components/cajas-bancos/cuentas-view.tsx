@@ -51,9 +51,13 @@ import { formatCurrency, formatDate, getTodayLocalDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { CashTransferModal } from "@/components/cajas-bancos/cash-transfer-modal";
+import { CashMovementModal } from "@/components/cajas-bancos/cash-movement-modal";
 import { PettyCashPanel } from "@/components/cajas-bancos/petty-cash-panel";
 import { createCashTransfer } from "@/lib/caja/transferencias";
+import { cashMovementToPayment } from "@/lib/caja/movimientos";
+import { createPayment } from "@/lib/pagos/pagos";
 import type { CashTransferFormValues } from "@/lib/schemas/cash-transfer";
+import type { CashMovementFormValues } from "@/lib/schemas/cash-movement";
 
 const SKELETON_ROWS = 4;
 const DEFAULT_PAGE_SIZE = 10;
@@ -136,6 +140,10 @@ export function CuentasView() {
   const [pettyCashAccountId, setPettyCashAccountId] = useState<string | null>(
     null
   );
+  const [movementAccountId, setMovementAccountId] = useState<string | null>(
+    null
+  );
+  const [isSavingMovement, setIsSavingMovement] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -191,6 +199,24 @@ export function CuentasView() {
       );
     } finally {
       setIsTransferring(false);
+    }
+  }
+
+  async function handleCreateMovement(values: CashMovementFormValues) {
+    setIsSavingMovement(true);
+    try {
+      await createPayment(cashMovementToPayment(values));
+      toast.success("Movimiento registrado");
+      setMovementAccountId(null);
+      setRefreshKey((key) => key + 1);
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "No se pudo registrar el movimiento."
+      );
+    } finally {
+      setIsSavingMovement(false);
     }
   }
 
@@ -359,9 +385,16 @@ export function CuentasView() {
         cuentasColumnHelper.display({
           id: "actions",
           header: () => <div className="text-right">Acciones</div>,
-          cell: ({ row }) =>
-            row.original.isPettyCash ? (
-              <div className="text-right">
+          cell: ({ row }) => (
+            <div className="flex justify-end gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMovementAccountId(row.original.id)}
+              >
+                Movimiento
+              </Button>
+              {row.original.isPettyCash ? (
                 <Button
                   variant="outline"
                   size="sm"
@@ -369,8 +402,9 @@ export function CuentasView() {
                 >
                   Vales
                 </Button>
-              </div>
-            ) : null,
+              ) : null}
+            </div>
+          ),
         }),
       ]),
     []
@@ -541,6 +575,20 @@ export function CuentasView() {
         accounts={positions.map((position) => position.account)}
         onDone={(values) => void handleTransfer(values)}
         isSaving={isTransferring}
+      />
+
+      <CashMovementModal
+        open={movementAccountId !== null}
+        onOpenChange={(next) => {
+          if (!next) setMovementAccountId(null);
+        }}
+        account={
+          positions.find(
+            (position) => position.account.id === movementAccountId
+          )?.account ?? null
+        }
+        onDone={(values) => void handleCreateMovement(values)}
+        isSaving={isSavingMovement}
       />
 
       {pettyCashAccount ? (

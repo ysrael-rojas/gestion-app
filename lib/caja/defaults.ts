@@ -29,6 +29,8 @@ export const DEFAULT_CATEGORIES: Record<PaymentDirection, SeedCategory[]> = {
   INGRESO: [
     { code: "COBRANZA_VENTA", name: "Cobranza de venta" },
     { code: "ANTICIPO_CLIENTE", name: "Anticipo de cliente" },
+    { code: "APORTE_PROPIETARIO", name: "Aporte del propietario" },
+    { code: "ABONO_BANCARIO", name: "Abono bancario" },
     { code: "OTRO_INGRESO", name: "Otro ingreso" },
   ],
   EGRESO: [
