@@ -23,7 +23,11 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { Payment, PaymentDirection } from "@/components/pagos/types";
+import type {
+  Payment,
+  PaymentDirection,
+  PaymentListItem,
+} from "@/components/pagos/types";
 import { ReceiptStatusBadge } from "@/components/pagos/receipt-status-badge";
 import { PAYMENT_STATUSES } from "@/lib/data/payment-options";
 import { getOptionLabel } from "@/lib/data/sale-options";
@@ -43,7 +47,7 @@ export const paymentsTableFeatures = tableFeatures({
 
 export type PaymentsTableFeatures = typeof paymentsTableFeatures;
 
-export interface PaymentsRow extends Payment {
+export interface PaymentsRow extends PaymentListItem {
   entityName: string;
 }
 
