@@ -13,6 +13,7 @@ import {
   getLastClose,
   listCashPositionsConsolidated,
   listCloseDenominations,
+  listLastMovementDates,
   proposeClosePeriod,
 } from "@/lib/caja/caja";
 import { DEFAULT_CATEGORIES } from "@/lib/caja/defaults";
@@ -406,6 +407,31 @@ describe("caja.ts", () => {
       expect(positions).toHaveLength(1);
       expect(positions[0].account.id).toBe("acc-1");
       expect(positions[0].balance).toBe(0);
+    });
+  });
+
+  describe("listLastMovementDates", () => {
+    it("mapea el último movimiento por cuenta en una sola consulta", async () => {
+      mock.setTable("payment", {
+        data: [
+          { cash_account_id: "acc-1", last_date: "2026-10-20" },
+          { cash_account_id: "acc-2", last_date: null },
+        ],
+        error: null,
+      });
+
+      const dates = await listLastMovementDates();
+
+      expect(dates).toEqual({ "acc-1": "2026-10-20" });
+    });
+
+    it("propaga el error de la consulta", async () => {
+      mock.setTable("payment", {
+        data: null,
+        error: { code: "42501", message: "permission denied" },
+      });
+
+      await expect(listLastMovementDates()).rejects.toThrow(/permisos/);
     });
   });
 });

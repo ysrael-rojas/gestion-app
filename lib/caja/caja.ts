@@ -470,20 +470,31 @@ export async function listCashPositionsConsolidated(
 }
 
 /**
- * @deprecated Usa `listCashPositionsConsolidated`: resuelve todos los saldos
- * con una sola RPC en lugar de una llamada por cuenta (N+1).
+ * Último movimiento (recibo) por cuenta en una sola consulta agregada, para
+ * evitar una consulta por cuenta en el Detalle de Cuentas (SPEC 49).
  */
-export async function listCashPositions(
-  asOf: string
-): Promise<CashAccountPosition[]> {
-  const accounts = await listCashAccounts();
+export async function listLastMovementDates(): Promise<Record<string, string>> {
+  const { data, error } = await supabase
+    .from("payment")
+    .select("cash_account_id, last_date:payment_date.max()");
 
-  return Promise.all(
-    accounts.map(async (account) => ({
-      account,
-      balance: await getCashPosition(account.id, asOf),
-    }))
-  );
+  if (error) {
+    throw mapError(error);
+  }
+
+  const rows = (data ?? []) as unknown as Array<{
+    cash_account_id: string;
+    last_date: string | null;
+  }>;
+  const entries: Record<string, string> = {};
+
+  for (const row of rows) {
+    if (row.last_date) {
+      entries[row.cash_account_id] = row.last_date;
+    }
+  }
+
+  return entries;
 }
 
 /** Ingresos y egresos (sin anulados) de un período, para el resultado del mes. */
@@ -511,23 +522,6 @@ export async function getCashAccountStatement(
   to: string
 ): Promise<Payment[]> {
   return listAccountStatement(accountId, from, to);
-}
-
-export async function getLastMovementDate(
-  cashAccountId: string
-): Promise<string | null> {
-  const { data, error } = await supabase
-    .from("payment")
-    .select("payment_date")
-    .eq("cash_account_id", cashAccountId)
-    .order("payment_date", { ascending: false })
-    .limit(1);
-
-  if (error) {
-    throw mapError(error);
-  }
-
-  return data?.[0]?.payment_date ?? null;
 }
 
 // ---------------------------------------------------------------------------

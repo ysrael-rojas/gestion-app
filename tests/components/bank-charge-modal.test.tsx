@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 const mock = vi.hoisted(() => ({
   getLastClose: vi.fn(),
@@ -80,5 +81,36 @@ describe("BankChargeModal", () => {
     const date = screen.getByLabelText("Fecha") as HTMLInputElement;
 
     await waitFor(() => expect(date.value).toBe(getTodayLocalDate()));
+  });
+
+  it("lista las categorías de cargo por código aunque se renombren", async () => {
+    const user = userEvent.setup();
+    mock.listCategories.mockResolvedValue([
+      {
+        id: "cat-itf",
+        direction: "EGRESO",
+        name: "Impuesto bancario",
+        code: "ITF",
+        isActive: true,
+      },
+      {
+        id: "cat-pago",
+        direction: "EGRESO",
+        name: "Pago a proveedor",
+        code: "PAGO_PROVEEDOR",
+        isActive: true,
+      },
+    ]);
+
+    renderModal();
+
+    await user.click(screen.getByLabelText("Tipo de cargo"));
+
+    expect(
+      await screen.findByRole("option", { name: "Impuesto bancario" })
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "Pago a proveedor" })
+    ).not.toBeInTheDocument();
   });
 });

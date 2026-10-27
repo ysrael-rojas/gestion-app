@@ -30,7 +30,7 @@ import {
   listPaymentMethods,
 } from "@/lib/caja/caja";
 import { firstOpenDate, isDateClosed } from "@/lib/caja/periodo";
-import { BANK_CHARGE_CATEGORIES } from "@/lib/caja/defaults";
+import { BANK_CHARGE_CATEGORY_CODES } from "@/lib/caja/defaults";
 import {
   bankChargeSchema,
   type BankChargeFormInput,
@@ -127,8 +127,8 @@ export function BankChargeModal({
         setMethods(nextMethods);
         setCategories(
           nextCategories.filter((category) =>
-            (BANK_CHARGE_CATEGORIES as readonly string[]).includes(
-              category.name
+            (BANK_CHARGE_CATEGORY_CODES as readonly string[]).includes(
+              category.code
             )
           )
         );

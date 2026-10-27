@@ -41,9 +41,9 @@ import {
 import { DataTableColumnHeader } from "@/components/shared/data-table-column-header";
 import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import {
-  getLastMovementDate,
   getPenUsdRate,
-  listCashPositions,
+  listCashPositionsConsolidated,
+  listLastMovementDates,
   type CashAccountPosition,
 } from "@/lib/caja/caja";
 import { getPeriodicityLabel } from "@/lib/data/cash-options";
@@ -144,22 +144,16 @@ export function CuentasView() {
       setIsLoading(true);
 
       try {
-        const [data, rate] = await Promise.all([
-          listCashPositions(today),
+        const [data, rate, movements] = await Promise.all([
+          listCashPositionsConsolidated(today),
           getPenUsdRate(),
+          listLastMovementDates(),
         ]);
-
-        const movements = await Promise.all(
-          data.map(async (position) => {
-            const date = await getLastMovementDate(position.account.id);
-            return [position.account.id, date] as const;
-          })
-        );
 
         if (isMounted) {
           setPositions(data);
           setPenUsdRate(rate);
-          setLastMovements(Object.fromEntries(movements));
+          setLastMovements(movements);
           setError(null);
         }
       } catch (err) {
