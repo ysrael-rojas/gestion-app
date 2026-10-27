@@ -1,6 +1,6 @@
 # SPEC 51 — Acta de arqueo imprimible y extracto por rango
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 19, SPEC 32, SPEC 35, SPEC 49, SPEC 50
 > **Date:** 2026-10-27
 > **Objective:** Que el dueño pueda imprimir el acta de arqueo de un cierre (con denominaciones, diferencia, resultado y doble firma) y consultar los movimientos de cualquier cuenta en un rango libre con descarga a Excel, sin escribir fechas raras ni entender tecnicismos.
@@ -112,20 +112,20 @@ interface CuadreActaProps {
 
 ## Acceptance criteria
 
-- [ ] El modal de cierre ofrece "¿Quién contó la caja?" y "¿Quién revisó el arqueo?" (opcionales) y los guarda; `CuadreReport` los muestra como "Contado por" / "Revisado por" (o "—").
-- [ ] Un clic en "Imprimir acta" abre la impresión del navegador mostrando **solo** el acta: cuenta, período, periodicidad y fecha de impresión.
-- [ ] El acta de una caja incluye el conteo por denominación con A, B, A−B, saldo según registros (C), diferencia, tolerancia, motivo (si lo hubo) y resultado (Cuadrado/Faltante/Sobrante).
-- [ ] El acta muestra la secuencia de recibos del período y la cantidad de anulados.
-- [ ] El acta termina con dos líneas de firma ("Firma del cajero" / "Firma del arqueador") con los nombres registrados, o en blanco si el cierre no los tiene.
-- [ ] En una cuenta bancaria el acta no muestra denominaciones y etiqueta el conteo como "Saldo según extracto".
-- [ ] Los cierres históricos (sin `counted_by`/`verified_by`) se imprimen sin errores y con las firmas en blanco.
-- [ ] `/cajas-bancos/extractos` existe, aparece en el navbar bajo "Caja y bancos" y abre con el mes actual precargado.
-- [ ] El extracto permite cambiar de cuenta y de rango (con atajos "Este mes" / "Mes anterior") y lista recibos y transferencias por fecha, con su estado, sin acciones de verificación.
-- [ ] El extracto muestra el resumen (ingresos, egresos, movimientos, transferencias) excluyendo los anulados de los totales.
-- [ ] "Descargar CSV (se abre en Excel)" genera `extracto-{cuenta}-{desde}_{hasta}.csv` con cabecera de cuenta/rango y las ocho columnas del extracto.
-- [ ] Sin rango o sin movimientos, la página explica qué hacer en vez de mostrar una tabla vacía.
-- [ ] No hay librerías de PDF nuevas y `close_cash_account` solo gana los dos parámetros opcionales.
-- [ ] `lib/supabase/types.ts` verificado contra `generate_typescript_types`, migración versionada, y `npx tsc --noEmit`, `npm run lint`, `npm test` y `npm run build` en verde.
+- [x] El modal de cierre ofrece "¿Quién contó la caja?" y "¿Quién revisó el arqueo?" (opcionales) y los guarda; `CuadreReport` los muestra como "Contado por" / "Revisado por" (o "—"). Integración en BD: nombres con trim, null si vacío; tests de schema, RPC y componente.
+- [x] Un clic en "Imprimir acta" abre la impresión del navegador mostrando **solo** el acta: cuenta, período, periodicidad y fecha de impresión. Portal propio y `@page` A4 inyectado solo mientras está montada (no afecta el recibo térmico); test verifica `window.print`.
+- [x] El acta de una caja incluye el conteo por denominación con A, B, A−B, saldo según registros (C), diferencia, tolerancia, motivo (si lo hubo) y resultado (Cuadrado/Faltante/Sobrante). Tests de componente.
+- [x] El acta muestra la secuencia de recibos del período y la cantidad de anulados. Test: "RI-000001 → RI-000005" y conteo.
+- [x] El acta termina con dos líneas de firma ("Firma del cajero" / "Firma del arqueador") con los nombres registrados, o en blanco si el cierre no los tiene.
+- [x] En una cuenta bancaria el acta no muestra denominaciones y etiqueta el conteo como "Saldo según extracto". Test del variante banco.
+- [x] Los cierres históricos (sin `counted_by`/`verified_by`) se imprimen sin errores y con las firmas en blanco. Test del cierre sin nombres.
+- [x] `/cajas-bancos/extractos` existe, aparece en el navbar bajo "Caja y bancos" y abre con el mes actual precargado. Test: valores de Desde/Hasta = mes actual.
+- [x] El extracto permite cambiar de cuenta y de rango (con atajos "Este mes" / "Mes anterior") y lista recibos y transferencias por fecha, con su estado, sin acciones de verificación (`StatementTable` sin handlers).
+- [x] El extracto muestra el resumen (ingresos, egresos, movimientos, transferencias) excluyendo los anulados de los totales. Test de `summarizeStatement` y de la vista.
+- [x] "Descargar CSV (se abre en Excel)" genera `extracto-{cuenta}-{desde}_{hasta}.csv` con cabecera de cuenta/rango y las ocho columnas del extracto. Test del nombre y contenido.
+- [x] Sin rango o sin movimientos, la página explica qué hacer ("No hay movimientos en ese rango. Prueba con otras fechas o elige «Este mes»."). Test del vacío.
+- [x] No hay librerías de PDF nuevas y `close_cash_account` solo gana los dos parámetros opcionales (misma lógica de SPEC 49).
+- [x] `lib/supabase/types.ts` verificado contra `generate_typescript_types`, migración versionada en `supabase/migrations/`, y `npx tsc --noEmit`, `npm run lint`, `npm test` (571 tests) y `npm run build` en verde; advisors sin hallazgos nuevos.
 
 ## Decisions
 
@@ -140,6 +140,9 @@ interface CuadreActaProps {
 - **Sí:** label "Descargar CSV (se abre en Excel)". **No:** "Exportar CSV" a secas (el dueño no sabe qué es un CSV).
 - **No** en esta spec: flujo proyectado (SPEC 52), conciliación formal (SPEC 53), aging, firmas digitales y acta del arqueo sorpresivo.
 - **Pase previo por `frontend-design`** (2026-10-27): "el acta es un documento, no una pantalla" — al imprimir desaparece el chrome; números primero, firmas al final; el título en mayúsculas pertenece al formato oficial de arqueo, no es un adorno; en pantalla se usan los tokens del tema y en impresión negro sobre blanco; tabular-nums en todos los montos.
+- **Corrección de implementación (2026-10-27):** `CashClose` no exponía `transferInTotal`/`transferOutTotal` (estaban en la tabla y en el select, pero no en el tipo ni en el mapper); se añadieron porque el acta imprime las transferencias del período.
+- **Corrección de implementación (2026-10-27):** el acta no repite "Contado por / Revisado por" en el resumen; los nombres van en las líneas de firma para no duplicar el dato y mantener una página.
+- **Corrección de implementación (2026-10-27):** el mock de Supabase de los tests ganó `.or()`, que usan las consultas de transferencias del extracto.
 
 ## Risks
 

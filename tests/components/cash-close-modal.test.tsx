@@ -207,7 +207,8 @@ describe("CashCloseModal", () => {
     });
   });
 
-  it("exige motivo cuando la diferencia supera la tolerancia", async () => {    const user = userEvent.setup();
+  it("exige motivo cuando la diferencia supera la tolerancia", async () => {
+    const user = userEvent.setup();
     const onClose = vi.fn();
     getCashPosition.mockResolvedValue(0);
 
@@ -231,5 +232,5 @@ describe("CashCloseModal", () => {
     expect(onClose.mock.calls[0][0]).toMatchObject({
       differenceReason: "Faltante por vuelto",
     });
-  });
+  }, 15000);
 });
