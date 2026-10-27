@@ -29,6 +29,8 @@ const close = (overrides: Partial<CashClose> = {}): CashClose => ({
   difference: -99.5,
   differenceReason: null,
   differenceTolerance: 0.5,
+  countedBy: null,
+  verifiedBy: null,
   penUsdRate: null,
   notes: null,
   createdAt: "2026-10-14T00:00:00Z",
@@ -166,8 +168,7 @@ describe("CuadreReport", () => {
     expect(csv).toContain("Efectivo neto (A − B),,200.5");
   });
 
-  it("muestra y exporta la secuencia de recibos del período y los anulados", async () => {
-    const user = userEvent.setup();
+  it("muestra y exporta la secuencia de recibos del período y los anulados", async () => {    const user = userEvent.setup();
 
     renderReport({
       statement: [
@@ -247,6 +248,17 @@ describe("CuadreReport", () => {
     expect(csv).toContain("INGRESO,Cobranza de venta,100");
     // El anulado no aparece en el resumen (sí en Movimientos, con su estado).
     expect(csv).not.toContain("EGRESO,ITF,50");
+  });
+
+  it("muestra quién contó y quién revisó el cierre", () => {
+    renderReport({
+      close: { countedBy: "Ana Ríos", verifiedBy: "Luis Torres" },
+    });
+
+    expect(screen.getByText("Contado por")).toBeInTheDocument();
+    expect(screen.getByText("Ana Ríos")).toBeInTheDocument();
+    expect(screen.getByText("Revisado por")).toBeInTheDocument();
+    expect(screen.getByText("Luis Torres")).toBeInTheDocument();
   });
 
   it("etiqueta el conteo según el tipo de cuenta", () => {

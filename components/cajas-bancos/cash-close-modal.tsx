@@ -87,6 +87,9 @@ function createEmptyValues(
     periodEnd,
     countedBalance: "",
     notes: "",
+    differenceReason: "",
+    countedBy: "",
+    verifiedBy: "",
     emptyCashConfirmed: false,
     denominations: PEN_DENOMINATIONS.map((denomination) => ({
       denomination,
@@ -488,6 +491,34 @@ export function CashCloseModal({
                     </p>
                   ) : null}
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="countedBy">¿Quién contó la caja?</Label>
+                    <Input
+                      id="countedBy"
+                      placeholder="Ej. Ana Ríos"
+                      {...form.register("countedBy")}
+                    />
+                    <FieldError message={errors.countedBy?.message} />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="verifiedBy">
+                      ¿Quién revisó el arqueo?
+                    </Label>
+                    <Input
+                      id="verifiedBy"
+                      placeholder="Ej. Luis Torres"
+                      {...form.register("verifiedBy")}
+                    />
+                    <FieldError message={errors.verifiedBy?.message} />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Si lo hiciste tú, escribe tu nombre. Se imprime en el acta.
+                </p>
               </div>
 
               <div className="flex flex-col gap-1.5">

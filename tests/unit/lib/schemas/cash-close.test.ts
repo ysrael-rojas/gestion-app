@@ -83,6 +83,20 @@ describe("cashCloseSchema", () => {
       expect(result.data.differenceReason).toBe("Faltante por vuelto");
     }
   });
+
+  it("acepta los nombres del acta y los recorta (SPEC 51)", () => {
+    const result = cashCloseSchema.safeParse({
+      ...validClose(),
+      countedBy: "  Ana Ríos  ",
+      verifiedBy: "Luis Torres",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.countedBy).toBe("Ana Ríos");
+      expect(result.data.verifiedBy).toBe("Luis Torres");
+    }
+  });
 });
 
 describe("cashCloseSchema con arqueo por denominaciones", () => {

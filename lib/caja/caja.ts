@@ -544,6 +544,8 @@ function mapCashCloseRow(row: CashCloseRow): CashClose {
     difference: row.difference,
     differenceReason: row.difference_reason,
     differenceTolerance: row.difference_tolerance,
+    countedBy: row.counted_by,
+    verifiedBy: row.verified_by,
     penUsdRate: row.pen_usd_rate,
     notes: row.notes,
     createdAt: row.created_at,
@@ -653,6 +655,8 @@ export async function closeCashAccount(
     p_notes: values.notes || "",
     p_denominations: denominations.length > 0 ? denominations : null,
     p_difference_reason: values.differenceReason || "",
+    p_counted_by: values.countedBy || "",
+    p_verified_by: values.verifiedBy || "",
   });
 
   if (error) {

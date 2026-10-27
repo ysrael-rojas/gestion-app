@@ -508,6 +508,8 @@ export function CuadreReport({
               ) : null}
             </>
           ) : null}
+          <SummaryRow label="Contado por" value={close.countedBy || "—"} />
+          <SummaryRow label="Revisado por" value={close.verifiedBy || "—"} />
           {close.penUsdRate !== null ? (
             <SummaryRow
               label="Tipo de cambio usado"

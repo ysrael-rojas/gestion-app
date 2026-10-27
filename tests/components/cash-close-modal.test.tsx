@@ -182,8 +182,32 @@ describe("CashCloseModal", () => {
     expect(values.denominations).toBeUndefined();
   });
 
-  it("exige motivo cuando la diferencia supera la tolerancia", async () => {
+  it("pide y envía los nombres del acta (opcionales)", async () => {
     const user = userEvent.setup();
+    const onClose = vi.fn();
+    getCashPosition.mockResolvedValue(400);
+
+    renderModal({ account: account(), onClose });
+
+    await user.type(
+      screen.getByLabelText("¿Quién contó la caja?"),
+      "Ana Ríos"
+    );
+    await user.type(
+      screen.getByLabelText("¿Quién revisó el arqueo?"),
+      "Luis Torres"
+    );
+    await user.type(screen.getByLabelText("Cantidad de S/ 200"), "2");
+    await user.click(screen.getByRole("button", { name: "Cerrar caja" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(onClose.mock.calls[0][0]).toMatchObject({
+      countedBy: "Ana Ríos",
+      verifiedBy: "Luis Torres",
+    });
+  });
+
+  it("exige motivo cuando la diferencia supera la tolerancia", async () => {    const user = userEvent.setup();
     const onClose = vi.fn();
     getCashPosition.mockResolvedValue(0);
 

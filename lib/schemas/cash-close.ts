@@ -67,6 +67,9 @@ export const cashCloseSchema = z
     // La obligatoriedad se valida en el modal (depende del saldo esperado) y
     // la RPC la exige como última línea de defensa.
     differenceReason: z.string().trim().max(300).optional(),
+    // Doble firma del acta (SPEC 51): opcionales para no bloquear el cierre.
+    countedBy: z.string().trim().max(100).optional(),
+    verifiedBy: z.string().trim().max(100).optional(),
     // Confirmación explícita para cerrar una caja con la grilla en cero (solo UI).
     emptyCashConfirmed: z.boolean().optional(),
     // Solo cajas: conteo por denominación. En bancos no se envía.
