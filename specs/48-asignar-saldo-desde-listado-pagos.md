@@ -1,6 +1,6 @@
 # SPEC 48 — Asignar saldo de pagos desde el listado
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 09, SPEC 18, SPEC 26, SPEC 42
 > **Date:** 2026-10-27
 > **Objective:** Exponer en el listado de pagos la asignación de saldo pendiente: nueva columna "Saldo por asignar" con estado derivado (Por asignar / Asignado, calculado de `payment_balance.unassigned_amount`), botón por fila que abre un diálogo propio para asignar el saldo a uno o varios comprobantes (incluye anticipos sin entidad), sin cambios de esquema.
@@ -70,16 +70,16 @@ interface PaymentAssignDialogProps {
 
 ## Acceptance criteria
 
-- [ ] El listado de ingresos y egresos muestra la columna "Saldo por asignar" con el monto pendiente y badge: ámbar "Por asignar" (saldo > 0), neutro "Asignado" (saldo 0), "—" en anulados.
-- [ ] El botón "Asignar" aparece solo en filas no anuladas con saldo por asignar y abre el diálogo sin salir del listado (sin navegación).
-- [ ] En un pago sin entidad, el diálogo pide primero Cliente/Proveedor y luego habilita el picker; en uno con entidad va directo al picker.
-- [ ] El diálogo permite asignar el saldo a uno o varios comprobantes, con monto clampeado al saldo de cada comprobante y Auto-distribuir disponible.
-- [ ] Una asignación parcial es válida: el pago queda "Por asignar" con el saldo restante; al llegar a 0 el badge pasa a "Asignado" tras el refresh, sin recargar la página.
-- [ ] No se puede asignar más que el saldo por asignar del pago (validación existente del picker/zod).
-- [ ] Los pagos creados desde el `PaymentDrawer` (asignación 1:1 al crear) figuran como "Asignado".
-- [ ] El filtro "sin-asignar" existente del toolbar sigue funcionando con la misma fuente (`payment_balance`).
-- [ ] Los estados `EN_REVISION`/`PROCESADO`/`ANULADO` y su columna Estado quedan intactos; sin migraciones ni regeneración de tipos.
-- [ ] `npm run lint`, `npm test` y `npm run build` pasan con los tests nuevos en verde.
+- [x] El listado de ingresos y egresos muestra la columna "Saldo por asignar" con el monto pendiente y badge: ámbar "Por asignar" (saldo > 0), neutro "Asignado" (saldo 0), "—" en anulados. Tests: `payments-columns.test.tsx` (monto, badge y "—" en anulado).
+- [x] El botón "Asignar" aparece solo en filas no anuladas con saldo por asignar y abre el diálogo sin salir del listado (sin navegación). Test: botón ausente con saldo 0 y en anulados; `onAssign` dispara el diálogo montado en `payments-view.tsx`.
+- [x] En un pago sin entidad, el diálogo pide primero Cliente/Proveedor y luego habilita el picker; en uno con entidad va directo al picker. Tests: "pide Cliente/Proveedor cuando el pago no tiene entidad" y "no pide entidad si el pago ya la tiene".
+- [x] El diálogo permite asignar el saldo a uno o varios comprobantes, con monto clampeado al saldo de cada comprobante y Auto-distribuir disponible. Reutiliza `AllocationPicker` (clampeo y Auto-distribuir ya cubiertos por su implementación SPEC 26/37); el test del diálogo asigna al comprobante marcado.
+- [x] Una asignación parcial es válida: el pago queda "Por asignar" con el saldo restante; al llegar a 0 el badge pasa a "Asignado" tras el refresh, sin recargar la página. `assignAllocations` del provider ya refresca pagos y cartera; `getAssignState` deriva el badge del nuevo `unassignedAmount`.
+- [x] No se puede asignar más que el saldo por asignar del pago (validación existente del picker/zod). `canAssign` del diálogo exige Σ ≤ `unassignedAmount`; `AllocationPicker` muestra el error de exceso.
+- [x] Los pagos creados desde el `PaymentDrawer` (asignación 1:1 al crear) figuran como "Asignado". Por derivación: `unassigned_amount` = 0 cuando el importe quedó 100 % asignado.
+- [x] El filtro "sin-asignar" existente del toolbar sigue funcionando con la misma fuente (`payment_balance`). No se tocó (`cartera.ts` sigue igual).
+- [x] Los estados `EN_REVISION`/`PROCESADO`/`ANULADO` y su columna Estado quedan intactos; sin migraciones ni regeneración de tipos. Solo se añadió una consulta de lectura a `payment_balance`.
+- [x] `npm run lint`, `npm test` y `npm run build` pasan con los tests nuevos en verde. Lint limpio, 508 tests (57 archivos) y build OK. Verificación visual en navegador omitida: exige credenciales del `.env` y datos reales (el diálogo asigna saldo real); queda para una pasada manual.
 
 ## Decisions
 
