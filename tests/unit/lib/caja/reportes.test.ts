@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatReceiptRanges,
   summarizeReceiptSequence,
+  summarizeStatement,
 } from "@/lib/caja/reportes";
 
 describe("reportes.ts", () => {
@@ -53,5 +54,46 @@ describe("reportes.ts", () => {
       summarizeReceiptSequence([{ receiptNumber: "", status: "ANULADO" }])
         .annulled
     ).toBe(1);
+  });
+});
+
+describe("summarizeStatement", () => {
+  it("suma ingresos y egresos sin anulados y cuenta transferencias", () => {
+    const summary = summarizeStatement(
+      [
+        { direction: "INGRESO", amount: 100, status: "EN_REVISION" },
+        { direction: "INGRESO", amount: 50, status: "ANULADO" },
+        { direction: "EGRESO", amount: 30, status: "PROCESADO" },
+      ],
+      [{ id: "t-1" }, { id: "t-2" }]
+    );
+
+    expect(summary).toEqual({
+      income: 100,
+      expense: 30,
+      movements: 2,
+      transfers: 2,
+    });
+  });
+
+  it("devuelve cero sin movimientos", () => {
+    expect(summarizeStatement([], [])).toEqual({
+      income: 0,
+      expense: 0,
+      movements: 0,
+      transfers: 0,
+    });
+  });
+
+  it("redondea los totales a dos decimales", () => {
+    const summary = summarizeStatement(
+      [
+        { direction: "INGRESO", amount: 0.1, status: "EN_REVISION" },
+        { direction: "INGRESO", amount: 0.2, status: "EN_REVISION" },
+      ],
+      []
+    );
+
+    expect(summary.income).toBe(0.3);
   });
 });

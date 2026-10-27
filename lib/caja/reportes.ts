@@ -1,3 +1,5 @@
+import { round2 } from "@/lib/utils";
+
 export interface ReceiptRange {
   prefix: string;
   first: string;
@@ -66,4 +68,45 @@ export function formatReceiptRanges(summary: ReceiptSequenceSummary): string {
         : `${range.first} → ${range.last}`
     )
     .join(" · ");
+}
+
+export interface StatementSummary {
+  income: number;
+  expense: number;
+  movements: number;
+  transfers: number;
+}
+
+/**
+ * Totales del extracto (SPEC 51): los anulados se listan pero no suman.
+ * Las transferencias no tienen dirección contable propia aquí: solo se cuentan.
+ */
+export function summarizeStatement(
+  statement: Array<{ direction: string; amount: number; status: string }>,
+  transfers: unknown[]
+): StatementSummary {
+  let income = 0;
+  let expense = 0;
+  let movements = 0;
+
+  for (const row of statement) {
+    if (row.status === "ANULADO") {
+      continue;
+    }
+
+    movements += 1;
+
+    if (row.direction === "INGRESO") {
+      income += row.amount;
+    } else {
+      expense += row.amount;
+    }
+  }
+
+  return {
+    income: round2(income),
+    expense: round2(expense),
+    movements,
+    transfers: transfers.length,
+  };
 }
