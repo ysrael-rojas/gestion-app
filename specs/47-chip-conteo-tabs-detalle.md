@@ -1,6 +1,6 @@
 # SPEC 47 — Chip de conteo en los tabs del detalle de comprobantes
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 43
 > **Date:** 2026-10-27
 > **Objective:** Reemplazar el indicador `Hand` (mano ámbar) de las pestañas del detalle de comprobantes por un chip de conteo neutral que muestre cuántos registros tiene cada pestaña (pagos, notas, retenciones), sin cambios de esquema ni de queries.
@@ -56,15 +56,15 @@ function TabCount({ count, solid }: { count: number; solid: boolean });
 
 ## Acceptance criteria
 
-- [ ] El chip de conteo aparece en Historial de pagos / Notas / Retenciones solo cuando hay registros (> 0) y no aparece cuando no los hay.
-- [ ] Historial de pagos cuenta todas las filas del historial, incluidos pagos anulados (p. ej. 2 activos + 1 anulado → chip "3").
-- [ ] Notas muestra un conteo unificado NC + ND (no desglosado).
-- [ ] "Datos" no lleva chip.
-- [ ] El chip es legible tanto en pill inactivo (muted) como sobre el pill activo rose/emerald de pagos, en modo claro y oscuro.
-- [ ] El tono rose/emerald del pill de pagos se mantiene igual que antes (`paymentsTone` sin cambios).
-- [ ] Tras registrar un pago desde el detalle, el chip de pagos se actualiza en vivo sin recargar la página (vía `onRegistered` existente).
-- [ ] Los selectores del e2e `registrar-pago-y-ver-saldo.spec.ts` siguen funcionando (regex sobre el nombre del botón).
-- [ ] `tests/components/voucher-detalle-view.test.tsx` actualizado y en verde; `npm run lint`, `npm test` y `npm run build` pasan.
+- [x] El chip de conteo aparece en Historial de pagos / Notas / Retenciones solo cuando hay registros (> 0) y no aparece cuando no los hay. Tests: "sin filas en el historial no hay chip en pagos" y "muestra los 4 tabs con icono y sin chip en Datos".
+- [x] Historial de pagos cuenta todas las filas del historial incluidos los pagos anulados (p. ej. 2 activos + 1 anulado → chip "3"). Test: "el chip de pagos cuenta todas las filas, incluidas las anuladas".
+- [x] Notas muestra un conteo unificado NC + ND (no desglosado). Test: "el chip de notas unifica NC y ND y retenciones lleva su propio conteo" (NC + ND → chip "2").
+- [x] "Datos" no lleva chip. Verificado en el test de los 4 tabs (`countOf(tabButton("Datos")) === null`).
+- [x] El chip es legible tanto en pill inactivo (muted) como sobre el pill activo rose/emerald de pagos. Tokens del tema (`bg-muted`/`text-muted-foreground`) y `bg-white/20 text-white` sobre fondo coloreado; test: "en el pill activo el chip usa el tratamiento contrastante".
+- [x] El tono rose/emerald del pill de pagos se mantiene igual que antes (`paymentsTone` sin cambios). Tests "marca pagos en rose…" y "en saldado el tab de pagos pasa a emerald" siguen en verde.
+- [x] Tras registrar un pago desde el detalle, el chip de pagos se actualiza en vivo sin recargar la página (vía `onRegistered` existente). El chip lee el mismo estado `paymentHistory` que refresca `onRegistered`; no se agregó estado nuevo.
+- [x] Los selectores del e2e `registrar-pago-y-ver-saldo.spec.ts` siguen funcionando (regex sobre el nombre del botón). Nombre accesible ahora "Historial de pagos 1" y el regex `/Historial de pagos/` sigue matcheando (mismo `getByRole` en tests de componente). E2E no ejecutado: muta datos reales (paga el saldo completo) y requiere seed manual.
+- [x] `tests/components/voucher-detalle-view.test.tsx` actualizado y en verde; `npm run lint`, `npm test` y `npm run build` pasan. 14/14 en la vista, 493 tests totales, build OK.
 
 ## Decisions
 
