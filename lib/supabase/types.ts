@@ -217,6 +217,88 @@ export type Database = {
           },
         ]
       }
+      cash_count: {
+        Row: {
+          cash_account_id: string
+          change_fund: number | null
+          count_date: string
+          counted_balance: number
+          counted_by: string | null
+          created_at: string
+          difference: number
+          expected_balance: number
+          id: string
+          is_surprise: boolean
+          notes: string | null
+          owner_id: string
+        }
+        Insert: {
+          cash_account_id: string
+          change_fund?: number | null
+          count_date?: string
+          counted_balance: number
+          counted_by?: string | null
+          created_at?: string
+          difference: number
+          expected_balance: number
+          id?: string
+          is_surprise?: boolean
+          notes?: string | null
+          owner_id?: string
+        }
+        Update: {
+          cash_account_id?: string
+          change_fund?: number | null
+          count_date?: string
+          counted_balance?: number
+          counted_by?: string | null
+          created_at?: string
+          difference?: number
+          expected_balance?: number
+          id?: string
+          is_surprise?: boolean
+          notes?: string | null
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_count_cash_account_id_fkey"
+            columns: ["cash_account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_count_denomination: {
+        Row: {
+          cash_count_id: string
+          denomination: number
+          id: string
+          quantity: number
+        }
+        Insert: {
+          cash_count_id: string
+          denomination: number
+          id?: string
+          quantity: number
+        }
+        Update: {
+          cash_count_id?: string
+          denomination?: number
+          id?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_count_denomination_cash_count_id_fkey"
+            columns: ["cash_count_id"]
+            isOneToOne: false
+            referencedRelation: "cash_count"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_receipt_category: {
         Row: {
           code: string
@@ -842,6 +924,17 @@ export type Database = {
       mark_payments_processed: {
         Args: { p_payment_ids: string[] }
         Returns: number
+      }
+      register_cash_count: {
+        Args: {
+          p_cash_account_id: string
+          p_count_date: string
+          p_counted_balance: number
+          p_counted_by?: string
+          p_denominations?: Json
+          p_notes?: string
+        }
+        Returns: string
       }
       replenish_petty_cash: {
         Args: {
