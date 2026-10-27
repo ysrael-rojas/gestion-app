@@ -50,6 +50,9 @@ const closeRow = (overrides: Record<string, unknown> = {}) => ({
   expected_balance: 100,
   counted_balance: 100,
   difference: 0,
+  difference_reason: null,
+  difference_tolerance: 0.5,
+  change_fund: null,
   pen_usd_rate: null,
   notes: null,
   created_at: "2026-09-01T00:00:00Z",
@@ -247,6 +250,35 @@ describe("caja.ts", () => {
           notes: "",
         })
       ).rejects.toThrow("El período ya está cerrado hasta 2026-10-05");
+    });
+
+    it("envía el motivo de la diferencia y mapea tolerancia y motivo", async () => {
+      mock.setRpc("close_cash_account", { data: "close-1", error: null });
+      mock.setTable("cash_close", {
+        data: [
+          closeRow({
+            difference: -12.5,
+            difference_reason: "Faltante por vuelto",
+            difference_tolerance: 0.5,
+          }),
+        ],
+        error: null,
+      });
+
+      const close = await closeCashAccount({
+        cashAccountId: "acc-1",
+        periodEnd: "2026-08-31",
+        countedBalance: 87.5,
+        notes: "",
+        differenceReason: "Faltante por vuelto",
+      });
+
+      expect(mock.rpcCalls[0]).toMatchObject({
+        name: "close_cash_account",
+        args: { p_difference_reason: "Faltante por vuelto" },
+      });
+      expect(close.differenceReason).toBe("Faltante por vuelto");
+      expect(close.differenceTolerance).toBe(0.5);
     });
   });
 

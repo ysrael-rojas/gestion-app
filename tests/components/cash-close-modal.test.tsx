@@ -1,6 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+
+const { getCashPosition, getCashDifferenceTolerance } = vi.hoisted(() => ({
+  getCashPosition: vi.fn(async () => 0),
+  getCashDifferenceTolerance: vi.fn(async () => 0.5),
+}));
+
+vi.mock("@/lib/caja/caja", () => ({
+  getCashPosition,
+  getCashDifferenceTolerance,
+}));
 
 import { CashCloseModal } from "@/components/cajas-bancos/cash-close-modal";
 import type { CashAccount } from "@/lib/cuentas/entidades";
@@ -46,6 +56,13 @@ function renderModal(props: {
 }
 
 describe("CashCloseModal", () => {
+  beforeEach(() => {
+    getCashPosition.mockReset();
+    getCashPosition.mockResolvedValue(0);
+    getCashDifferenceTolerance.mockReset();
+    getCashDifferenceTolerance.mockResolvedValue(0.5);
+  });
+
   it("muestra la grilla de denominaciones de S/ 200 a S/ 0.10 en una caja", () => {
     renderModal({ account: account() });
 
@@ -57,6 +74,7 @@ describe("CashCloseModal", () => {
 
   it("calcula en vivo el total y el efectivo neto (total − fondo de cambio)", async () => {
     const user = userEvent.setup();
+    getCashPosition.mockResolvedValue(400.5);
 
     renderModal({ account: account({ changeFund: 100 }) });
 
@@ -65,8 +83,9 @@ describe("CashCloseModal", () => {
     await user.type(screen.getByLabelText("Cantidad de S/ 0.50"), "1");
 
     // 3 × 100 + 2 × 50 + 1 × 0.50 = S/ 400.50; menos el fondo de S/ 100.
+    // El importe aparece dos veces: total del arqueo (A) y saldo esperado.
     await waitFor(() => {
-      expect(screen.getByText("S/ 400.50")).toBeInTheDocument();
+      expect(screen.getAllByText("S/ 400.50")).toHaveLength(2);
       expect(screen.getByText("S/ 300.50")).toBeInTheDocument();
     });
   });
@@ -74,6 +93,7 @@ describe("CashCloseModal", () => {
   it("envía el detalle por denominación al cerrar una caja", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
+    getCashPosition.mockResolvedValue(400);
 
     renderModal({ account: account(), onClose });
 
@@ -117,6 +137,7 @@ describe("CashCloseModal", () => {
   it("permite registrar el saldo según extracto en un banco", async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();
+    getCashPosition.mockResolvedValue(1234.56);
 
     renderModal({
       account: account({ type: "BANK_ACCOUNT", bankName: "BCP" }),
@@ -159,5 +180,32 @@ describe("CashCloseModal", () => {
     };
     expect(values.countedBalance).toBe(0);
     expect(values.denominations).toBeUndefined();
+  });
+
+  it("exige motivo cuando la diferencia supera la tolerancia", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    getCashPosition.mockResolvedValue(0);
+
+    renderModal({ account: account(), onClose });
+
+    await user.type(screen.getByLabelText("Cantidad de S/ 200"), "2");
+    await user.click(screen.getByRole("button", { name: "Cerrar caja" }));
+
+    await waitFor(() => expect(onClose).not.toHaveBeenCalled());
+    expect(
+      await screen.findByText(/supera la tolerancia/i)
+    ).toBeInTheDocument();
+
+    await user.type(
+      screen.getByLabelText(/Motivo de la diferencia/),
+      "Faltante por vuelto"
+    );
+    await user.click(screen.getByRole("button", { name: "Cerrar caja" }));
+
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    expect(onClose.mock.calls[0][0]).toMatchObject({
+      differenceReason: "Faltante por vuelto",
+    });
   });
 });

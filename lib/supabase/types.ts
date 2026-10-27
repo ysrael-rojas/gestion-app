@@ -118,6 +118,8 @@ export type Database = {
           counted_balance: number | null
           created_at: string
           difference: number | null
+          difference_reason: string | null
+          difference_tolerance: number | null
           expense_total: number
           expected_balance: number
           id: string
@@ -138,6 +140,8 @@ export type Database = {
           counted_balance?: number | null
           created_at?: string
           difference?: number | null
+          difference_reason?: string | null
+          difference_tolerance?: number | null
           expense_total?: number
           expected_balance: number
           id?: string
@@ -158,6 +162,8 @@ export type Database = {
           counted_balance?: number | null
           created_at?: string
           difference?: number | null
+          difference_reason?: string | null
+          difference_tolerance?: number | null
           expense_total?: number
           expected_balance?: number
           id?: string
@@ -776,6 +782,7 @@ export type Database = {
           p_cash_account_id: string
           p_counted_balance: number
           p_denominations?: Json
+          p_difference_reason?: string
           p_notes: string
           p_period_end: string
         }

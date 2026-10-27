@@ -36,6 +36,7 @@ function getErrorMessage(error: unknown): string {
 export function GeneralSettingsCard() {
   const [periodicity, setPeriodicity] = useState<ClosingPeriodicity>("DAILY");
   const [rate, setRate] = useState("3.75");
+  const [tolerance, setTolerance] = useState("0.50");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -53,6 +54,7 @@ export function GeneralSettingsCard() {
             setPeriodicity(value);
           }
           setRate(settings.pen_usd_rate ?? "3.75");
+          setTolerance(settings.cash_difference_tolerance ?? "0.50");
         }
       } catch (error) {
         if (isMounted) {
@@ -72,9 +74,15 @@ export function GeneralSettingsCard() {
 
   async function handleSave() {
     const numericRate = Number(rate);
+    const numericTolerance = Number(tolerance);
 
     if (!Number.isFinite(numericRate) || numericRate <= 0) {
       toast.error("El tipo de cambio debe ser mayor a 0.");
+      return;
+    }
+
+    if (!Number.isFinite(numericTolerance) || numericTolerance < 0) {
+      toast.error("La tolerancia de diferencia debe ser mayor o igual a 0.");
       return;
     }
 
@@ -82,6 +90,10 @@ export function GeneralSettingsCard() {
     try {
       await setAppSetting("default_closing_periodicity", periodicity);
       await setAppSetting("pen_usd_rate", String(numericRate));
+      await setAppSetting(
+        "cash_difference_tolerance",
+        numericTolerance.toFixed(2)
+      );
       toast.success("Configuración guardada");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -143,6 +155,26 @@ export function GeneralSettingsCard() {
           />
           <p className="text-xs text-muted-foreground">
             Se usa para consolidar a soles las cuentas en otra moneda.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="cashDifferenceTolerance">
+            Tolerancia de diferencia al cerrar (S/)
+          </Label>
+          <Input
+            id="cashDifferenceTolerance"
+            type="number"
+            step="0.01"
+            min="0"
+            className="w-full sm:w-64"
+            value={tolerance}
+            onChange={(event) => setTolerance(event.target.value)}
+            disabled={isLoading}
+          />
+          <p className="text-xs text-muted-foreground">
+            Diferencias de redondeo dentro de este margen no exigen motivo; por
+            encima, el cierre pide una explicación escrita.
           </p>
         </div>
 

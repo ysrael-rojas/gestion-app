@@ -27,6 +27,8 @@ const close = (overrides: Partial<CashClose> = {}): CashClose => ({
   countedBalance: 400.5,
   changeFund: null,
   difference: -99.5,
+  differenceReason: null,
+  differenceTolerance: 0.5,
   penUsdRate: null,
   notes: null,
   createdAt: "2026-10-14T00:00:00Z",

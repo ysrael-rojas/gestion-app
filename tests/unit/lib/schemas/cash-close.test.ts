@@ -57,6 +57,32 @@ describe("cashCloseSchema", () => {
 
     expect(result.success).toBe(false);
   });
+
+  it("rechaza una fecha de cierre futura", () => {
+    const result = cashCloseSchema.safeParse({
+      ...validClose(),
+      periodEnd: "2099-01-01",
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(
+        result.error.issues.map((issue) => issue.path.join("."))
+      ).toContain("periodEnd");
+    }
+  });
+
+  it("acepta el motivo de la diferencia y lo recorta", () => {
+    const result = cashCloseSchema.safeParse({
+      ...validClose(),
+      differenceReason: "  Faltante por vuelto  ",
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.differenceReason).toBe("Faltante por vuelto");
+    }
+  });
 });
 
 describe("cashCloseSchema con arqueo por denominaciones", () => {

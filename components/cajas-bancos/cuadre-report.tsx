@@ -357,6 +357,14 @@ export function CuadreReport({
     net: netCash(countedTotal, effectiveChangeFund),
   };
   const hasArqueo = denominations.length > 0 || effectiveChangeFund > 0;
+  const differenceResult =
+    close.difference === null
+      ? null
+      : close.difference === 0
+        ? "Cuadrado"
+        : close.difference < 0
+          ? "Faltante"
+          : "Sobrante";
 
   function handleExport() {
     const rows: (string | number | null)[][] = [
@@ -371,6 +379,9 @@ export function CuadreReport({
       ["Saldo esperado", close.expectedBalance],
       [countedLabel, close.countedBalance ?? ""],
       ["Diferencia", close.difference ?? ""],
+      ["Resultado del arqueo", differenceResult ?? ""],
+      ["Tolerancia permitida", close.differenceTolerance ?? ""],
+      ["Motivo de la diferencia", close.differenceReason ?? ""],
       [],
       ...(hasArqueo
         ? ([
@@ -459,6 +470,24 @@ export function CuadreReport({
                 value={formatAmount(close.difference ?? 0, currency)}
                 strong
               />
+              {differenceResult ? (
+                <SummaryRow
+                  label="Resultado del arqueo"
+                  value={differenceResult}
+                />
+              ) : null}
+              {close.differenceTolerance !== null ? (
+                <SummaryRow
+                  label="Tolerancia permitida"
+                  value={formatAmount(close.differenceTolerance, currency)}
+                />
+              ) : null}
+              {close.differenceReason ? (
+                <SummaryRow
+                  label="Motivo de la diferencia"
+                  value={close.differenceReason}
+                />
+              ) : null}
             </>
           ) : null}
           {close.penUsdRate !== null ? (
