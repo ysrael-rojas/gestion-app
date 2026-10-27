@@ -13,7 +13,7 @@ import {
 
 import { useClientes } from "@/components/clientes/clientes-provider";
 import { useCompras } from "@/components/compras/compras-provider";
-import { NestedPaymentDrawers } from "@/components/comprobantes/nested-payment-drawers";
+import { PaymentDrawer } from "@/components/comprobantes/payment-drawer";
 import { PaymentHistorySection } from "@/components/comprobantes/payment-history-section";
 import type { VoucherKind } from "@/components/comprobantes/types";
 import { useVoucher } from "@/components/comprobantes/use-voucher";
@@ -358,7 +358,7 @@ export function VoucherDetalleView({
       ) : null}
 
       {wizardOpen ? (
-        <NestedPaymentDrawers
+        <PaymentDrawer
           open
           onOpenChange={(open) => {
             if (!open) {

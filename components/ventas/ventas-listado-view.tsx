@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { useClientes } from "@/components/clientes/clientes-provider";
-import { NestedPaymentDrawers } from "@/components/comprobantes/nested-payment-drawers";
+import { PaymentDrawer } from "@/components/comprobantes/payment-drawer";
 import { ListingsToolbar } from "@/components/shared/listings-toolbar";
 import { SalesDataTable } from "@/components/ventas/sales-data-table";
 import { useVentas } from "@/components/ventas/ventas-provider";
@@ -71,7 +71,7 @@ export function VentasListadoView({ filters }: VentasListadoViewProps) {
       />
 
       {paymentSale ? (
-        <NestedPaymentDrawers
+        <PaymentDrawer
           open
           onOpenChange={(open) => {
             if (!open) {

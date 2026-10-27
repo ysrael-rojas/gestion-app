@@ -84,24 +84,23 @@ test.describe.serial("registrar pago y ver saldo", () => {
     const voucherNumber =
       cells.find((text) => /[A-Z0-9]+-\d+/.test(text)) ?? cells[0] ?? "";
 
-    // 3. Abrir el asistente de drawers y completar sus 4 paneles.
+    // 3. Abrir el drawer único y completar los campos.
     await row.getByRole("button", { name: "Registrar pago" }).click();
 
-    // Panel 1: comprobante + fecha (viene precargada con hoy).
+    await expect(
+      page.getByRole("heading", { name: "Registrar pago" })
+    ).toBeVisible();
     await expect(page.getByText(voucherNumber).first()).toBeVisible();
-    await page.getByRole("button", { name: "Continuar" }).last().click();
 
-    // Panel 2: método y cuenta (la categoría viene fijada por código).
-    await selectOption(page, "#payment-method", METHOD_NAME);
-    await selectOption(page, "#payment-account", ACCOUNT_NAME);
-    await page.getByRole("button", { name: "Continuar" }).last().click();
-
-    // Panel 3: importe precargado con el saldo → se paga completo.
+    // Importe precargado con el saldo → se paga completo.
     const amountInput = page.locator("#payment-amount");
     await expect(amountInput).not.toHaveValue("");
-    await page.getByRole("button", { name: "Continuar" }).last().click();
 
-    // Panel 4: referencia/notas opcionales → registrar.
+    // Método y cuenta (la categoría viene fijada por código).
+    await selectOption(page, "#payment-method", METHOD_NAME);
+    await selectOption(page, "#payment-account", ACCOUNT_NAME);
+
+    // Sin pasos intermedios: registrar directamente.
     await page
       .getByRole("button", { name: "Registrar pago" })
       .last()

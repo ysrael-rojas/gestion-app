@@ -11,8 +11,8 @@ const { listVoucherAdjustments, getPaymentHistory, useVoucher, reload } =
 vi.mock("@/lib/comprobantes/notas", () => ({ listVoucherAdjustments }));
 vi.mock("@/lib/pagos/pagos", () => ({ getPaymentHistory }));
 vi.mock("@/components/comprobantes/use-voucher", () => ({ useVoucher }));
-vi.mock("@/components/comprobantes/nested-payment-drawers", () => ({
-  NestedPaymentDrawers: () => <p>wizard stub</p>,
+vi.mock("@/components/comprobantes/payment-drawer", () => ({
+  PaymentDrawer: () => <p>wizard stub</p>,
 }));
 vi.mock("@/components/pagos/receipt-dialog", () => ({
   ReceiptDialog: () => null,
