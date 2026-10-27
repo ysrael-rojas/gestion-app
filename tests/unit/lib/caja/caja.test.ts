@@ -177,6 +177,8 @@ describe("caja.ts", () => {
           "ITF",
           "Comisión bancaria",
           "Detracción SPOT",
+          "Aporte del propietario",
+          "Abono bancario",
         ])
       );
       // Faltan todas menos las dos que ya existían.
