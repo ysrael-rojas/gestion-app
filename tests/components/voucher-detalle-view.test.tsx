@@ -102,8 +102,8 @@ function tabButton(name: RegExp | string) {
   ).getByRole("button", { name });
 }
 
-function handOf(tab: HTMLElement) {
-  return tab.querySelector("svg.lucide-hand");
+function countOf(tab: HTMLElement) {
+  return tab.querySelector<HTMLElement>('[data-testid="tab-count"]');
 }
 
 describe("VoucherDetalleView", () => {
@@ -121,7 +121,7 @@ describe("VoucherDetalleView", () => {
     });
   });
 
-  it("muestra los 4 tabs con icono y sin mano en Datos", async () => {
+  it("muestra los 4 tabs con icono y sin chip en Datos", async () => {
     renderView("VENTA");
 
     await waitFor(() => {
@@ -132,14 +132,14 @@ describe("VoucherDetalleView", () => {
     const tabs = tabButtons();
     expect(tabs).toHaveLength(4);
     expect(tabButton("Datos")).toBeInTheDocument();
-    expect(handOf(tabButton("Datos"))).toBeNull();
+    expect(countOf(tabButton("Datos"))).toBeNull();
 
     tabs.forEach((tab) => {
       expect(tab.querySelector("svg")).not.toBeNull();
     });
   });
 
-  it("pone mano en pagos cuando el historial tiene filas, aunque el saldo esté en cero", async () => {
+  it("muestra el chip de conteo en pagos cuando el historial tiene filas, aunque el pago esté anulado", async () => {
     // Caso real: el único pago está anulado → paidAmount 0 pero el historial
     // sí lista filas (SPEC 43, corrección posterior).
     useVoucher.mockReturnValue({
@@ -154,11 +154,11 @@ describe("VoucherDetalleView", () => {
 
     const pagos = tabButton(/Historial de pagos/);
     await waitFor(() => {
-      expect(handOf(pagos)).not.toBeNull();
+      expect(countOf(pagos)).toHaveTextContent("1");
     });
   });
 
-  it("sin filas en el historial no hay mano en pagos", async () => {
+  it("sin filas en el historial no hay chip en pagos", async () => {
     useVoucher.mockReturnValue({
       voucher: voucher({ paidAmount: 0, balance: 1000 }),
       isLoading: false,
@@ -172,10 +172,10 @@ describe("VoucherDetalleView", () => {
       expect(getPaymentHistory).toHaveBeenCalled();
     });
 
-    expect(handOf(tabButton(/Historial de pagos/))).toBeNull();
+    expect(countOf(tabButton(/Historial de pagos/))).toBeNull();
   });
 
-  it("marca pagos en rose y pone manos en notas y retenciones", async () => {
+  it("marca pagos en rose y pone chips de conteo en notas y retenciones", async () => {
     listVoucherAdjustments.mockResolvedValue([
       note(),
       note({ id: "a-2", voucherType: "COMPROBANTE_RETENCION", total: 30 }),
@@ -186,12 +186,56 @@ describe("VoucherDetalleView", () => {
 
     const pagos = tabButton(/Historial de pagos/);
     await waitFor(() => {
-      expect(handOf(pagos)).not.toBeNull();
+      expect(countOf(pagos)).toHaveTextContent("1");
     });
     expect(pagos).toHaveClass("text-rose-600");
 
-    expect(handOf(tabButton(/Notas/))).not.toBeNull();
-    expect(handOf(tabButton("Retenciones"))).not.toBeNull();
+    expect(countOf(tabButton(/Notas/))).toHaveTextContent("1");
+    expect(countOf(tabButton(/Retenciones/))).toHaveTextContent("1");
+  });
+
+  it("el chip de pagos cuenta todas las filas, incluidas las anuladas", async () => {
+    getPaymentHistory.mockResolvedValue([
+      historyEntry({ allocationId: "al-1", paymentId: "p-1" }),
+      historyEntry({ allocationId: "al-2", paymentId: "p-2" }),
+      historyEntry({
+        allocationId: "al-3",
+        paymentId: "p-3",
+        status: "ANULADO",
+      }),
+    ]);
+
+    renderView("VENTA");
+
+    await waitFor(() => {
+      expect(countOf(tabButton(/Historial de pagos/))).toHaveTextContent("3");
+    });
+  });
+
+  it("el chip de notas unifica NC y ND y retenciones lleva su propio conteo", async () => {
+    listVoucherAdjustments.mockResolvedValue([
+      note(),
+      note({ id: "a-2", voucherType: "NOTA_DEBITO", voucherNumber: "FD01-000001" }),
+      note({ id: "a-3", voucherType: "COMPROBANTE_RETENCION", total: 30 }),
+    ]);
+
+    renderView("VENTA");
+
+    await waitFor(() => {
+      expect(countOf(tabButton(/Notas/))).toHaveTextContent("2");
+    });
+    expect(countOf(tabButton(/Retenciones/))).toHaveTextContent("1");
+  });
+
+  it("en el pill activo el chip usa el tratamiento contrastante", async () => {
+    getPaymentHistory.mockResolvedValue([historyEntry()]);
+    renderView("VENTA");
+
+    await userEvent.click(tabButton(/Historial de pagos/));
+
+    const chip = countOf(tabButton(/Historial de pagos/));
+    expect(chip).toHaveClass("bg-white/20");
+    expect(chip).toHaveClass("text-white");
   });
 
   it("el pill activo de pagos pendiente es rojo con la misma forma que los demás", async () => {
@@ -257,7 +301,7 @@ describe("VoucherDetalleView", () => {
     ).toBeInTheDocument();
   });
 
-  it("compras comparte el mismo modelo: 4 pills, mano y estado del pago", async () => {
+  it("compras comparte el mismo modelo: 4 pills, chip y estado del pago", async () => {
     useVoucher.mockReturnValue({
       voucher: voucher({ paidAmount: 100, balance: 400 }),
       isLoading: false,
@@ -275,7 +319,7 @@ describe("VoucherDetalleView", () => {
 
     const pagos = tabButton(/Historial de pagos/);
     await waitFor(() => {
-      expect(handOf(pagos)).not.toBeNull();
+      expect(countOf(pagos)).toHaveTextContent("1");
     });
     expect(pagos).toHaveClass("text-rose-600");
 

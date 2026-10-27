@@ -258,7 +258,7 @@ export function VoucherDetalleView({
           )}
         >
           <HandCoins />
-          Historial de pagos
+          Historial de pagos{" "}
           {paymentHistoryCount > 0 ? (
             <TabCount
               count={paymentHistoryCount}
@@ -273,7 +273,7 @@ export function VoucherDetalleView({
           onClick={() => setActiveTab("notas")}
         >
           <NotebookPen />
-          Notas de crédito/débito
+          Notas de crédito/débito{" "}
           {notasCount > 0 ? (
             <TabCount count={notasCount} solid={activeTab === "notas"} />
           ) : null}
@@ -285,7 +285,7 @@ export function VoucherDetalleView({
           onClick={() => setActiveTab("retenciones")}
         >
           <Percent />
-          Retenciones
+          Retenciones{" "}
           {retencionesCount > 0 ? (
             <TabCount
               count={retencionesCount}
