@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const downloadCsv = vi.hoisted(() => vi.fn());
@@ -24,6 +24,8 @@ const close = (overrides: Partial<CashClose> = {}): CashClose => ({
   incomeTotal: 500,
   expenseTotal: 0,
   expectedBalance: 500,
+  transferInTotal: 0,
+  transferOutTotal: 0,
   countedBalance: 400.5,
   changeFund: null,
   difference: -99.5,
@@ -294,5 +296,19 @@ describe("CuadreReport", () => {
     expect(
       screen.getByText("Menos fondo de cambio (B)").parentElement
     ).toHaveTextContent("S/ 100.00");
+  });
+
+  it("imprime el acta al pulsar Imprimir acta", async () => {
+    const user = userEvent.setup();
+    const print = vi.spyOn(window, "print").mockImplementation(() => {});
+
+    renderReport({});
+
+    await user.click(screen.getByRole("button", { name: /Imprimir acta/ }));
+
+    await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
+    expect(screen.getByText("Acta de arqueo de caja")).toBeInTheDocument();
+
+    print.mockRestore();
   });
 });

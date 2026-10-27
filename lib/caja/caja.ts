@@ -539,6 +539,8 @@ function mapCashCloseRow(row: CashCloseRow): CashClose {
     incomeTotal: row.income_total,
     expenseTotal: row.expense_total,
     expectedBalance: row.expected_balance,
+    transferInTotal: row.transfer_in_total,
+    transferOutTotal: row.transfer_out_total,
     countedBalance: row.counted_balance,
     changeFund: row.change_fund,
     difference: row.difference,

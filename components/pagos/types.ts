@@ -110,6 +110,8 @@ export interface CashClose {
   incomeTotal: number;
   expenseTotal: number;
   expectedBalance: number;
+  transferInTotal: number;
+  transferOutTotal: number;
   countedBalance: number | null;
   /** Fondo de cambio congelado al cerrar (null en cierres históricos). */
   changeFund: number | null;
