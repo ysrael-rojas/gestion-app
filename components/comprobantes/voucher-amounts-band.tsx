@@ -34,7 +34,7 @@ export function VoucherAmountsBand({
 
   const items: AmountItem[] = [
     {
-      label: "Total del comprobante",
+      label: "Total",
       value: total,
       valueClassName: "text-xl text-foreground",
     },

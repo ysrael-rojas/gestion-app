@@ -91,6 +91,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PaymentDrawer } from "@/components/comprobantes/payment-drawer";
 import type { PaymentDirection } from "@/components/pagos/types";
+import type { PaymentType } from "@/components/ventas/types";
 
 const baseProps = {
   open: true,
@@ -100,8 +101,8 @@ const baseProps = {
   voucherType: "FACTURA" as const,
   voucherNumber: "F001-000012",
   issueDate: "2026-10-01",
-  condition: "CREDITO" as const,
-  dueDate: "2026-10-31",
+  condition: "CREDITO" as PaymentType,
+  dueDate: "2026-10-31" as string | null,
   entityId: "e-1",
   comprobanteId: "c-1",
   total: 118,
@@ -146,7 +147,7 @@ describe("PaymentDrawer", () => {
     expect(screen.getByText("F001-000012")).toBeInTheDocument();
     expect(screen.getByText("Distribuidora Norte SAC")).toBeInTheDocument();
 
-    expect(screen.getByText("Total del comprobante")).toBeInTheDocument();
+    expect(screen.getByText("Total")).toBeInTheDocument();
     expect(screen.getByText("Monto abonado")).toBeInTheDocument();
     expect(screen.getByText("Saldo por pagar")).toBeInTheDocument();
 
@@ -167,6 +168,70 @@ describe("PaymentDrawer", () => {
     renderDrawer();
 
     expect(screen.getAllByText("Requerido")).toHaveLength(4);
+  });
+
+  it("muestra el header uniforme con tipo, cliente y datos de emisión", () => {
+    renderDrawer();
+
+    const identity = screen.getByTestId("payment-drawer-identity");
+    expect(identity).toHaveClass("text-sm");
+    expect(identity.querySelector('[class*="text-xs"]')).toBeNull();
+    expect(identity.querySelector('[class*="text-base"]')).toBeNull();
+    expect(identity.querySelector('[class*="text-lg"]')).toBeNull();
+
+    expect(screen.getByText("Factura:")).toHaveClass("uppercase");
+    expect(screen.getByText("Cliente:")).toHaveClass("uppercase");
+    expect(screen.getByText("Fecha emisión:")).toHaveClass("uppercase");
+    expect(screen.getByText("Condición:")).toHaveClass("uppercase");
+    expect(screen.getByText("Vencimiento:")).toHaveClass("uppercase");
+    expect(screen.getByText("31/10/2026")).toBeInTheDocument();
+  });
+
+  it("no muestra vencimiento cuando la condición es contado", () => {
+    renderDrawer({ condition: "CONTADO", dueDate: null });
+
+    expect(screen.queryByText("Vencimiento:")).not.toBeInTheDocument();
+    expect(screen.getByText("Contado")).toBeInTheDocument();
+  });
+
+  it(
+    "mantiene Seleccionar en Método y limpia la cuenta incompatible",
+    { timeout: 15_000 },
+    async () => {
+      const user = userEvent.setup();
+      renderDrawer();
+
+      await pickMethod(user, "Transferencia BCP");
+      await pickAccount(user, "Banco", "Banco USD · USD");
+      expect(screen.getByLabelText("Banco")).toHaveTextContent("Banco USD");
+
+      await user.click(screen.getByLabelText("Método"));
+      await user.click(
+        await screen.findByRole("option", { name: "Seleccionar" })
+      );
+
+      expect(screen.getByLabelText("Método")).toHaveTextContent("Seleccionar");
+      expect(screen.getByLabelText("Caja/Banco")).toHaveTextContent(
+        "Seleccionar"
+      );
+    }
+  );
+
+  it("permite volver a Seleccionar en Caja/Banco", async () => {
+    const user = userEvent.setup();
+    renderDrawer();
+
+    await pickMethod(user, "Efectivo");
+    await pickAccount(user, "Caja/Banco", "Caja General · PEN");
+
+    await user.click(screen.getByLabelText("Caja/Banco"));
+    await user.click(
+      await screen.findByRole("option", { name: "Seleccionar" })
+    );
+
+    expect(screen.getByLabelText("Caja/Banco")).toHaveTextContent(
+      "Seleccionar"
+    );
   });
 
   it("valida al enviar y lleva el foco al primer error", async () => {
@@ -252,7 +317,7 @@ describe("PaymentDrawer", () => {
       entityId: "p-1",
     });
 
-    expect(screen.getByText("Proveedor")).toBeInTheDocument();
+    expect(screen.getByText("Proveedor:")).toBeInTheDocument();
     expect(await screen.findByText("Pago a proveedor")).toBeInTheDocument();
 
     await pickMethod(user, "Efectivo");

@@ -95,6 +95,8 @@ const ENTITY_LABELS: Record<PaymentDirection, string> = {
   EGRESO: "Proveedor",
 };
 
+const SELECT_PLACEHOLDER = "Seleccionar";
+
 function createInitialDraft(balance: number): PaymentDraft {
   return {
     paymentDate: getTodayLocalDate(),
@@ -236,14 +238,20 @@ export function PaymentDrawer({
     ? activeAccounts.filter((account) => account.type === requiredAccountType)
     : activeAccounts;
 
-  const methodItems = methods.map((method) => ({
-    value: method.id,
-    label: method.name,
-  }));
-  const accountItems = availableAccounts.map((account) => ({
-    value: account.id,
-    label: `${account.name} · ${account.currency}`,
-  }));
+  const methodItems = [
+    { value: null, label: SELECT_PLACEHOLDER },
+    ...methods.map((method) => ({
+      value: method.id,
+      label: method.name,
+    })),
+  ];
+  const accountItems = [
+    { value: null, label: SELECT_PLACEHOLDER },
+    ...availableAccounts.map((account) => ({
+      value: account.id,
+      label: `${account.name} · ${account.currency}`,
+    })),
+  ];
   const categoryItems = categories.map((category) => ({
     value: category.id,
     label: category.name,
@@ -416,36 +424,43 @@ export function PaymentDrawer({
             </DrawerClose>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">
-                {getOptionLabel(VOUCHER_TYPES, voucherType)}
-              </Badge>
-              <span className="text-base font-semibold tabular-nums">
-                {voucherNumber}
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {ENTITY_LABELS[direction]}{" "}
-              <span className="font-medium text-foreground">{entityName}</span>
+          <div
+            data-testid="payment-drawer-identity"
+            className="flex flex-col gap-1 text-sm"
+          >
+            <p>
+              <span className="text-muted-foreground uppercase">
+                {getOptionLabel(VOUCHER_TYPES, voucherType)}:
+              </span>{" "}
+              <span className="tabular-nums">{voucherNumber}</span>
             </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+            <p>
+              <span className="text-muted-foreground uppercase">
+                {ENTITY_LABELS[direction]}:
+              </span>{" "}
+              <span>{entityName}</span>
+            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
               <span>
-                Emisión{" "}
-                <span className="text-foreground">{formatDate(issueDate)}</span>
+                <span className="text-muted-foreground uppercase">
+                  Fecha emisión:
+                </span>{" "}
+                <span>{formatDate(issueDate)}</span>
               </span>
               <span>
-                Condición{" "}
-                <span className="text-foreground">
-                  {getOptionLabel(PAYMENT_TYPES, condition)}
+                <span className="text-muted-foreground uppercase">
+                  Condición:
+                </span>{" "}
+                <span>{getOptionLabel(PAYMENT_TYPES, condition)}</span>
+              </span>
+              {condition === "CREDITO" ? (
+                <span>
+                  <span className="text-muted-foreground uppercase">
+                    Vencimiento:
+                  </span>{" "}
+                  <span>{dueDate ? formatDate(dueDate) : "—"}</span>
                 </span>
-              </span>
-              <span>
-                Vence{" "}
-                <span className="text-foreground">
-                  {dueDate ? formatDate(dueDate) : "—"}
-                </span>
-              </span>
+              ) : null}
             </div>
           </div>
         </DrawerHeader>
@@ -541,9 +556,10 @@ export function PaymentDrawer({
                       className="w-full"
                       aria-invalid={!!errors.methodId}
                     >
-                      <SelectValue placeholder="Seleccionar" />
+                      <SelectValue placeholder={SELECT_PLACEHOLDER} />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value={null}>{SELECT_PLACEHOLDER}</SelectItem>
                       {methods.map((method) => (
                         <SelectItem key={method.id} value={method.id}>
                           {method.name}
@@ -579,9 +595,10 @@ export function PaymentDrawer({
                       className="w-full"
                       aria-invalid={!!errors.cashAccountId}
                     >
-                      <SelectValue placeholder="Seleccionar" />
+                      <SelectValue placeholder={SELECT_PLACEHOLDER} />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value={null}>{SELECT_PLACEHOLDER}</SelectItem>
                       {availableAccounts.map((account) => (
                         <SelectItem key={account.id} value={account.id}>
                           {account.name} · {account.currency}

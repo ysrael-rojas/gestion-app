@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * E2E: registrar el pago total de una venta desde el asistente de drawers
- * (SPEC 25) y verificar que el comprobante queda PAGADO con saldo 0.
+ * E2E: registrar el pago total de una venta desde el drawer único de pago
+ * (SPEC 45) y verificar que el comprobante queda PAGADO con saldo 0.
  * El botón "Ver" del listado navega a la página de detalle (`/ventas/[id]`),
  * que muestra la banda de montos y las pestañas de datos e historial.
  *
