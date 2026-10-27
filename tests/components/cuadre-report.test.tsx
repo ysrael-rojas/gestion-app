@@ -165,8 +165,42 @@ describe("CuadreReport", () => {
     expect(csv).toContain("Efectivo neto (A − B),,200.5");
   });
 
-  it("excluye los recibos ANULADO del resumen por categoría", () => {
+  it("muestra y exporta la secuencia de recibos del período y los anulados", async () => {
+    const user = userEvent.setup();
+
     renderReport({
+      statement: [
+        payment({ receiptNumber: "RI-000012", status: "EN_REVISION" }),
+        payment({
+          id: "pay-2",
+          receiptNumber: "RI-000031",
+          status: "EN_REVISION",
+        }),
+        payment({
+          id: "pay-3",
+          receiptNumber: "RI-000020",
+          status: "EN_REVISION",
+        }),
+        payment({
+          id: "pay-4",
+          receiptNumber: "RI-000015",
+          status: "ANULADO",
+        }),
+      ],
+    });
+
+    expect(screen.getByText("Recibos del período")).toBeInTheDocument();
+    expect(screen.getByText("RI-000012 → RI-000031")).toBeInTheDocument();
+    expect(screen.getByText("Recibos anulados")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Exportar CSV/ }));
+    const [, csv] = downloadCsv.mock.calls[0] as [string, string];
+
+    expect(csv).toContain("Recibos del período,RI-000012 → RI-000031");
+    expect(csv).toContain("Recibos anulados,1");
+  });
+
+  it("excluye los recibos ANULADO del resumen por categoría", () => {    renderReport({
       statement: [
         payment({ amount: 100, status: "EN_REVISION" }),
         payment({ id: "pay-2", amount: 50, status: "ANULADO" }),
