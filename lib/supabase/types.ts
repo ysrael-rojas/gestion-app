@@ -531,6 +531,7 @@ export type Database = {
           direction: Database["public"]["Enums"]["payment_direction"]
           entity_id: string | null
           id: string
+          is_cash_movement: boolean
           method_id: string
           notes: string | null
           owner_id: string
@@ -551,6 +552,7 @@ export type Database = {
           direction: Database["public"]["Enums"]["payment_direction"]
           entity_id?: string | null
           id?: string
+          is_cash_movement?: boolean
           method_id: string
           notes?: string | null
           owner_id?: string
@@ -571,6 +573,7 @@ export type Database = {
           direction?: Database["public"]["Enums"]["payment_direction"]
           entity_id?: string | null
           id?: string
+          is_cash_movement?: boolean
           method_id?: string
           notes?: string | null
           owner_id?: string
@@ -895,6 +898,7 @@ export type Database = {
           p_category_id: string
           p_direction: Database["public"]["Enums"]["payment_direction"]
           p_entity_id: string
+          p_is_cash_movement?: boolean
           p_method_id: string
           p_notes: string
           p_payment_date: string
