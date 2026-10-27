@@ -41,6 +41,11 @@ export interface Payment {
   notes: string | null;
 }
 
+/** Fila del listado de pagos: añade el saldo aún no asignado (SPEC 48). */
+export interface PaymentListItem extends Payment {
+  unassignedAmount: number;
+}
+
 export interface PaymentAllocation {
   id: string;
   paymentId: string;

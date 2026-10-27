@@ -129,6 +129,49 @@ describe("pagos.ts", () => {
 
       await expect(listPayments("INGRESO")).rejects.toThrow("saldo insuficiente");
     });
+
+    it("fusiona el saldo por asignar de payment_balance y deja 0 sin fila", async () => {
+      mock.setTable("payment", {
+        data: [
+          paymentRow({ id: "p-1" }),
+          paymentRow({ id: "p-2", receipt_serial: 2, receipt_number: "RI-000002" }),
+        ],
+        error: null,
+      });
+      mock.setTable("payment_balance", {
+        data: [paymentBalanceRow({ payment_id: "p-1", unassigned_amount: 20 })],
+        error: null,
+      });
+
+      const result = await listPayments("INGRESO");
+
+      expect(result[0]?.unassignedAmount).toBe(20);
+      expect(result[1]?.unassignedAmount).toBe(0);
+    });
+
+    it("consulta los saldos solo de pagos activos (excluye anulados)", async () => {
+      mock.setTable("payment", { data: [], error: null });
+
+      await listPayments("INGRESO");
+
+      expect(mock.filterCalls).toContainEqual({
+        table: "payment_balance",
+        method: "in",
+        args: ["status", ["EN_REVISION", "PROCESADO"]],
+      });
+    });
+
+    it("propaga el error de la consulta de saldos", async () => {
+      mock.setTable("payment", { data: [], error: null });
+      mock.setTable("payment_balance", {
+        data: [],
+        error: { code: "23514", message: "x" },
+      });
+
+      await expect(listPayments("INGRESO")).rejects.toThrow(
+        "Los datos del pago no son válidos.",
+      );
+    });
   });
 
   describe("listOpenVouchers", () => {

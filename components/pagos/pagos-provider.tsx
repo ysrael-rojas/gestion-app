@@ -15,8 +15,8 @@ import type { CarteraResumen } from "@/components/cartera/types";
 import { useCompras } from "@/components/compras/compras-provider";
 import type {
   AllocationInput,
-  Payment,
   PaymentDetail,
+  PaymentListItem,
 } from "@/components/pagos/types";
 import { useVentas } from "@/components/ventas/ventas-provider";
 import { getCarteraResumen } from "@/lib/pagos/cartera";
@@ -29,7 +29,7 @@ import {
 import type { PaymentFormValues } from "@/lib/schemas/payment";
 
 interface PagosContextValue {
-  payments: Payment[];
+  payments: PaymentListItem[];
   isLoading: boolean;
   error: string | null;
   summary: CarteraResumen | null;
@@ -54,7 +54,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 export function PagosProvider({ children }: { children: React.ReactNode }) {
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [payments, setPayments] = useState<PaymentListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<CarteraResumen | null>(null);

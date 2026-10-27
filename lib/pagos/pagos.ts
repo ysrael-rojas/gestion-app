@@ -5,6 +5,7 @@ import type {
   PaymentDetail,
   PaymentDirection,
   PaymentHistoryEntry,
+  PaymentListItem,
   VoucherBalance,
 } from "@/components/pagos/types";
 import type { PaymentFormValues } from "@/lib/schemas/payment";
@@ -167,20 +168,53 @@ function mapError(error: { code?: string; message: string }): Error {
   );
 }
 
+/**
+ * Lista los pagos de una dirección con su saldo pendiente de asignar
+ * (SPEC 48). `payment_balance` no excluye pagos anulados, por eso la segunda
+ * consulta filtra por estado activo; los anulados quedan con saldo 0 y la UI
+ * los muestra como "—".
+ */
 export async function listPayments(
   direction: PaymentDirection
-): Promise<Payment[]> {
-  const { data, error } = await supabase
-    .from("payment")
-    .select(PAYMENT_SELECT)
-    .eq("direction", direction)
-    .order("payment_date", { ascending: false });
+): Promise<PaymentListItem[]> {
+  const [paymentsResult, balancesResult] = await Promise.all([
+    supabase
+      .from("payment")
+      .select(PAYMENT_SELECT)
+      .eq("direction", direction)
+      .order("payment_date", { ascending: false }),
+    supabase
+      .from("payment_balance")
+      .select("payment_id, unassigned_amount")
+      .eq("direction", direction)
+      .in("status", ["EN_REVISION", "PROCESADO"]),
+  ]);
 
-  if (error) {
-    throw mapError(error);
+  if (paymentsResult.error) {
+    throw mapError(paymentsResult.error);
   }
 
-  return (data as unknown as PaymentRowWithRefs[]).map(mapPaymentRow);
+  if (balancesResult.error) {
+    throw mapError(balancesResult.error);
+  }
+
+  const unassignedByPayment = new Map<string, number>();
+
+  for (const row of (balancesResult.data ?? []) as Pick<
+    PaymentBalanceRow,
+    "payment_id" | "unassigned_amount"
+  >[]) {
+    if (row.payment_id) {
+      unassignedByPayment.set(row.payment_id, row.unassigned_amount ?? 0);
+    }
+  }
+
+  return (paymentsResult.data as unknown as PaymentRowWithRefs[]).map(
+    (row) => ({
+      ...mapPaymentRow(row),
+      unassignedAmount: unassignedByPayment.get(row.id) ?? 0,
+    })
+  );
 }
 
 export async function listAccountStatement(
