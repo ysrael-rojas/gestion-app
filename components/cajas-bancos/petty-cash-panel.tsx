@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CashValeModal } from "@/components/cajas-bancos/cash-vale-modal";
+import { CashCountModal } from "@/components/cajas-bancos/cash-count-modal";
 import { PettyCashReplenishModal } from "@/components/cajas-bancos/petty-cash-replenish-modal";
 import {
   anularVale,
@@ -34,11 +35,17 @@ import {
   type PettyCashVale,
   type ValeStatus,
 } from "@/lib/caja/caja-chica";
+import {
+  createCashCount,
+  listCashCounts,
+  type CashCount,
+} from "@/lib/caja/arqueos";
 import type { CashAccount } from "@/lib/cuentas/entidades";
 import type {
   PettyCashReplenishFormValues,
   PettyCashValeFormValues,
 } from "@/lib/schemas/petty-cash-vale";
+import type { CashCountFormValues } from "@/lib/schemas/cash-count";
 import { formatCurrency, formatDate, round2 } from "@/lib/utils";
 
 const STATUS_LABEL: Record<ValeStatus, string> = {
@@ -104,17 +111,25 @@ export function PettyCashPanel({
   onChanged,
 }: PettyCashPanelProps) {
   const [vales, setVales] = useState<PettyCashVale[]>([]);
+  const [counts, setCounts] = useState<CashCount[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [countedCash, setCountedCash] = useState("");
   const [valeOpen, setValeOpen] = useState(false);
   const [replenishOpen, setReplenishOpen] = useState(false);
+  const [countOpen, setCountOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingCount, setIsSavingCount] = useState(false);
   const [busyValeId, setBusyValeId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
-      setVales(await listVales(account.id));
+      const [nextVales, nextCounts] = await Promise.all([
+        listVales(account.id),
+        listCashCounts(account.id),
+      ]);
+      setVales(nextVales);
+      setCounts(nextCounts);
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -197,6 +212,26 @@ export function PettyCashPanel({
       toast.error(getErrorMessage(error));
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleSaveCount(values: CashCountFormValues) {
+    setIsSavingCount(true);
+    try {
+      const created = await createCashCount(values);
+      toast.success(
+        created.difference === 0
+          ? "Arqueo guardado: cuadrado"
+          : `Arqueo guardado: ${
+              created.difference < 0 ? "faltante" : "sobrante"
+            } de ${formatCurrency(Math.abs(created.difference))}`
+      );
+      setCountOpen(false);
+      setCounts(await listCashCounts(account.id));
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setIsSavingCount(false);
     }
   }
 
@@ -287,12 +322,51 @@ export function PettyCashPanel({
               >
                 Reponer fondo
               </Button>
+              <Button variant="outline" onClick={() => setCountOpen(true)}>
+                Guardar arqueo
+              </Button>
               <span className="text-sm text-muted-foreground">
                 {pendingVales.length === 0
                   ? "No hay vales pendientes."
                   : `${pendingVales.length} vale(s) pendiente(s) por ${formatCurrency(pendingTotal)}.`}
               </span>
             </div>
+
+            {counts.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-medium">Últimos arqueos</span>
+                <div className="flex flex-col divide-y rounded-md border">
+                  {counts.slice(0, 3).map((count) => (
+                    <div
+                      key={count.id}
+                      className="flex flex-wrap items-center justify-between gap-2 p-2 text-sm"
+                    >
+                      <span>{formatDate(count.countDate)}</span>
+                      <span className="text-muted-foreground">
+                        {count.countedBy || "—"}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={
+                          count.difference === 0
+                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                            : "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                        }
+                      >
+                        {count.difference === 0
+                          ? "Cuadrado"
+                          : count.difference < 0
+                            ? "Faltante"
+                            : "Sobrante"}
+                      </Badge>
+                      <span className="font-medium tabular-nums">
+                        {formatCurrency(count.difference)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className="overflow-hidden rounded-md border">
               <Table>
@@ -388,6 +462,14 @@ export function PettyCashPanel({
         pendingVales={pendingVales}
         onDone={(values) => void handleReplenish(values)}
         isSaving={isSaving}
+      />
+
+      <CashCountModal
+        open={countOpen}
+        onOpenChange={setCountOpen}
+        account={account}
+        onDone={(values) => void handleSaveCount(values)}
+        isSaving={isSavingCount}
       />
     </>
   );

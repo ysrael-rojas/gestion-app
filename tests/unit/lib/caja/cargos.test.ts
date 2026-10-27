@@ -29,6 +29,7 @@ describe("bankChargeToPayment", () => {
       reference: "operación 0012345",
       notes: "ITF del mes",
       allocations: [],
+      isCashMovement: true,
     });
   });
 
@@ -46,5 +47,6 @@ describe("bankChargeToPayment", () => {
     expect(payment.reference).toBeUndefined();
     expect(payment.notes).toBeUndefined();
     expect(payment.allocations).toEqual([]);
+    expect(payment.isCashMovement).toBe(true);
   });
 });
