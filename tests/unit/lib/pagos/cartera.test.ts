@@ -115,6 +115,27 @@ describe("cartera.ts", () => {
       expect(resumen.unassignedPayments.amount).toBe(30);
     });
 
+    it("excluye los movimientos de caja de los buckets sin asignar", async () => {
+      mock.setTable("voucher_balance", { data: [], error: null });
+      mock.setTable("payment_balance", {
+        data: [
+          paymentBalanceRow({
+            payment_id: "p-mov",
+            direction: "EGRESO",
+            unassigned_amount: 50,
+          }),
+        ],
+        error: null,
+      });
+      // El flag consulta la tabla payment por los ids sin asignar.
+      mock.setTable("payment", { data: [{ id: "p-mov" }], error: null });
+
+      const resumen = await getCarteraResumen();
+
+      expect(resumen.unassignedPayments.count).toBe(0);
+      expect(resumen.unassignedPayments.amount).toBe(0);
+    });
+
     it("cuenta anticipos sin entidad en el bucket de sin asignar", async () => {
       mock.setTable("voucher_balance", { data: [], error: null });
       mock.setTable("payment_balance", {
@@ -235,6 +256,25 @@ describe("cartera.ts", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0]?.entityId).toBeNull();
+    });
+
+    it("pide solo recibos que no son movimiento de caja", async () => {
+      mock.setTable("payment_balance", {
+        data: [paymentBalanceRow({ payment_id: "p-1" })],
+        error: null,
+      });
+      mock.setTable("payment", {
+        data: [paymentRow({ id: "p-1" })],
+        error: null,
+      });
+
+      await listUnassignedPayments("INGRESO");
+
+      expect(mock.filterCalls).toContainEqual({
+        table: "payment",
+        method: "eq",
+        args: ["is_cash_movement", false],
+      });
     });
 
     it("lanza error cuando falla la consulta de payment_balance", async () => {

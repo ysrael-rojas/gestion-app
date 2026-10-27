@@ -51,6 +51,7 @@ const payment = (
   voidReason: null,
   voidedAt: null,
   notes: null,
+  isCashMovement: false,
   unassignedAmount: 400,
   ...overrides,
 });

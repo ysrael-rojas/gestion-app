@@ -31,6 +31,20 @@ describe("paymentSchema", () => {
     }
   });
 
+  it("acepta la bandera de movimiento de caja (SPEC 50)", () => {
+    const result = paymentSchema.safeParse({
+      ...validPayment(),
+      entityId: undefined,
+      allocations: [],
+      isCashMovement: true,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.isCashMovement).toBe(true);
+    }
+  });
+
   it("acepta un anticipo sin entidad y sin allocations", () => {
     const { entityId, ...rest } = validPayment();
     void entityId;

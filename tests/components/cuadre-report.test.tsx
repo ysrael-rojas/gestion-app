@@ -54,6 +54,7 @@ const payment = (overrides: Partial<Payment> = {}): Payment => ({
   voidReason: null,
   voidedAt: null,
   notes: null,
+  isCashMovement: false,
   ...overrides,
 });
 

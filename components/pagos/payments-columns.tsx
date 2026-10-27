@@ -149,11 +149,23 @@ export function getPaymentsColumns({
       cell: ({ row }) => {
         const state = getAssignState(
           row.original.status,
-          row.original.unassignedAmount
+          row.original.unassignedAmount,
+          row.original.isCashMovement
         );
 
         if (state === "ANULADO") {
           return <span className="text-sm text-muted-foreground">—</span>;
+        }
+
+        if (state === "MOVIMIENTO") {
+          return (
+            <Badge
+              variant="outline"
+              className="bg-muted text-muted-foreground"
+            >
+              {ASSIGN_STATE_LABELS[state]}
+            </Badge>
+          );
         }
 
         return (
@@ -233,8 +245,11 @@ export function getPaymentsColumns({
                 </TooltipTrigger>
                 <TooltipContent>Imprimir</TooltipContent>
               </Tooltip>
-              {getAssignState(payment.status, payment.unassignedAmount) ===
-              "POR_ASIGNAR" ? (
+              {getAssignState(
+                payment.status,
+                payment.unassignedAmount,
+                payment.isCashMovement
+              ) === "POR_ASIGNAR" ? (
                 <Tooltip>
                   <TooltipTrigger
                     render={

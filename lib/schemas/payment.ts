@@ -17,6 +17,8 @@ export const paymentSchema = z
     reference: z.string().trim().max(60).optional(),
     notes: z.string().trim().max(200).optional(),
     allocations: z.array(allocationSchema).default([]),
+    // Movimiento de caja/cargo/vale: nunca se asigna a comprobantes (SPEC 50).
+    isCashMovement: z.boolean().optional(),
   })
   .superRefine((values, ctx) => {
     // Un anticipo sin entidad no puede traer asignaciones: la entidad se fija

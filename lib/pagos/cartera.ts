@@ -38,6 +38,7 @@ function mapPaymentRow(
     voidReason: row.void_reason,
     voidedAt: row.voided_at,
     notes: row.notes,
+    isCashMovement: row.is_cash_movement,
   };
 }
 
@@ -122,7 +123,33 @@ export async function getCarteraResumen(): Promise<CarteraResumen> {
   const vouchers = (vouchersResult.data as VoucherBalanceRow[]).map(
     mapVoucherBalanceRow
   );
-  const unassigned = paymentsResult.data as PaymentBalanceRow[];
+
+  // SPEC 50: los movimientos de caja (is_cash_movement) no son cartera
+  // asignable: se excluyen de los buckets de "sin asignar".
+  const paymentIds = (paymentsResult.data as PaymentBalanceRow[])
+    .map((row) => row.payment_id)
+    .filter((id): id is string => Boolean(id));
+  const cashMovementIds = new Set<string>();
+
+  if (paymentIds.length > 0) {
+    const { data: movementRows, error: movementError } = await supabase
+      .from("payment")
+      .select("id")
+      .in("id", paymentIds)
+      .eq("is_cash_movement", true);
+
+    if (movementError) {
+      throw new Error(LOAD_ERROR);
+    }
+
+    for (const row of movementRows ?? []) {
+      cashMovementIds.add(row.id);
+    }
+  }
+
+  const unassigned = (paymentsResult.data as PaymentBalanceRow[]).filter(
+    (row) => !row.payment_id || !cashMovementIds.has(row.payment_id)
+  );
 
   return {
     receivable: buildVoucherBucket(
@@ -188,6 +215,7 @@ export async function listUnassignedPayments(
     .from("payment")
     .select("*, cash_account(currency)")
     .in("id", paymentIds)
+    .eq("is_cash_movement", false)
     .order("payment_date", { ascending: false });
 
   if (error) {

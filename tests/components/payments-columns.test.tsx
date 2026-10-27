@@ -36,6 +36,7 @@ const payment = (
   voidReason: null,
   voidedAt: null,
   notes: null,
+  isCashMovement: false,
   unassignedAmount: 400,
   ...overrides,
 });
@@ -151,5 +152,16 @@ describe("payments-columns", () => {
     expect(onAssign).toHaveBeenCalledWith(
       expect.objectContaining({ id: "p-1", unassignedAmount: 400 })
     );
+  });
+
+  it("muestra Movimiento de caja sin monto ni botón Asignar", () => {
+    render(<Harness rows={[row({ isCashMovement: true })]} />);
+
+    expect(screen.getByText("Movimiento de caja")).toBeInTheDocument();
+    expect(screen.queryByText("Por asignar")).not.toBeInTheDocument();
+    expect(screen.queryByText("S/ 400.00")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Asignar" })
+    ).not.toBeInTheDocument();
   });
 });

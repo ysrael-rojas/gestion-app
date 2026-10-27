@@ -34,6 +34,7 @@ const paymentRow = (overrides: Record<string, unknown> = {}) => ({
   void_reason: null,
   voided_at: null,
   notes: null,
+  is_cash_movement: false,
   ...overrides,
 });
 
@@ -159,6 +160,21 @@ describe("pagos.ts", () => {
         method: "in",
         args: ["status", ["EN_REVISION", "PROCESADO"]],
       });
+    });
+
+    it("mapea la bandera de movimiento de caja", async () => {
+      mock.setTable("payment", {
+        data: [
+          paymentRow({ id: "p-mov", is_cash_movement: true }),
+          paymentRow({ id: "p-cobro" }),
+        ],
+        error: null,
+      });
+
+      const result = await listPayments("INGRESO");
+
+      expect(result[0]?.isCashMovement).toBe(true);
+      expect(result[1]?.isCashMovement).toBe(false);
     });
 
     it("propaga el error de la consulta de saldos", async () => {
@@ -326,6 +342,34 @@ describe("pagos.ts", () => {
       const detail = await createPayment(values);
 
       expect(detail.id).toBe("p-new");
+    });
+
+    it("envía p_is_cash_movement cuando el recibo es un movimiento de caja", async () => {
+      mock.setRpc("create_payment_with_allocations", {
+        data: "p-new",
+        error: null,
+      });
+      mock.queueTable("payment", { data: [paymentRow({ id: "p-new" })], error: null });
+      mock.queueTable("payment_balance", { data: [], error: null });
+      mock.queueTable("payment_allocation", { data: [], error: null });
+
+      await createPayment({
+        entityId: undefined,
+        direction: "EGRESO",
+        paymentDate: "2026-10-01",
+        amount: 25,
+        methodId: "m-1",
+        cashAccountId: "acc-1",
+        categoryId: "cat-1",
+        reference: "",
+        notes: "",
+        allocations: [],
+        isCashMovement: true,
+      });
+
+      expect(mock.rpcCalls[0]?.args).toMatchObject({
+        p_is_cash_movement: true,
+      });
     });
 
     it("traduce error 23505 a mensaje de duplicado", async () => {

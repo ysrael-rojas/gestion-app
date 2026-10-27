@@ -39,6 +39,8 @@ export interface Payment {
   voidReason: string | null;
   voidedAt: string | null;
   notes: string | null;
+  /** true = movimiento de caja/cargo/vale: no se asigna a comprobantes (SPEC 50). */
+  isCashMovement: boolean;
 }
 
 /** Fila del listado de pagos: añade el saldo aún no asignado (SPEC 48). */
