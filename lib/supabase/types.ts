@@ -120,8 +120,8 @@ export type Database = {
           difference: number | null
           difference_reason: string | null
           difference_tolerance: number | null
-          expense_total: number
           expected_balance: number
+          expense_total: number
           id: string
           income_total: number
           notes: string | null
@@ -142,8 +142,8 @@ export type Database = {
           difference?: number | null
           difference_reason?: string | null
           difference_tolerance?: number | null
-          expense_total?: number
           expected_balance: number
+          expense_total?: number
           id?: string
           income_total?: number
           notes?: string | null
@@ -164,8 +164,8 @@ export type Database = {
           difference?: number | null
           difference_reason?: string | null
           difference_tolerance?: number | null
-          expense_total?: number
           expected_balance?: number
+          expense_total?: number
           id?: string
           income_total?: number
           notes?: string | null
@@ -755,6 +755,13 @@ export type Database = {
             referencedRelation: "payment"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "petty_cash_vale_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payment_balance"
+            referencedColumns: ["payment_id"]
+          },
         ]
       }
       receipt_sequence: {
@@ -1057,11 +1064,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1074,11 +1081,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
