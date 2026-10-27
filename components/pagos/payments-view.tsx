@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/shared/data-table-pagination";
 import { usePagos } from "@/components/pagos/pagos-provider";
+import { PaymentAssignDialog } from "@/components/pagos/payment-assign-dialog";
 import { PaymentDetailModal } from "@/components/pagos/payment-detail-modal";
 import { ReceiptDialog } from "@/components/pagos/receipt-dialog";
 import { PaymentsListingsToolbar } from "@/components/pagos/payments-listings-toolbar";
@@ -42,6 +43,7 @@ import {
 import type {
   Payment,
   PaymentDirection,
+  PaymentListItem,
   VoucherBalance,
 } from "@/components/pagos/types";
 import { listOpenVouchers, listUnassignedPayments } from "@/lib/pagos/cartera";
@@ -235,6 +237,8 @@ export function PaymentsView({
   const [globalFilter, setGlobalFilter] = useState("");
   const [viewingPaymentId, setViewingPaymentId] = useState<string | null>(null);
   const [detailMode, setDetailMode] = useState<"view" | "annul">("view");
+  const [assigningPayment, setAssigningPayment] =
+    useState<PaymentListItem | null>(null);
   const [printingPaymentId, setPrintingPaymentId] = useState<string | null>(null);
   const [vouchers, setVouchers] = useState<VoucherBalance[] | null>(null);
   const [unassignedIds, setUnassignedIds] = useState<Set<string> | null>(null);
@@ -296,6 +300,11 @@ export function PaymentsView({
     setViewingPaymentId(payment.id);
   }, []);
 
+  const openAssign = useCallback((payment: PaymentListItem) => {
+    setViewingPaymentId(null);
+    setAssigningPayment(payment);
+  }, []);
+
   const data = useMemo<PaymentsRow[]>(
     () => {
       const rows = payments
@@ -333,9 +342,10 @@ export function PaymentsView({
         onView: openView,
         onPrint: openPrint,
         onAnnul: openAnnul,
+        onAssign: openAssign,
         direction,
       }),
-    [openView, openPrint, openAnnul, direction]
+    [openView, openPrint, openAnnul, openAssign, direction]
   );
 
   const table = useTable({
@@ -477,6 +487,16 @@ export function PaymentsView({
         }}
         paymentId={viewingPaymentId}
         initialMode={detailMode}
+      />
+
+      <PaymentAssignDialog
+        payment={assigningPayment}
+        open={assigningPayment !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAssigningPayment(null);
+          }
+        }}
       />
 
       <ReceiptDialog
