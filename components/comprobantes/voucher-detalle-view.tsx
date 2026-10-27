@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FileText,
-  Hand,
   HandCoins,
   NotebookPen,
   Percent,
@@ -61,15 +60,19 @@ function DetailField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function TabHand({ solid }: { solid: boolean }) {
+function TabCount({ count, solid }: { count: number; solid: boolean }) {
   return (
-    <Hand
+    <span
+      data-testid="tab-count"
       className={cn(
-        "size-4",
-        solid ? "text-white" : "text-amber-600 dark:text-amber-400"
+        "inline-flex min-w-4 items-center justify-center rounded-full px-1 py-0.5 text-[10px] font-medium leading-none tabular-nums",
+        solid
+          ? "bg-white/20 text-white"
+          : "bg-muted text-muted-foreground"
       )}
-      aria-hidden
-    />
+    >
+      {count}
+    </span>
   );
 }
 
@@ -145,7 +148,7 @@ export function VoucherDetalleView({
   const basePath = isSale ? "/ventas" : "/compras";
   const entityLabel = isSale ? "Cliente" : "Proveedor";
 
-  const hasPayments = (paymentHistory ?? []).length > 0;
+  const paymentHistoryCount = (paymentHistory ?? []).length;
   const isUnsettled = voucher ? voucher.balance > 0 : false;
   const notasCount = (adjustments ?? []).filter(
     (adjustment) => adjustment.voucherType !== "COMPROBANTE_RETENCION"
@@ -256,7 +259,12 @@ export function VoucherDetalleView({
         >
           <HandCoins />
           Historial de pagos
-          {hasPayments ? <TabHand solid={activeTab === "pagos"} /> : null}
+          {paymentHistoryCount > 0 ? (
+            <TabCount
+              count={paymentHistoryCount}
+              solid={activeTab === "pagos"}
+            />
+          ) : null}
         </Button>
 
         <Button
@@ -266,7 +274,9 @@ export function VoucherDetalleView({
         >
           <NotebookPen />
           Notas de crédito/débito
-          {notasCount > 0 ? <TabHand solid={activeTab === "notas"} /> : null}
+          {notasCount > 0 ? (
+            <TabCount count={notasCount} solid={activeTab === "notas"} />
+          ) : null}
         </Button>
 
         <Button
@@ -277,7 +287,10 @@ export function VoucherDetalleView({
           <Percent />
           Retenciones
           {retencionesCount > 0 ? (
-            <TabHand solid={activeTab === "retenciones"} />
+            <TabCount
+              count={retencionesCount}
+              solid={activeTab === "retenciones"}
+            />
           ) : null}
         </Button>
       </div>
