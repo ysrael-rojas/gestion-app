@@ -1028,6 +1028,13 @@ export type Database = {
           type: Database["public"]["Enums"]["cash_account_type"]
         }[]
       }
+      list_last_movement_dates: {
+        Args: never
+        Returns: {
+          cash_account_id: string
+          last_date: string
+        }[]
+      }
       mark_payments_processed: {
         Args: { p_payment_ids: string[] }
         Returns: number

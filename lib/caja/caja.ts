@@ -78,6 +78,11 @@ function mapError(error: { code?: string; message: string }): Error {
       "La consulta devolvió más registros de los esperados."
     );
   }
+  if (error.code === "PGRST123") {
+    return new Error(
+      "La consulta usó una función no permitida por la API."
+    );
+  }
   return new Error(
     "No se pudo completar la operación con la base de datos. Intenta nuevamente."
   );
@@ -470,25 +475,20 @@ export async function listCashPositionsConsolidated(
 }
 
 /**
- * Último movimiento (recibo) por cuenta en una sola consulta agregada, para
- * evitar una consulta por cuenta en el Detalle de Cuentas (SPEC 49).
+ * Último movimiento (recibo no anulado) por cuenta, en una sola llamada.
+ * Usa la RPC `list_last_movement_dates` porque PostgREST tiene los agregados
+ * deshabilitados y rechaza `payment_date.max()` con PGRST123 (SPEC 55).
  */
 export async function listLastMovementDates(): Promise<Record<string, string>> {
-  const { data, error } = await supabase
-    .from("payment")
-    .select("cash_account_id, last_date:payment_date.max()");
+  const { data, error } = await supabase.rpc("list_last_movement_dates");
 
   if (error) {
     throw mapError(error);
   }
 
-  const rows = (data ?? []) as unknown as Array<{
-    cash_account_id: string;
-    last_date: string | null;
-  }>;
   const entries: Record<string, string> = {};
 
-  for (const row of rows) {
+  for (const row of data ?? []) {
     if (row.last_date) {
       entries[row.cash_account_id] = row.last_date;
     }
