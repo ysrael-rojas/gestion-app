@@ -34,6 +34,7 @@ interface QueryBuilder {
   lte: (col: string, val: unknown) => QueryBuilder;
   is: (col: string, val: unknown) => QueryBuilder;
   in: (col: string, vals: unknown[]) => QueryBuilder;
+  or: (filters: string) => QueryBuilder;
   order: (col: string, opts?: { ascending?: boolean }) => QueryBuilder;
   limit: (n: number) => QueryBuilder;
   single: () => Promise<SingleResult>;
@@ -145,6 +146,7 @@ export function createMockSupabase(): MockSupabase {
         recordFilter("in", [col, vals]);
         return builder;
       },
+      or: () => builder,
       order: () => builder,
       limit: () => builder,
       single: async () => {

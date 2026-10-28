@@ -53,6 +53,8 @@ const closeRow = (overrides: Record<string, unknown> = {}) => ({
   difference: 0,
   difference_reason: null,
   difference_tolerance: 0.5,
+  counted_by: null,
+  verified_by: null,
   change_fund: null,
   pen_usd_rate: null,
   notes: null,
@@ -282,6 +284,35 @@ describe("caja.ts", () => {
       });
       expect(close.differenceReason).toBe("Faltante por vuelto");
       expect(close.differenceTolerance).toBe(0.5);
+    });
+
+    it("envía y mapea los nombres del acta (SPEC 51)", async () => {
+      mock.setRpc("close_cash_account", { data: "close-1", error: null });
+      mock.setTable("cash_close", {
+        data: [
+          closeRow({ counted_by: "Ana Ríos", verified_by: "Luis Torres" }),
+        ],
+        error: null,
+      });
+
+      const close = await closeCashAccount({
+        cashAccountId: "acc-1",
+        periodEnd: "2026-08-31",
+        countedBalance: 100,
+        notes: "",
+        countedBy: "Ana Ríos",
+        verifiedBy: "Luis Torres",
+      });
+
+      expect(mock.rpcCalls[0]).toMatchObject({
+        name: "close_cash_account",
+        args: {
+          p_counted_by: "Ana Ríos",
+          p_verified_by: "Luis Torres",
+        },
+      });
+      expect(close.countedBy).toBe("Ana Ríos");
+      expect(close.verifiedBy).toBe("Luis Torres");
     });
   });
 

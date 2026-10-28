@@ -110,6 +110,8 @@ export interface CashClose {
   incomeTotal: number;
   expenseTotal: number;
   expectedBalance: number;
+  transferInTotal: number;
+  transferOutTotal: number;
   countedBalance: number | null;
   /** Fondo de cambio congelado al cerrar (null en cierres históricos). */
   changeFund: number | null;
@@ -118,6 +120,10 @@ export interface CashClose {
   differenceReason: string | null;
   /** Tolerancia vigente al cerrar (snapshot; null en cierres históricos). */
   differenceTolerance: number | null;
+  /** Quién contó la caja (SPEC 51; null en cierres históricos). */
+  countedBy: string | null;
+  /** Quién revisó el arqueo (SPEC 51; null en cierres históricos). */
+  verifiedBy: string | null;
   penUsdRate: number | null;
   notes: string | null;
   createdAt: string;

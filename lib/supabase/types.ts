@@ -116,6 +116,7 @@ export type Database = {
           cash_account_id: string
           change_fund: number | null
           counted_balance: number | null
+          counted_by: string | null
           created_at: string
           difference: number | null
           difference_reason: string | null
@@ -133,11 +134,13 @@ export type Database = {
           periodicity: Database["public"]["Enums"]["closing_periodicity"]
           transfer_in_total: number
           transfer_out_total: number
+          verified_by: string | null
         }
         Insert: {
           cash_account_id: string
           change_fund?: number | null
           counted_balance?: number | null
+          counted_by?: string | null
           created_at?: string
           difference?: number | null
           difference_reason?: string | null
@@ -155,11 +158,13 @@ export type Database = {
           periodicity: Database["public"]["Enums"]["closing_periodicity"]
           transfer_in_total?: number
           transfer_out_total?: number
+          verified_by?: string | null
         }
         Update: {
           cash_account_id?: string
           change_fund?: number | null
           counted_balance?: number | null
+          counted_by?: string | null
           created_at?: string
           difference?: number | null
           difference_reason?: string | null
@@ -177,6 +182,7 @@ export type Database = {
           periodicity?: Database["public"]["Enums"]["closing_periodicity"]
           transfer_in_total?: number
           transfer_out_total?: number
+          verified_by?: string | null
         }
         Relationships: [
           {
@@ -873,10 +879,12 @@ export type Database = {
         Args: {
           p_cash_account_id: string
           p_counted_balance: number
+          p_counted_by?: string
           p_denominations?: Json
           p_difference_reason?: string
           p_notes: string
           p_period_end: string
+          p_verified_by?: string
         }
         Returns: string
       }

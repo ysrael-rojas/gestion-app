@@ -13,7 +13,7 @@ import {
   useTable,
   type SortingState,
 } from "@tanstack/react-table";
-import { Download } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +37,7 @@ import {
   buildStatementRows,
 } from "@/components/cajas-bancos/statement-table";
 import { downloadCsv, toCsv } from "@/lib/caja/csv";
+import { CuadreActa } from "@/components/cajas-bancos/cuadre-acta";
 import {
   formatReceiptRanges,
   summarizeReceiptSequence,
@@ -342,6 +343,7 @@ export function CuadreReport({
   onMarkVerified,
   onRegisterBankCharge,
 }: CuadreReportProps) {
+  const [printOpen, setPrintOpen] = useState(false);
   const isBank = accountType === "BANK_ACCOUNT";
   const countedLabel = isBank ? "Saldo según extracto" : "Conteo físico";
   // El cierre congela el fondo de cambio; los cierres históricos sin snapshot
@@ -445,10 +447,20 @@ export function CuadreReport({
         <CardTitle>
           Cuadre {formatDate(close.periodStart)} — {formatDate(close.periodEnd)}
         </CardTitle>
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download />
-          Exportar CSV
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExport}>
+            <Download />
+            Exportar CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPrintOpen(true)}
+          >
+            <Printer />
+            Imprimir acta
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-6">
         <div className="flex flex-col gap-1 rounded-md border bg-background p-4">
@@ -508,6 +520,8 @@ export function CuadreReport({
               ) : null}
             </>
           ) : null}
+          <SummaryRow label="Contado por" value={close.countedBy || "—"} />
+          <SummaryRow label="Revisado por" value={close.verifiedBy || "—"} />
           {close.penUsdRate !== null ? (
             <SummaryRow
               label="Tipo de cambio usado"
@@ -543,6 +557,17 @@ export function CuadreReport({
           />
         </div>
       </CardContent>
+
+      <CuadreActa
+        close={close}
+        accountName={accountName}
+        accountType={accountType}
+        currency={currency === "USD" ? "USD" : "PEN"}
+        denominations={denominations}
+        statement={statement}
+        open={printOpen}
+        onClose={() => setPrintOpen(false)}
+      />
     </Card>
   );
 }

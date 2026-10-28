@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const downloadCsv = vi.hoisted(() => vi.fn());
@@ -24,11 +24,15 @@ const close = (overrides: Partial<CashClose> = {}): CashClose => ({
   incomeTotal: 500,
   expenseTotal: 0,
   expectedBalance: 500,
+  transferInTotal: 0,
+  transferOutTotal: 0,
   countedBalance: 400.5,
   changeFund: null,
   difference: -99.5,
   differenceReason: null,
   differenceTolerance: 0.5,
+  countedBy: null,
+  verifiedBy: null,
   penUsdRate: null,
   notes: null,
   createdAt: "2026-10-14T00:00:00Z",
@@ -166,8 +170,7 @@ describe("CuadreReport", () => {
     expect(csv).toContain("Efectivo neto (A − B),,200.5");
   });
 
-  it("muestra y exporta la secuencia de recibos del período y los anulados", async () => {
-    const user = userEvent.setup();
+  it("muestra y exporta la secuencia de recibos del período y los anulados", async () => {    const user = userEvent.setup();
 
     renderReport({
       statement: [
@@ -249,6 +252,17 @@ describe("CuadreReport", () => {
     expect(csv).not.toContain("EGRESO,ITF,50");
   });
 
+  it("muestra quién contó y quién revisó el cierre", () => {
+    renderReport({
+      close: { countedBy: "Ana Ríos", verifiedBy: "Luis Torres" },
+    });
+
+    expect(screen.getByText("Contado por")).toBeInTheDocument();
+    expect(screen.getByText("Ana Ríos")).toBeInTheDocument();
+    expect(screen.getByText("Revisado por")).toBeInTheDocument();
+    expect(screen.getByText("Luis Torres")).toBeInTheDocument();
+  });
+
   it("etiqueta el conteo según el tipo de cuenta", () => {
     const { unmount } = renderReport({ accountType: "CASH_BOX" });
     expect(screen.getByText("Conteo físico")).toBeInTheDocument();
@@ -282,5 +296,19 @@ describe("CuadreReport", () => {
     expect(
       screen.getByText("Menos fondo de cambio (B)").parentElement
     ).toHaveTextContent("S/ 100.00");
+  });
+
+  it("imprime el acta al pulsar Imprimir acta", async () => {
+    const user = userEvent.setup();
+    const print = vi.spyOn(window, "print").mockImplementation(() => {});
+
+    renderReport({});
+
+    await user.click(screen.getByRole("button", { name: /Imprimir acta/ }));
+
+    await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
+    expect(screen.getByText("Acta de arqueo de caja")).toBeInTheDocument();
+
+    print.mockRestore();
   });
 });
