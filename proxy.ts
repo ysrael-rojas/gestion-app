@@ -7,7 +7,7 @@ import type { Database } from "@/lib/supabase/types";
 // escribir cookies, así que si el token no se renueva acá la sesión caduca y el
 // usuario aparece deslogueado aunque su refresh token siga siendo válido.
 
-const PUBLIC_ROUTES = ["/login", "/registro"];
+const PUBLIC_ROUTES = ["/login"];
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
