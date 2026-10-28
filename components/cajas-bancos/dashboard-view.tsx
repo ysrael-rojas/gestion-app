@@ -7,7 +7,9 @@ import {
   ArrowUpCircle,
   Calculator,
   Landmark,
+  ScrollText,
   Settings,
+  TrendingUp,
   Wallet,
 } from "lucide-react";
 
@@ -43,6 +45,7 @@ import {
   type CashFlowTotals,
 } from "@/lib/caja/dashboard";
 import { getCarteraResumen } from "@/lib/pagos/cartera";
+import { CashFlowProjection } from "@/components/cajas-bancos/cash-flow-projection";
 import { formatCurrency, getTodayLocalDate } from "@/lib/utils";
 
 function formatAmount(value: number, currency: string): string {
@@ -65,6 +68,8 @@ const QUICK_LINKS = [
     icon: Calculator,
   },
   { href: "/cajas-bancos/cuentas", label: "Detalle de cuentas", icon: Wallet },
+  { href: "/cajas-bancos/extractos", label: "Extractos", icon: ScrollText },
+  { href: "#flujo", label: "Ver flujo de caja", icon: TrendingUp },
   {
     href: "/cajas-bancos/configuracion",
     label: "Configuración",
@@ -278,6 +283,8 @@ export function DashboardView() {
           </CardContent>
         </Card>
       </div>
+
+      <CashFlowProjection />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Desglose por cuenta</h2>
