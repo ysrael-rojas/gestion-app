@@ -4,6 +4,7 @@ import {
   getMonthRange,
   summarizeCashFlow,
   summarizePositions,
+  toPen,
 } from "@/lib/caja/dashboard";
 
 describe("getMonthRange", () => {
@@ -70,8 +71,7 @@ describe("summarizeCashFlow", () => {
   });
 });
 
-describe("summarizePositions", () => {
-  it("totaliza y separa caja de banco", () => {
+describe("summarizePositions", () => {  it("totaliza y separa caja de banco", () => {
     const result = summarizePositions([
       { type: "CASH_BOX", balance: 500 },
       { type: "BANK_ACCOUNT", balance: 9320 },
@@ -106,5 +106,19 @@ describe("summarizePositions", () => {
       bankTotal: 0,
       count: 0,
     });
+  });
+});
+
+describe("toPen", () => {
+  it("deja los saldos en soles igual", () => {
+    expect(toPen(100, "PEN", 3.75)).toBe(100);
+  });
+
+  it("convierte dólares con el tipo de cambio", () => {
+    expect(toPen(100, "USD", 3.75)).toBe(375);
+  });
+
+  it("cuenta los dólares como 0 sin tipo de cambio", () => {
+    expect(toPen(100, "USD", null)).toBe(0);
   });
 });
