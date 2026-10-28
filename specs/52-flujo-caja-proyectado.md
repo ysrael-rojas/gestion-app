@@ -1,6 +1,6 @@
 # SPEC 52 — Flujo de caja proyectado
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 09, SPEC 34, SPEC 39
 > **Date:** 2026-10-28
 > **Objective:** Mostrar en el Resumen de caja y bancos una proyección de 4 semanas del saldo disponible (lo que entrará por cobranzas, lo que saldrá por pagos, y lo que queda), armada solo con la cartera y sus vencimientos, con alerta cuando una semana queda negativa — y de paso corregir que el Resumen hoy suma PEN y USD como si fueran la misma moneda.
@@ -104,16 +104,16 @@ export function buildCashFlowProjection(input: ProjectionInput): CashFlowProject
 
 ## Acceptance criteria
 
-- [ ] El Resumen muestra la sección "Flujo de caja proyectado" con 4 semanas (lunes a domingo, la primera es la semana en curso) y el encabezado "Disponible hoy: S/ X · N cuentas · TC S/ 3.75".
-- [ ] La tabla tiene las filas Atrasado, Cobranzas, Pagos y Queda; "Queda" se calcula en cascada desde el disponible de hoy.
-- [ ] Los comprobantes vencidos (incluido el contado con saldo) suman en la semana 1 como "Atrasado", con el desglose "por cobrar +X · por pagar −Y" visible.
-- [ ] Los créditos sin fecha de vencimiento no suman: la nota al pie muestra su total y avisa que no está considerado.
-- [ ] Una semana con "Queda" negativo se muestra en rose con el texto guía "No te alcanza esa semana. Cobra lo atrasado o aplaza el pago."
-- [ ] "Disponible total", "En cajas", "En bancos" y el footer del desglose del Resumen convierten las cuentas en USD con el TC configurado (antes sumaban crudo); sin TC configurado, USD cuenta como 0 y hay una nota visible que lo avisa.
-- [ ] "Descargar CSV (se abre en Excel)" genera `flujo-proyectado-{hoy}.csv` con el encabezado y las 4 semanas.
-- [ ] Los accesos rápidos del Resumen incluyen "Extractos" y el ancla "Ver flujo de caja" lleva a la sección.
-- [ ] No hay cambios en la BD (sin migraciones), y `toPen`, `startOfWeek` y `buildCashFlowProjection` son funciones puras con tests unitarios.
-- [ ] `npx tsc --noEmit`, `npm run lint`, `npm test` y `npm run build` pasan en verde.
+- [x] El Resumen muestra la sección "Flujo de caja proyectado" con 4 semanas (lunes a domingo, la primera es la semana en curso) y el encabezado "Disponible hoy: S/ X · N cuentas · TC S/ 3.75". Test de componente.
+- [x] La tabla tiene las filas Atrasado, Cobranzas, Pagos y Queda; "Queda" se calcula en cascada desde el disponible de hoy. Tests del helper (cascada) y de la sección.
+- [x] Los comprobantes vencidos (incluido el contado con saldo) suman en la semana 1 como "Atrasado", con el desglose "por cobrar +X · por pagar −Y" visible.
+- [x] Los créditos sin fecha de vencimiento no suman: la nota al pie muestra su total y avisa que no está considerado. Test del helper y de la sección.
+- [x] Una semana con "Queda" negativo se muestra en rose con el texto guía "No te alcanza esa semana. Cobra lo atrasado o aplaza el pago." Test del helper (primera semana negativa) y de la sección (texto con la fecha de la semana).
+- [x] "Disponible total", "En cajas", "En bancos" y el footer del desglose del Resumen convierten las cuentas en USD con el TC configurado; sin TC, USD cuenta como 0 con nota visible. Test de `toPen` y de la sección (1,000 PEN + 100 USD × 3.75 = 1,375).
+- [x] "Descargar CSV (se abre en Excel)" genera `flujo-proyectado-{hoy}.csv` con el encabezado y las 4 semanas. Test del nombre y contenido.
+- [x] Los accesos rápidos del Resumen incluyen "Extractos" y el ancla "Ver flujo de caja" lleva a la sección (`#flujo`).
+- [x] No hay cambios en la BD (sin migraciones), y `toPen`, `startOfWeek` y `buildCashFlowProjection` son funciones puras con tests unitarios.
+- [x] `npx tsc --noEmit`, `npm run lint`, `npm test` (588 tests) y `npm run build` pasan en verde.
 
 ## Decisions
 
@@ -129,6 +129,8 @@ export function buildCashFlowProjection(input: ProjectionInput): CashFlowProject
 - **Sí:** las semanas son lunes-domingo para lectura de negocio. **No:** reutilizar la semántica "WEEKLY → domingo terminal" de `periodo.ts` (esa es para cierres de caja, otro concepto).
 - **Asumido:** los comprobantes están en soles — `voucher_balance` no expone moneda y el multi-moneda real quedó fuera de alcance desde SPEC 34/37; el TC solo aplica a las cuentas de caja/banco.
 - **Pase previo por `frontend-design`** (2026-10-28): "la proyección responde una sola pregunta: ¿me alcanza?" — una tabla, tres conceptos (entra, sale, queda) y el atrasado con etiqueta propia; descartados el gráfico de barras (decorativo), el número gigante con gradiente y las tarjetas idénticas; montos con `tabular-nums`; cabeceras de semana con rango corto.
+- **Corrección de implementación (2026-10-28):** lo que vence **después de la cuarta semana** se ignora en la proyección (el horizonte es de 4 semanas y no se inventa una columna extra); queda documentado en el helper. La nota de "sin fecha" muestra por cobrar y por pagar por separado.
+- **Corrección de implementación (2026-10-28):** la fila "Atrasado" muestra el **neto** y debajo el desglose "+X por cobrar · −Y por pagar"; solo aplica a la semana 1 (las demás muestran "—").
 
 ## Risks
 
