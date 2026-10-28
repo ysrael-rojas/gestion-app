@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Download, Plus, Printer, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -23,8 +23,13 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCajasBancos } from "@/components/cajas-bancos/cajas-bancos-provider";
+import {
+  ConciliacionActa,
+  type ConciliacionActaData,
+} from "@/components/cajas-bancos/conciliacion-acta";
 import type { Payment } from "@/components/pagos/types";
 import { getCashAccountStatement, getCashPosition } from "@/lib/caja/caja";
+import { downloadCsv, toCsv } from "@/lib/caja/csv";
 import {
   computeReconciliation,
   getReconciliation,
@@ -92,6 +97,7 @@ export function ConciliacionView() {
   const [isRefreshingBooks, setIsRefreshingBooks] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [actaOpen, setActaOpen] = useState(false);
 
   const bankAccounts = useMemo(
     () =>
@@ -106,8 +112,7 @@ export function ConciliacionView() {
     null;
   const currency = account?.currency === "USD" ? "USD" : "PEN";
 
-  const createDraft = useCallback(
-    (values: Partial<Omit<DraftItem, "key">> = {}): DraftItem => {
+  const createDraft = useCallback(    (values: Partial<Omit<DraftItem, "key">> = {}): DraftItem => {
       nextKey.current += 1;
       return {
         key: `draft-${nextKey.current}`,
@@ -190,6 +195,7 @@ export function ConciliacionView() {
   );
 
   const rangeIsInverted = from > to;
+  const closeActa = useCallback(() => setActaOpen(false), []);
 
   function updateItem(key: string, changes: Partial<Omit<DraftItem, "key">>) {
     setItems((current) =>
@@ -301,6 +307,59 @@ export function ConciliacionView() {
       setIsSaving(false);
     }
   }
+
+  function handleExport() {
+    if (!account) {
+      return;
+    }
+
+    const rows: (string | number | null)[][] = [
+      ["Conciliación bancaria"],
+      ["Banco", account.bankName ?? ""],
+      ["Cuenta", account.name],
+      ["Moneda", currency],
+      ["Período", `${from} a ${to}`],
+      [],
+      ["Signo", "Clase", "Descripción", "Monto"],
+      ...items.map((item) => [
+        ITEM_META[item.kind].sign,
+        ITEM_META[item.kind].longLabel,
+        item.description,
+        toMoney(item.amount),
+      ]),
+      [],
+      ["", "", "Saldo según extracto", toMoney(statementBalance)],
+      ["", "", "Saldo conciliado", summary.reconciledBalance],
+      ["", "", "Saldo según registros", booksBalance ?? 0],
+      ["", "", "Diferencia", summary.difference],
+    ];
+
+    downloadCsv(
+      `conciliacion-${account.name}-${from}_${to}.csv`,
+      toCsv(rows)
+    );
+  }
+
+  const actaData: ConciliacionActaData | null = account
+    ? {
+        accountName: account.name,
+        bankName: account.bankName,
+        accountNumber: account.accountNumber,
+        currency,
+        periodStart: from,
+        periodEnd: to,
+        statementBalance: toMoney(statementBalance),
+        booksBalance: booksBalance ?? 0,
+        preparedBy: preparedBy || null,
+        reviewedBy: reviewedBy || null,
+        notes: notes || null,
+        items: items.map((item) => ({
+          kind: item.kind,
+          description: item.description,
+          amount: toMoney(item.amount),
+        })),
+      }
+    : null;
 
   return (
     <main className="container mx-auto flex flex-col gap-6 p-6">
@@ -721,7 +780,27 @@ export function ConciliacionView() {
                 <Button onClick={handleSave} disabled={isSaving}>
                   {isSaving ? "Guardando…" : "Guardar conciliación"}
                 </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setActaOpen(true)}
+                  disabled={!actaData}
+                >
+                  <Printer />
+                  Imprimir acta
+                </Button>
+                <Button variant="outline" onClick={handleExport}>
+                  <Download />
+                  Descargar CSV (se abre en Excel)
+                </Button>
               </div>
+
+              {actaData ? (
+                <ConciliacionActa
+                  data={actaData}
+                  open={actaOpen}
+                  onClose={closeActa}
+                />
+              ) : null}
             </>
           )}
         </>

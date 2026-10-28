@@ -2,11 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-const { mock, accounts, toast } = await vi.hoisted(async () => {
+const { mock, accounts, toast, downloadCsv } = await vi.hoisted(async () => {
   const { createMockSupabase } = await import("@/tests/__mocks__/supabase");
   return {
     mock: createMockSupabase(),
     toast: { success: vi.fn(), error: vi.fn() },
+    downloadCsv: vi.fn(),
     accounts: [
       {
         id: "11111111-1111-4111-8111-111111111111",
@@ -30,6 +31,12 @@ const { mock, accounts, toast } = await vi.hoisted(async () => {
 
 vi.mock("@/lib/supabase/client", () => ({ supabase: mock.client }));
 vi.mock("sonner", () => ({ toast }));
+vi.mock("@/lib/caja/csv", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/caja/csv")>(
+    "@/lib/caja/csv"
+  );
+  return { ...actual, downloadCsv };
+});
 vi.mock("@/components/cajas-bancos/cajas-bancos-provider", () => ({
   useCajasBancos: () => ({ accounts, isLoading: false }),
 }));
@@ -103,6 +110,8 @@ describe("ConciliacionView", () => {
     mock.reset();
     toast.success.mockReset();
     toast.error.mockReset();
+    downloadCsv.mockReset();
+    vi.spyOn(window, "print").mockImplementation(() => {});
 
     mock.setTable("bank_reconciliation", { data: [], error: null });
     mock.setTable("bank_reconciliation_item", { data: [], error: null });
@@ -347,5 +356,58 @@ describe("ConciliacionView", () => {
         .parentElement?.parentElement as HTMLElement;
       expect(booksCard).toHaveTextContent("S/ 19,000.00");
     });
+  });
+
+  it("descarga el CSV con cabecera, partidas y totales", async () => {
+    const user = userEvent.setup();
+
+    render(<ConciliacionView />);
+
+    await screen.findByText("Saldo según mis registros");
+    fireEvent.change(screen.getByLabelText("Saldo según extracto bancario"), {
+      target: { value: "17955.30" },
+    });
+    await user.click(
+      screen.getByRole("button", { name: /Agregar RI-000001 como partida/ })
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: /Descargar CSV/ })
+    );
+
+    expect(downloadCsv).toHaveBeenCalledTimes(1);
+    const [filename, csv] = downloadCsv.mock.calls[0] as [string, string];
+
+    expect(filename).toBe(
+      "conciliacion-Banco BCP-2026-10-01_2026-10-31.csv"
+    );
+    expect(csv).toContain("Conciliación bancaria");
+    expect(csv).toContain("Signo");
+    expect(csv).toContain("Depósito en tránsito");
+    expect(csv).toContain("Recibo RI-000001");
+    expect(csv).toContain("Saldo conciliado");
+    expect(csv).toContain("Diferencia");
+  });
+
+  it("abre la impresión del acta con el formato oficial", async () => {
+    const user = userEvent.setup();
+
+    render(<ConciliacionView />);
+
+    await screen.findByText("Saldo según mis registros");
+    fireEvent.change(screen.getByLabelText("Saldo según extracto bancario"), {
+      target: { value: "17955.30" },
+    });
+    await user.click(
+      screen.getByRole("button", { name: /Agregar RI-000001 como partida/ })
+    );
+    await user.click(screen.getByRole("button", { name: /Imprimir acta/ }));
+
+    expect(window.print).toHaveBeenCalledTimes(1);
+    expect(
+      await screen.findByText("Acta de conciliación bancaria")
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("Elaborado por")).toHaveLength(2);
+    expect(screen.getAllByText("Revisado por")).toHaveLength(2);
   });
 });

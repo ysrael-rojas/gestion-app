@@ -6,6 +6,8 @@
  * (validación), y los tests de los schemas no deben necesitar credenciales.
  */
 
+import { round2 } from "@/lib/utils";
+
 export const RECONCILIATION_ITEM_KINDS = [
   "DEPOSITO_EN_TRANSITO",
   "PAGO_NO_DEBITADO",
@@ -66,4 +68,64 @@ export interface ReconciliationItem {
   kind: ReconciliationItemKind;
   description: string;
   amount: number;
+}
+
+export interface ReconciliationSummary {
+  /** Total de cada clase de partida (siempre en positivo). */
+  adjustedByKind: Record<ReconciliationItemKind, number>;
+  /** Extracto del banco ± partidas. */
+  reconciledBalance: number;
+  /** Registros propios − saldo conciliado. 0 = conciliado. */
+  difference: number;
+  isConciled: boolean;
+}
+
+function emptyByKind(): Record<ReconciliationItemKind, number> {
+  return {
+    DEPOSITO_EN_TRANSITO: 0,
+    PAGO_NO_DEBITADO: 0,
+    CARGO_NO_REGISTRADO: 0,
+    ABONO_NO_REGISTRADO: 0,
+  };
+}
+
+/**
+ * Cálculo del formato oficial de conciliación (SPEC 53):
+ *
+ *   saldo conciliado = saldo del extracto ± partidas
+ *   diferencia       = saldo según registros − saldo conciliado
+ *
+ * Los valores calculados nunca se persisten: se recalculan con las partidas
+ * vigentes para que una edición no deje el guardado inconsistente.
+ */
+export function computeReconciliation(
+  statementBalance: number,
+  booksBalance: number,
+  items: ReconciliationItem[]
+): ReconciliationSummary {
+  const adjustedByKind = emptyByKind();
+
+  for (const item of items) {
+    adjustedByKind[item.kind] = round2(
+      adjustedByKind[item.kind] + item.amount
+    );
+  }
+
+  let reconciled = statementBalance;
+
+  for (const kind of RECONCILIATION_ITEM_KINDS) {
+    reconciled += ITEM_SIGN[kind] * adjustedByKind[kind];
+  }
+
+  const reconciledBalance = round2(reconciled);
+  const difference = round2(booksBalance - reconciledBalance);
+
+  return {
+    adjustedByKind,
+    reconciledBalance,
+    difference,
+    // Solo hay conciliación cuando la diferencia es cero (redondeada a 2
+    // decimales); un céntimo todavía es una diferencia por explicar.
+    isConciled: difference === 0,
+  };
 }
