@@ -62,8 +62,7 @@ export function summarizeCashFlow(rows: FlowLike[]): CashFlowTotals {
 }
 
 /** Total disponible y su desglose por tipo de cuenta (caja vs. banco). */
-export function summarizePositions(positions: PositionLike[]): PositionsSummary {
-  let total = 0;
+export function summarizePositions(positions: PositionLike[]): PositionsSummary {  let total = 0;
   let cashTotal = 0;
   let bankTotal = 0;
 
@@ -82,4 +81,20 @@ export function summarizePositions(positions: PositionLike[]): PositionsSummary 
     bankTotal: round2(bankTotal),
     count: positions.length,
   };
+}
+
+/**
+ * Convierte un saldo a soles con el TC configurado (SPEC 52). Sin TC, una
+ * cuenta en USD cuenta como 0 y la UI avisa que hay que configurarlo.
+ */
+export function toPen(
+  balance: number,
+  currency: string,
+  penUsdRate: number | null
+): number {
+  if (currency === "PEN") {
+    return balance;
+  }
+
+  return penUsdRate ? balance * penUsdRate : 0;
 }

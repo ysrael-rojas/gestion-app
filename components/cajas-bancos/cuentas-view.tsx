@@ -47,6 +47,7 @@ import {
   type CashAccountPosition,
 } from "@/lib/caja/caja";
 import { getPeriodicityLabel } from "@/lib/data/cash-options";
+import { toPen } from "@/lib/caja/dashboard";
 import { formatCurrency, formatDate, getTodayLocalDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -109,17 +110,6 @@ function formatAmount(value: number, currency: string): string {
   } catch {
     return formatCurrency(value);
   }
-}
-
-function toPen(
-  balance: number,
-  currency: string,
-  penUsdRate: number | null
-): number {
-  if (currency === "PEN") {
-    return balance;
-  }
-  return penUsdRate ? balance * penUsdRate : 0;
 }
 
 export function CuentasView() {

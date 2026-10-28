@@ -7,7 +7,9 @@ import {
   ArrowUpCircle,
   Calculator,
   Landmark,
+  ScrollText,
   Settings,
+  TrendingUp,
   Wallet,
 } from "lucide-react";
 
@@ -32,15 +34,18 @@ import {
 import type { CarteraBucket } from "@/components/cartera/types";
 import {
   getMonthlyCashFlow,
+  getPenUsdRate,
   listCashPositionsConsolidated,
   type CashAccountPosition,
 } from "@/lib/caja/caja";
 import {
   getMonthRange,
   summarizePositions,
+  toPen,
   type CashFlowTotals,
 } from "@/lib/caja/dashboard";
 import { getCarteraResumen } from "@/lib/pagos/cartera";
+import { CashFlowProjection } from "@/components/cajas-bancos/cash-flow-projection";
 import { formatCurrency, getTodayLocalDate } from "@/lib/utils";
 
 function formatAmount(value: number, currency: string): string {
@@ -63,6 +68,8 @@ const QUICK_LINKS = [
     icon: Calculator,
   },
   { href: "/cajas-bancos/cuentas", label: "Detalle de cuentas", icon: Wallet },
+  { href: "/cajas-bancos/extractos", label: "Extractos", icon: ScrollText },
+  { href: "#flujo", label: "Ver flujo de caja", icon: TrendingUp },
   {
     href: "/cajas-bancos/configuracion",
     label: "Configuración",
@@ -114,6 +121,7 @@ export function DashboardView() {
   );
   const [flow, setFlow] = useState<CashFlowTotals | null>(null);
   const [receivable, setReceivable] = useState<CarteraBucket | null>(null);
+  const [penUsdRate, setPenUsdRate] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -122,16 +130,18 @@ export function DashboardView() {
 
     void (async () => {
       try {
-        const [nextPositions, nextFlow, cartera] = await Promise.all([
+        const [nextPositions, nextFlow, cartera, nextRate] = await Promise.all([
           listCashPositionsConsolidated(today),
           getMonthlyCashFlow(start, end),
           getCarteraResumen(),
+          getPenUsdRate(),
         ]);
 
         if (isMounted) {
           setPositions(nextPositions);
           setFlow(nextFlow);
           setReceivable(cartera.receivable);
+          setPenUsdRate(nextRate);
           setError(null);
         }
       } catch (err) {
@@ -151,12 +161,23 @@ export function DashboardView() {
   }, [today]);
 
   const isLoading = positions === null;
+  // SPEC 52: el disponible se consolida en soles; antes se sumaba crudo y una
+  // cuenta en USD inflaba el total como si fuera PEN.
   const summary = summarizePositions(
     (positions ?? []).map((position) => ({
       type: position.account.type,
-      balance: position.balance,
+      balance: toPen(
+        position.balance,
+        position.account.currency,
+        penUsdRate
+      ),
     }))
   );
+  const missingExchangeRate =
+    penUsdRate === null &&
+    (positions ?? []).some(
+      (position) => position.account.currency !== "PEN"
+    );
 
   return (
     <main className="container mx-auto flex flex-col gap-6 p-6">
@@ -196,6 +217,13 @@ export function DashboardView() {
           isLoading={isLoading}
         />
       </div>
+
+      {missingExchangeRate ? (
+        <p className="text-sm text-amber-600 dark:text-amber-400">
+          Hay cuentas en dólares sin tipo de cambio configurado: se suman como
+          S/ 0. Configúralo en Configuración → General.
+        </p>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card className="bg-muted/30 ring-0">
@@ -255,6 +283,8 @@ export function DashboardView() {
           </CardContent>
         </Card>
       </div>
+
+      <CashFlowProjection />
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold">Desglose por cuenta</h2>
