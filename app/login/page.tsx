@@ -15,7 +15,7 @@ export default function LoginPage() {
           Ventas, compras, pagos y cajas
         </p>
       </div>
-      <AuthForm mode="login" />
+      <AuthForm />
     </main>
   );
 }
