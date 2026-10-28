@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { useClientes } from "@/components/clientes/clientes-provider";
+import type { Client } from "@/components/clientes/types";
 import { useCompras } from "@/components/compras/compras-provider";
 import { PaymentDrawer } from "@/components/comprobantes/payment-drawer";
 import { PaymentHistorySection } from "@/components/comprobantes/payment-history-section";
@@ -34,6 +35,7 @@ import {
   listVoucherAdjustments,
   type VoucherAdjustment,
 } from "@/lib/comprobantes/notas";
+import { listSuppliers } from "@/lib/clientes/entidades";
 import { getPaymentHistory } from "@/lib/pagos/pagos";
 import { toast } from "sonner";
 import {
@@ -102,6 +104,7 @@ export function VoucherDetalleView({
   const [paymentHistoryError, setPaymentHistoryError] = useState<string | null>(
     null
   );
+  const [suppliers, setSuppliers] = useState<Client[]>([]);
 
   const loadPaymentHistory = useCallback(async () => {
     try {
@@ -144,6 +147,34 @@ export function VoucherDetalleView({
     })();
   }, [loadPaymentHistory]);
 
+  // Un comprobante de compra resuelve su entidad contra proveedores; una venta,
+  // contra clientes (el formulario de venta solo ofrece clientes).
+  useEffect(() => {
+    if (voucherKind === "VENTA") {
+      return;
+    }
+
+    let isMounted = true;
+
+    void (async () => {
+      try {
+        const data = await listSuppliers();
+
+        if (isMounted) {
+          setSuppliers(data);
+        }
+      } catch {
+        if (isMounted) {
+          setSuppliers([]);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [voucherKind]);
+
   const isSale = voucherKind === "VENTA";
   const basePath = isSale ? "/ventas" : "/compras";
   const entityLabel = isSale ? "Cliente" : "Proveedor";
@@ -162,8 +193,9 @@ export function VoucherDetalleView({
     ? "text-rose-600 dark:text-rose-400"
     : "text-emerald-600 dark:text-emerald-400";
 
+  const entities = isSale ? clients : suppliers;
   const entityName = voucher
-    ? clients.find((client) => client.id === voucher.entityId)?.name ??
+    ? entities.find((entity) => entity.id === voucher.entityId)?.name ??
       (isSale ? "Cliente no encontrado" : "Proveedor no encontrado")
     : "";
 
