@@ -1,6 +1,6 @@
 # SPEC 53 — Conciliación bancaria formal
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 19, SPEC 33, SPEC 35, SPEC 49, SPEC 51
 > **Date:** 2026-10-28
 > **Objective:** Permitir conciliar cada cuenta bancaria por período: el dueño copia el saldo de su extracto, agrega las partidas que explican la diferencia (en tránsito, pagado no debitado, cargos y abonos no registrados), ve el saldo conciliado contra sus registros y archiva el acta firmada — persistida en la BD, imprimible y exportable, sin importación de extractos.
@@ -166,17 +166,17 @@ UI nueva: `components/cajas-bancos/conciliacion-view.tsx` y `components/cajas-ba
 
 ## Acceptance criteria
 
-- [ ] `/cajas-bancos/conciliacion` existe, aparece en el navbar bajo "Caja y bancos" y abre con el mes actual precargado; el selector solo lista cuentas bancarias.
-- [ ] El dueño escribe el saldo según extracto a mano y la vista muestra el saldo según registros (`getCashPosition` al final del período) con botón "Actualizar libros".
-- [ ] Las 4 clases de partida tienen etiquetas y explicaciones simples con su signo del formato oficial; se pueden agregar, corregir y quitar.
-- [ ] Los recibos `EN_REVISION` del período se ofrecen como sugerencias y se agregan como partida con un clic (INGRESO → en tránsito; EGRESO → pagado no debitado); nunca se suman solas.
-- [ ] El cálculo es en vivo: "Saldo conciliado (extracto ± partidas)" y "Diferencia" contra los registros; la diferencia ≠ 0 se muestra en rose con texto guía; al llegar a 0 aparece el badge "Conciliado".
-- [ ] "Guardar" persiste cabecera + partidas atómicamente (RPC); reabrir el mismo cuenta+rango recarga lo guardado; no se puede duplicar el mismo período (unique).
-- [ ] "Imprimir acta" abre la impresión mostrando solo el acta A4 con el formato oficial (extracto, partidas con signo, conciliado, registros, diferencia), notas y las firmas "Elaborado por" / "Revisado por".
-- [ ] "Descargar CSV (se abre en Excel)" genera el formato completo con cabecera y partidas.
-- [ ] El acceso rápido del Resumen "Cuadres y conciliación" pasa a "Cuadres de caja" y se agrega "Conciliación".
-- [ ] No cambian `cash_close`, `mark_payments_processed` ni los estados de recibo; sin importación de extractos ni cruce automático.
-- [ ] `lib/supabase/types.ts` verificado contra `generate_typescript_types`, migración versionada, `npx tsc --noEmit`, `npm run lint`, `npm test` y `npm run build` en verde, y advisors revisados tras las RLS nuevas.
+- [x] `/cajas-bancos/conciliacion` existe, aparece en el navbar bajo "Caja y bancos" y abre con el mes actual precargado; el selector solo lista cuentas bancarias.
+- [x] El dueño escribe el saldo según extracto a mano y la vista muestra el saldo según registros (`getCashPosition` al final del período) con botón "Actualizar libros".
+- [x] Las 4 clases de partida tienen etiquetas y explicaciones simples con su signo del formato oficial; se pueden agregar, corregir y quitar.
+- [x] Los recibos `EN_REVISION` del período se ofrecen como sugerencias y se agregan como partida con un clic (INGRESO → en tránsito; EGRESO → pagado no debitado); nunca se suman solas.
+- [x] El cálculo es en vivo: "Saldo conciliado (extracto ± partidas)" y "Diferencia" contra los registros; la diferencia ≠ 0 se muestra en rose con texto guía; al llegar a 0 aparece el badge "Conciliado".
+- [x] "Guardar" persiste cabecera + partidas atómicamente (RPC); reabrir el mismo cuenta+rango recarga lo guardado; no se puede duplicar el mismo período (unique).
+- [x] "Imprimir acta" abre la impresión mostrando solo el acta A4 con el formato oficial (extracto, partidas con signo, conciliado, registros, diferencia), notas y las firmas "Elaborado por" / "Revisado por".
+- [x] "Descargar CSV (se abre en Excel)" genera el formato completo con cabecera y partidas.
+- [x] El acceso rápido del Resumen "Cuadres y conciliación" pasa a "Cuadres de caja" y se agrega "Conciliación".
+- [x] No cambian `cash_close`, `mark_payments_processed` ni los estados de recibo; sin importación de extractos ni cruce automático.
+- [x] `lib/supabase/types.ts` verificado contra `generate_typescript_types`, migración versionada, `npx tsc --noEmit`, `npm run lint`, `npm test` (626 tests) y `npm run build` en verde, y advisors revisados tras las RLS nuevas (0 hallazgos).
 
 ## Decisions
 
@@ -193,6 +193,13 @@ UI nueva: `components/cajas-bancos/conciliacion-view.tsx` y `components/cajas-ba
 - **Asumido:** la sugerencia EN_REVISION no prueba que el banco no haya mostrado el recibo; es una pista que el dueño confirma o descarta.
 - **Pase previo por `frontend-design`** (2026-10-28): "la conciliación es una explicación, no un misterio" — dos bloques con números grandes, las 4 partidas como puentes con el signo textual del formato del contador, la diferencia como protagonista (rose mientras ≠ 0) y silencio discreto al llegar a 0; descartados gráficos, tarjetas idénticas y eyebrows; montos con `tabular-nums`.
 
+### Notas de implementación (2026-10-28)
+
+- **Corrección de implementación:** las tablas quedaron con RLS **solo de lectura** para el owner y los grants de escritura revocados; el guardado va únicamente por la RPC `SECURITY DEFINER` atómica (coherente con la decisión de no permitir inserts/updates sueltos). No se usaron policies de insert/update/delete como en `voucher_series`.
+- **Corrección de implementación:** `computeReconciliation`, `ITEM_SIGN`, `ITEM_META` y los tipos viven en `lib/caja/conciliacion-tipos.ts` (módulo puro, sin cliente de Supabase) para que el schema zod y el acta puedan importarlos sin credenciales; `lib/caja/conciliacion.ts` los reexporta y conserva el acceso a datos.
+- **Corrección de implementación:** `isConciled` exige diferencia exactamente 0 (redondeada a 2 decimales); un céntimo sigue siendo una diferencia por explicar.
+- **Integración verificada en la BD (rollback):** guardado con 4 partidas → 1 cabecera y 4 partidas; segundo guardado del mismo período → 1 cabecera y 2 partidas (reemplazo, no duplicado) con notas actualizadas; cuenta de caja rechazada; otro usuario ve 0 filas por RLS. Advisors de seguridad y performance: 0 hallazgos.
+
 ## Risks
 
 | Risk | Mitigación |
@@ -202,7 +209,7 @@ UI nueva: `components/cajas-bancos/conciliacion-view.tsx` y `components/cajas-ba
 | El snapshot de libros queda viejo tras registrar movimientos tardíos | Botón "Actualizar libros" siempre visible junto al valor |
 | Dos conciliaciones con períodos solapados confunden | Unique por (cuenta, inicio, fin) y la vista carga por rango exacto; se documenta que el rango típico es el mes |
 | Sugerencias EN_REVISION no cuadran con la realidad del extracto | Es una pista, nunca se suma sola; el dueño agrega o descarta |
-| RLS nueva con write policies | Patrón voucher_series (owner-scoped con `(select auth.uid())`); revisar advisors de seguridad tras la migración |
+| RLS nueva con escritura solo por RPC | Políticas de lectura owner-scoped con `(select auth.uid())`; grants de escritura revocados; validación de dueño y tipo dentro de la RPC; advisors revisados (0 hallazgos) |
 | Migraciones vía MCP sin CLI instalada | Versionar el SQL en `supabase/migrations/` y verificar los tipos contra `generate_typescript_types` |
 | El contador espera partidas de "cheques girados" que el sistema no modela | `PAGO_NO_DEBITADO` cubre ese caso con etiqueta simple ("Pagué y el banco aún no debita"); los cheques como tales no existen en el sistema |
 
