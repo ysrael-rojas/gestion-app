@@ -1,6 +1,6 @@
 # SPEC 56 — Cierre de registro y acceso
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 15, SPEC 16
 > **Date:** 2026-10-28
 > **Objective:** Eliminar el alta de cuentas desde la app y dejar el proyecto en modo de un solo usuario (el creador), de forma que nadie más pueda registrarse y las cuentas solo se creen desde el panel de Supabase.
@@ -69,6 +69,7 @@ Es la primera de las tres specs de la Fase 0 (56 registro → 57 integridad entr
 - **Sí:** alta de cuentas solo desde el dashboard de Supabase. **No:** panel de administración en la app ni `service_role` en el cliente (el proyecto no tiene clave de servicio y no debe tenerla).
 - **Sí:** mantener `signup_disabled` en `lib/auth/errors.ts`: si alguien llama la API directo, el mensaje sigue siendo claro.
 - **Sí:** contraseña mínima 12 en Supabase. **No:** reglas de contraseña en el cliente, porque ya no hay formulario de alta.
+- **Sí:** aceptar leaked password protection deshabilitado mientras el plan sea el actual (requiere Pro); el mínimo 12 y el registro cerrado cubren el caso normal. Se activa si se sube de plan.
 - **Sí:** recuperación de contraseña desde el dashboard. **No:** flujo "olvidé mi contraseña" en la UI en esta fase (un solo usuario).
 - **Asumido:** un solo usuario. Si se agrega un segundo, hace falta la spec de empresa + roles antes de crearlo.
 
@@ -77,7 +78,7 @@ Es la primera de las tres specs de la Fase 0 (56 registro → 57 integridad entr
 - Código completo en 3 commits: formulario login-only + schema, eliminación de `/registro` y sus tests, y runbook de operación.
 - **7 de 8 criterios verificados.** Playwright: `/registro` responde 404, login y logout funcionan, el formulario no muestra "Crear cuenta" ni confirmación, y la consola no tiene errores (el único 404 es el recurso de la ruta eliminada).
 - Usuario de prueba `ysrael@google.com` (no confirmado, sin datos) eliminado de `auth.users`; queda solo el owner real.
-- **Supabase Auth (2026-10-28):** signup y anonymous verificados apagados (`disable_signup: true`, `external.anonymous_users: false`). **Sigue pendiente** leaked password protection: el advisor `auth_leaked_password_protection` aún lo reporta deshabilitado. El mínimo de 12 no se expone en `/auth/v1/settings`; confirmarlo en el panel.
+- **Supabase Auth (2026-10-28):** signup y anonymous verificados apagados (`disable_signup: true`, `external.anonymous_users: false`); el mínimo de contraseña quedó confirmado en **12** por el dueño. **Leaked password protection no está disponible en el plan actual (requiere Pro):** el advisor `auth_leaked_password_protection` sigue apareciendo y se acepta como riesgo documentado. Si se sube a Pro, activarlo y volver a correr el advisor.
 - Tests: **627 en 74 archivos** (se retiraron 12 casos de signup); build con 24 rutas (ya no aparece `/registro`).
 - Al borrar `app/registro` quedó un `.next/types/validator.ts` obsoleto que rompía `tsc`; se limpió `.next/types` y volvió a verde.
 

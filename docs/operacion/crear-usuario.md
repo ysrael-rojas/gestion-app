@@ -13,7 +13,7 @@ Panel de Supabase → **Authentication**:
    - `Allow anonymous sign-ins`: **OFF**.
 2. **Sessions / Password** (o *Auth Settings* según la versión del panel)
    - `Minimum password length`: **12**.
-   - `Leaked password protection`: **ON** (HaveIBeenPwned).
+   - `Leaked password protection`: **ON** si el plan lo permite (requiere Pro). En el plan actual no está disponible y queda como riesgo aceptado; si se sube de plan, activarlo y revisar el advisor de seguridad.
 3. Verificar en **Users** que solo está la cuenta del dueño.
 
 > Si el panel cambia de nombre, busca estas tres opciones: *sign up*, *anonymous* y
