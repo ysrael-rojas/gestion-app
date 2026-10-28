@@ -121,6 +121,7 @@ export function CuentasView() {
   >({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [movementsError, setMovementsError] = useState(false);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<AccountFilterValue>("ALL");
@@ -141,32 +142,42 @@ export function CuentasView() {
     void (async () => {
       setIsLoading(true);
 
-      try {
-        const [data, rate, movements] = await Promise.all([
+      // Los saldos son obligatorios; el TC y el último movimiento son
+      // opcionales: si fallan, la tabla de cuentas se muestra igual (SPEC 55).
+      const [positionsResult, rateResult, movementsResult] =
+        await Promise.allSettled([
           listCashPositionsConsolidated(today),
           getPenUsdRate(),
           listLastMovementDates(),
         ]);
 
-        if (isMounted) {
-          setPositions(data);
-          setPenUsdRate(rate);
-          setLastMovements(movements);
-          setError(null);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "No se pudieron cargar las cuentas."
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+      if (!isMounted) {
+        return;
       }
+
+      if (positionsResult.status === "rejected") {
+        const reason = positionsResult.reason;
+
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : "No se pudieron cargar las cuentas."
+        );
+        setMovementsError(false);
+        setIsLoading(false);
+        return;
+      }
+
+      setPositions(positionsResult.value);
+      setPenUsdRate(
+        rateResult.status === "fulfilled" ? rateResult.value : null
+      );
+      setLastMovements(
+        movementsResult.status === "fulfilled" ? movementsResult.value : {}
+      );
+      setMovementsError(movementsResult.status === "rejected");
+      setError(null);
+      setIsLoading(false);
     })();
 
     return () => {
@@ -469,6 +480,13 @@ export function CuentasView() {
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}
+        </p>
+      ) : null}
+
+      {movementsError ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          No se pudo cargar el último movimiento. Los saldos y las cuentas
+          siguen disponibles.
         </p>
       ) : null}
 

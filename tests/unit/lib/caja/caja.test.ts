@@ -444,8 +444,8 @@ describe("caja.ts", () => {
   });
 
   describe("listLastMovementDates", () => {
-    it("mapea el último movimiento por cuenta en una sola consulta", async () => {
-      mock.setTable("payment", {
+    it("usa la RPC list_last_movement_dates y mapea el último movimiento", async () => {
+      mock.setRpc("list_last_movement_dates", {
         data: [
           { cash_account_id: "acc-1", last_date: "2026-10-20" },
           { cash_account_id: "acc-2", last_date: null },
@@ -456,15 +456,43 @@ describe("caja.ts", () => {
       const dates = await listLastMovementDates();
 
       expect(dates).toEqual({ "acc-1": "2026-10-20" });
+      expect(mock.rpcCalls).toHaveLength(1);
+      expect(mock.rpcCalls[0].name).toBe("list_last_movement_dates");
+      // Ya no consulta `payment` ni filtra en el cliente: el ANULADO se
+      // excluye dentro de la RPC (SPEC 55).
+      expect(mock.filterCalls).toHaveLength(0);
     });
 
-    it("propaga el error de la consulta", async () => {
-      mock.setTable("payment", {
+    it("ignora las filas sin fecha", async () => {
+      mock.setRpc("list_last_movement_dates", {
+        data: [{ cash_account_id: "acc-1", last_date: null }],
+        error: null,
+      });
+
+      await expect(listLastMovementDates()).resolves.toEqual({});
+    });
+
+    it("propaga el error de la RPC con el texto mapeado", async () => {
+      mock.setRpc("list_last_movement_dates", {
         data: null,
         error: { code: "42501", message: "permission denied" },
       });
 
       await expect(listLastMovementDates()).rejects.toThrow(/permisos/);
+    });
+
+    it("traduce PGRST123 a un mensaje claro", async () => {
+      mock.setRpc("list_last_movement_dates", {
+        data: null,
+        error: {
+          code: "PGRST123",
+          message: "Use of aggregate functions is not allowed",
+        },
+      });
+
+      await expect(listLastMovementDates()).rejects.toThrow(
+        "La consulta usó una función no permitida por la API."
+      );
     });
   });
 });
