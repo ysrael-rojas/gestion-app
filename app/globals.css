@@ -175,7 +175,8 @@
 }
 
 .receipt-print-portal,
-.cuadre-print-portal {
+.cuadre-print-portal,
+.conciliacion-print-portal {
   display: none;
 }
 
@@ -184,12 +185,13 @@
     overflow: visible !important;
   }
 
-  body > *:not(.receipt-print-portal):not(.cuadre-print-portal) {
+  body > *:not(.receipt-print-portal):not(.cuadre-print-portal):not(.conciliacion-print-portal) {
     display: none !important;
   }
 
   .receipt-print-portal,
-  .cuadre-print-portal {
+  .cuadre-print-portal,
+  .conciliacion-print-portal {
     display: block !important;
   }
 }

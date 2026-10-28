@@ -7,6 +7,7 @@ import {
   ArrowUpCircle,
   Calculator,
   Landmark,
+  Scale,
   ScrollText,
   Settings,
   TrendingUp,
@@ -64,8 +65,13 @@ function formatAmount(value: number, currency: string): string {
 const QUICK_LINKS = [
   {
     href: "/cajas-bancos/cuadres",
-    label: "Cuadres y conciliación",
+    label: "Cuadres de caja",
     icon: Calculator,
+  },
+  {
+    href: "/cajas-bancos/conciliacion",
+    label: "Conciliación",
+    icon: Scale,
   },
   { href: "/cajas-bancos/cuentas", label: "Detalle de cuentas", icon: Wallet },
   { href: "/cajas-bancos/extractos", label: "Extractos", icon: ScrollText },

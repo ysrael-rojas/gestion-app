@@ -36,6 +36,94 @@ export type Database = {
         }
         Relationships: []
       }
+      bank_reconciliation: {
+        Row: {
+          books_balance: number
+          cash_account_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          owner_id: string
+          period_end: string
+          period_start: string
+          prepared_by: string | null
+          reviewed_by: string | null
+          statement_balance: number
+          updated_at: string
+        }
+        Insert: {
+          books_balance: number
+          cash_account_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          period_end: string
+          period_start: string
+          prepared_by?: string | null
+          reviewed_by?: string | null
+          statement_balance: number
+          updated_at?: string
+        }
+        Update: {
+          books_balance?: number
+          cash_account_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          owner_id?: string
+          period_end?: string
+          period_start?: string
+          prepared_by?: string | null
+          reviewed_by?: string | null
+          statement_balance?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliation_cash_account_id_fkey"
+            columns: ["cash_account_id"]
+            isOneToOne: false
+            referencedRelation: "cash_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_reconciliation_item: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          kind: Database["public"]["Enums"]["reconciliation_item_kind"]
+          reconciliation_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          id?: string
+          kind: Database["public"]["Enums"]["reconciliation_item_kind"]
+          reconciliation_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["reconciliation_item_kind"]
+          reconciliation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_reconciliation_item_reconciliation_id_fkey"
+            columns: ["reconciliation_id"]
+            isOneToOne: false
+            referencedRelation: "bank_reconciliation"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_account: {
         Row: {
           account_number: string | null
@@ -963,6 +1051,10 @@ export type Database = {
         }
         Returns: string
       }
+      save_bank_reconciliation: {
+        Args: { p_items?: Json; p_reconciliation: Json }
+        Returns: string
+      }
       void_petty_cash_vale: { Args: { p_vale_id: string }; Returns: undefined }
     }
     Enums: {
@@ -973,6 +1065,11 @@ export type Database = {
       payment_direction: "INGRESO" | "EGRESO"
       payment_status: "EN_REVISION" | "PROCESADO" | "ANULADO"
       payment_type: "CONTADO" | "CREDITO"
+      reconciliation_item_kind:
+        | "DEPOSITO_EN_TRANSITO"
+        | "PAGO_NO_DEBITADO"
+        | "CARGO_NO_REGISTRADO"
+        | "ABONO_NO_REGISTRADO"
       vale_status: "PENDIENTE" | "REPUESTO" | "ANULADO"
       voucher_kind: "COMPRA" | "VENTA"
       voucher_type:
