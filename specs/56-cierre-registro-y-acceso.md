@@ -57,7 +57,7 @@ Es la primera de las tres specs de la Fase 0 (56 registro → 57 integridad entr
 - [x] `/registro` devuelve 404 y `proxy.ts` solo considera público `/login`.
 - [x] `components/auth/auth-form.tsx` no tiene modo signup, ni `confirmPassword`, ni link "Crear cuenta"; el login se ve igual que antes.
 - [x] `app/login/actions.ts` no exporta `signUp` y no quedan referencias a `signUpSchema`/`authFormSchema`.
-- [ ] Supabase rechaza un alta nueva (signup deshabilitado) y los anonymous sign-ins están apagados. **Pendiente:** hoy `GET /auth/v1/settings` devuelve `disable_signup: false`; falta el toggle del panel.
+- [x] Supabase rechaza un alta nueva (signup deshabilitado) y los anonymous sign-ins están apagados. Verificado con `GET /auth/v1/settings`: `disable_signup: true` y `external.anonymous_users: false`.
 - [x] El usuario de prueba no confirmado ya no existe en `auth.users`.
 - [x] Login y logout funcionan (Playwright) y no hay errores de consola.
 - [x] `docs/operacion/crear-usuario.md` existe con los pasos exactos del panel.
@@ -77,7 +77,7 @@ Es la primera de las tres specs de la Fase 0 (56 registro → 57 integridad entr
 - Código completo en 3 commits: formulario login-only + schema, eliminación de `/registro` y sus tests, y runbook de operación.
 - **7 de 8 criterios verificados.** Playwright: `/registro` responde 404, login y logout funcionan, el formulario no muestra "Crear cuenta" ni confirmación, y la consola no tiene errores (el único 404 es el recurso de la ruta eliminada).
 - Usuario de prueba `ysrael@google.com` (no confirmado, sin datos) eliminado de `auth.users`; queda solo el owner real.
-- **Pendiente manual:** `GET /auth/v1/settings` devuelve `disable_signup: false`. Falta apagar signup y anonymous, fijar mínimo 12 y activar leaked password protection en el panel (ver `docs/operacion/crear-usuario.md`). Al aplicarlo, volver a consultar el endpoint y marcar el criterio.
+- **Supabase Auth (2026-10-28):** signup y anonymous verificados apagados (`disable_signup: true`, `external.anonymous_users: false`). **Sigue pendiente** leaked password protection: el advisor `auth_leaked_password_protection` aún lo reporta deshabilitado. El mínimo de 12 no se expone en `/auth/v1/settings`; confirmarlo en el panel.
 - Tests: **627 en 74 archivos** (se retiraron 12 casos de signup); build con 24 rutas (ya no aparece `/registro`).
 - Al borrar `app/registro` quedó un `.next/types/validator.ts` obsoleto que rompía `tsc`; se limpió `.next/types` y volvió a verde.
 
