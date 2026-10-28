@@ -7,9 +7,11 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { CarteraBucket } from "@/components/cartera/types";
+import type { Client } from "@/components/clientes/types";
 import { useClientes } from "@/components/clientes/clientes-provider";
 import { usePagos } from "@/components/pagos/pagos-provider";
 import type { VoucherBalance } from "@/components/pagos/types";
+import { listSuppliers } from "@/lib/clientes/entidades";
 import { listOpenVouchers } from "@/lib/pagos/cartera";
 import { isOverdue } from "@/lib/pagos/saldos";
 import { formatCurrency, formatDate, getTodayLocalDate } from "@/lib/utils";
@@ -116,7 +118,7 @@ interface OverdueListProps {
   title: string;
   href: string;
   vouchers: VoucherBalance[];
-  clients: { id: string; name: string }[];
+  entities: { id: string; name: string }[];
   isLoading: boolean;
 }
 
@@ -124,7 +126,7 @@ function OverdueList({
   title,
   href,
   vouchers,
-  clients,
+  entities,
   isLoading,
 }: OverdueListProps) {
   return (
@@ -151,7 +153,7 @@ function OverdueList({
                     {voucher.voucherNumber}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {clients.find((client) => client.id === voucher.entityId)
+                    {entities.find((entity) => entity.id === voucher.entityId)
                       ?.name ?? "Entidad no encontrada"}{" "}
                     · vence{" "}
                     {voucher.effectiveDueDate
@@ -184,6 +186,7 @@ function OverdueList({
 export default function Home() {
   const { summary, isSummaryLoading } = usePagos();
   const { clients } = useClientes();
+  const [suppliers, setSuppliers] = useState<Client[]>([]);
   const [today] = useState(() => getTodayLocalDate());
   const [vouchers, setVouchers] = useState<{
     receivable: VoucherBalance[];
@@ -202,6 +205,28 @@ export default function Home() {
       .catch((error) => {
         if (active) {
           toast.error(getErrorMessage(error));
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Los vencidos por pagar se resuelven contra proveedores; los vencidos por
+  // cobrar, contra clientes.
+  useEffect(() => {
+    let active = true;
+
+    listSuppliers()
+      .then((data) => {
+        if (active) {
+          setSuppliers(data);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setSuppliers([]);
         }
       });
 
@@ -262,14 +287,14 @@ export default function Home() {
           title="Comprobantes vencidos por cobrar"
           href="/pagos/ingresos?filtro=vencidas"
           vouchers={overdueReceivable}
-          clients={clients}
+          entities={clients}
           isLoading={vouchers === null}
         />
         <OverdueList
           title="Comprobantes vencidos por pagar"
           href="/pagos/egresos?filtro=vencidas"
           vouchers={overduePayable}
-          clients={clients}
+          entities={suppliers}
           isLoading={vouchers === null}
         />
       </div>

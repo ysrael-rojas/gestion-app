@@ -30,7 +30,7 @@ import {
 
 interface PurchasesDataTableProps {
   purchases: Purchase[];
-  clients: Client[];
+  suppliers: Client[];
   filters: ListadoFilters;
   isLoading?: boolean;
   balanceError?: BalanceLoadError | null;
@@ -41,16 +41,16 @@ interface PurchasesDataTableProps {
 
 const SKELETON_ROWS = 5;
 
-function getSupplierName(clients: Client[], supplierId: string): string {
+function getSupplierName(suppliers: Client[], supplierId: string): string {
   return (
-    clients.find((client) => client.id === supplierId)?.name ??
+    suppliers.find((supplier) => supplier.id === supplierId)?.name ??
     "Proveedor no encontrado"
   );
 }
 
 export function PurchasesDataTable({
   purchases,
-  clients,
+  suppliers,
   filters,
   isLoading = false,
   balanceError,
@@ -70,11 +70,11 @@ export function PurchasesDataTable({
   const data = useMemo<PurchasesRow[]>(() => {
     const rows = purchases.map((purchase) => ({
       ...purchase,
-      supplierName: getSupplierName(clients, purchase.supplierId),
+      supplierName: getSupplierName(suppliers, purchase.supplierId),
     }));
 
     return applyListadoFilters(rows, filters);
-  }, [purchases, clients, filters]);
+  }, [purchases, suppliers, filters]);
 
   const columns = useMemo(
     () => getPurchasesColumns({ onView, onEdit, onRegisterPayment }),

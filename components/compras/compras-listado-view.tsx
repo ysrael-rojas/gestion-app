@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { useClientes } from "@/components/clientes/clientes-provider";
+import type { Client } from "@/components/clientes/types";
 import { PaymentDrawer } from "@/components/comprobantes/payment-drawer";
 import { ListingsToolbar } from "@/components/shared/listings-toolbar";
 import { PurchasesDataTable } from "@/components/compras/purchases-data-table";
 import { useCompras } from "@/components/compras/compras-provider";
 import type { Purchase } from "@/components/compras/types";
+import { listSuppliers } from "@/lib/clientes/entidades";
 import type { ListadoFilters } from "@/lib/filters/listado-filters";
 
 interface ComprasListadoViewProps {
@@ -18,9 +19,31 @@ interface ComprasListadoViewProps {
 
 export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
   const router = useRouter();
-  const { clients } = useClientes();
   const { purchases, isLoading, balanceError, refresh } = useCompras();
+  const [suppliers, setSuppliers] = useState<Client[]>([]);
   const [paymentPurchase, setPaymentPurchase] = useState<Purchase | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void (async () => {
+      try {
+        const data = await listSuppliers();
+
+        if (isMounted) {
+          setSuppliers(data);
+        }
+      } catch {
+        if (isMounted) {
+          setSuppliers([]);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const openEdit = useCallback(
     (purchase: Purchase) => {
@@ -41,7 +64,7 @@ export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
   }, []);
 
   const resolveSupplierName = (supplierId: string) =>
-    clients.find((client) => client.id === supplierId)?.name ??
+    suppliers.find((supplier) => supplier.id === supplierId)?.name ??
     "Proveedor no encontrado";
 
   return (
@@ -61,7 +84,7 @@ export function ComprasListadoView({ filters }: ComprasListadoViewProps) {
 
       <PurchasesDataTable
         purchases={purchases}
-        clients={clients}
+        suppliers={suppliers}
         filters={filters}
         isLoading={isLoading}
         balanceError={balanceError}

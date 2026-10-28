@@ -1,16 +1,23 @@
 ﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { listVoucherAdjustments, getPaymentHistory, useVoucher, reload } =
-  vi.hoisted(() => ({
-    listVoucherAdjustments: vi.fn(),
-    getPaymentHistory: vi.fn(),
-    useVoucher: vi.fn(),
-    reload: vi.fn(),
-  }));
+const {
+  listVoucherAdjustments,
+  getPaymentHistory,
+  useVoucher,
+  reload,
+  listSuppliers,
+} = vi.hoisted(() => ({
+  listVoucherAdjustments: vi.fn(),
+  getPaymentHistory: vi.fn(),
+  useVoucher: vi.fn(),
+  reload: vi.fn(),
+  listSuppliers: vi.fn(),
+}));
 
 vi.mock("@/lib/comprobantes/notas", () => ({ listVoucherAdjustments }));
 vi.mock("@/lib/pagos/pagos", () => ({ getPaymentHistory }));
 vi.mock("@/components/comprobantes/use-voucher", () => ({ useVoucher }));
+vi.mock("@/lib/clientes/entidades", () => ({ listSuppliers }));
 vi.mock("@/components/comprobantes/payment-drawer", () => ({
   PaymentDrawer: () => <p>wizard stub</p>,
 }));
@@ -30,6 +37,7 @@ vi.mock("@/components/compras/compras-provider", () => ({
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { VoucherDetalleView } from "@/components/comprobantes/voucher-detalle-view";
+import type { Client } from "@/components/clientes/types";
 import type { Voucher } from "@/components/comprobantes/types";
 import type { PaymentHistoryEntry } from "@/components/pagos/types";
 import type { VoucherAdjustment } from "@/lib/comprobantes/notas";
@@ -86,6 +94,20 @@ const historyEntry = (
   ...overrides,
 });
 
+const supplier = (overrides: Partial<Client> = {}): Client => ({
+  id: "e-1",
+  documentType: "RUC",
+  documentNumber: "20501122334",
+  name: "AGROINDUSTRIAL TRUJILLO SAC",
+  address: "",
+  phone: "",
+  contactName: "",
+  billingEmail: "",
+  managementEmail: "",
+  isSupplier: true,
+  ...overrides,
+});
+
 function renderView(kind: "VENTA" | "COMPRA") {
   return render(<VoucherDetalleView voucherKind={kind} voucherId="v-1" />);
 }
@@ -111,8 +133,10 @@ describe("VoucherDetalleView", () => {
     listVoucherAdjustments.mockReset();
     getPaymentHistory.mockReset();
     reload.mockReset();
+    listSuppliers.mockReset();
     listVoucherAdjustments.mockResolvedValue([]);
     getPaymentHistory.mockResolvedValue([]);
+    listSuppliers.mockResolvedValue([]);
     useVoucher.mockReturnValue({
       voucher: voucher(),
       isLoading: false,
@@ -330,5 +354,35 @@ describe("VoucherDetalleView", () => {
     expect(
       await screen.findByText("RI-000001")
     ).toBeInTheDocument();
+  });
+
+  it("en compras resuelve el nombre del proveedor", async () => {
+    listSuppliers.mockResolvedValue([supplier()]);
+
+    renderView("COMPRA");
+
+    expect(
+      await screen.findByText("Proveedor: AGROINDUSTRIAL TRUJILLO SAC")
+    ).toBeInTheDocument();
+    expect(listSuppliers).toHaveBeenCalledTimes(1);
+  });
+
+  it("en compras con proveedor desconocido mantiene el fallback", async () => {
+    renderView("COMPRA");
+
+    expect(
+      await screen.findByText("Proveedor: Proveedor no encontrado")
+    ).toBeInTheDocument();
+  });
+
+  it("en ventas no consulta proveedores y resuelve contra clientes", async () => {
+    renderView("VENTA");
+
+    await waitFor(() => {
+      expect(getPaymentHistory).toHaveBeenCalled();
+    });
+
+    expect(listSuppliers).not.toHaveBeenCalled();
+    expect(screen.getByText("Cliente: Cliente no encontrado")).toBeInTheDocument();
   });
 });
