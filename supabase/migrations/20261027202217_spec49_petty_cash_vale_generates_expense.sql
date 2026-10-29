@@ -1,14 +1,4 @@
--- =========================================================================
--- Migración: spec49_petty_cash_vale_generates_expense (SPEC 49, paso 1)
--- =========================================================================
--- El vale de caja chica genera su recibo de egreso: sin esto el saldo
--- esperado de la caja chica no baja y el cierre no cuadra.
--- 1) petty_cash_vale.payment_id (FK al recibo generado).
--- 2) create_petty_cash_vale con categoría obligatoria: inserta el vale y el
---    payment EGRESO (método Efectivo) y guarda el vínculo.
--- 3) void_petty_cash_vale anula también el recibo ligado.
--- =========================================================================
-
+-- SPEC 49 · Paso 1: el vale de caja chica genera su recibo de egreso
 alter table public.petty_cash_vale
   add column payment_id uuid references public.payment (id);
 
@@ -115,7 +105,8 @@ begin
   )
   returning id into v_id;
 
-  -- El gasto del vale entra al flujo de caja como recibo de egreso (SPEC 49).
+  -- El gasto del vale entra al flujo de caja como recibo de egreso (SPEC 49):
+  -- sin esto el saldo esperado de la caja chica no baja y el cierre no cuadra.
   insert into public.payment (
     owner_id, entity_id, direction, payment_date, amount,
     method_id, cash_account_id, category_id, notes

@@ -1,19 +1,43 @@
--- =========================================================================
--- Migración: spec51_cash_close_signatures (SPEC 51, paso 1)
--- =========================================================================
--- El acta de arqueo imprime la doble firma (cajero y arqueador).
--- 1) cash_close.counted_by / verified_by (nullable; cierres históricos en null).
--- 2) close_cash_account gana p_counted_by y p_verified_by (default null) al
---    final. Se elimina la firma de 6 argumentos para no dejar sobrecargas
---    ambiguas. El resto de la lógica (saldo esperado, tolerancia, motivo) no
---    cambia respecto de SPEC 49.
--- =========================================================================
+-- SPEC 49 · Paso 2: tolerancia y motivo de diferencia, bloqueo de fecha futura
+-- y fórmula única de saldo esperado.
+create or replace function private.cash_expected_balance(
+  p_cash_account_id uuid,
+  p_as_of           date
+) returns numeric(12,2)
+language sql stable set search_path = ''
+as $$
+  select (
+    a.opening_balance
+    + coalesce(
+        (select sum(p.amount) filter (where p.direction = 'INGRESO')
+              - sum(p.amount) filter (where p.direction = 'EGRESO')
+           from public.payment p
+          where p.cash_account_id = a.id
+            and p.status <> 'ANULADO'
+            and p.payment_date <= p_as_of), 0)
+    + coalesce(
+        (select sum(t.amount) from public.cash_transfer t
+          where t.target_account_id = a.id
+            and t.transfer_date <= p_as_of), 0)
+    - coalesce(
+        (select sum(t.amount) from public.cash_transfer t
+          where t.source_account_id = a.id
+            and t.transfer_date <= p_as_of), 0)
+  )::numeric(12,2)
+  from public.cash_account a
+  where a.id = p_cash_account_id;
+$$;
 
 alter table public.cash_close
-  add column counted_by  varchar(100),
-  add column verified_by varchar(100);
+  add column difference_reason    text,
+  add column difference_tolerance numeric(12,2);
 
-drop function if exists public.close_cash_account(uuid, date, numeric, text, jsonb, text);
+insert into public.app_setting (owner_id, key, value)
+select distinct s.owner_id, 'cash_difference_tolerance', '0.50'
+  from public.app_setting s
+on conflict (owner_id, key) do nothing;
+
+drop function if exists public.close_cash_account(uuid, date, numeric, text, jsonb);
 
 create function public.close_cash_account(
   p_cash_account_id   uuid,
@@ -21,9 +45,7 @@ create function public.close_cash_account(
   p_counted_balance   numeric,
   p_notes             text,
   p_denominations     jsonb default null,
-  p_difference_reason text default null,
-  p_counted_by        text default null,
-  p_verified_by       text default null
+  p_difference_reason text default null
 ) returns uuid
 language plpgsql security definer set search_path = ''
 as $$
@@ -93,6 +115,8 @@ begin
 
   v_periodicity := coalesce(v_periodicity, v_default, 'DAILY');
 
+  -- Apertura del período y esperado al cierre salen de la misma fórmula que
+  -- usa el arqueo sorpresivo (SPEC 49).
   v_opening := private.cash_expected_balance(
     p_cash_account_id, v_period_start - 1
   );
@@ -109,6 +133,8 @@ begin
   v_transfer_in := coalesce((select sum(t.amount) from public.cash_transfer t where t.target_account_id = p_cash_account_id and t.transfer_date between v_period_start and p_period_end), 0);
   v_transfer_out := coalesce((select sum(t.amount) from public.cash_transfer t where t.source_account_id = p_cash_account_id and t.transfer_date between v_period_start and p_period_end), 0);
 
+  -- Tolerancia configurable (default S/ 0.50): dentro del margen no se exige
+  -- motivo; por encima, el cierre queda bloqueado sin explicación escrita.
   select coalesce(
            (select s.value::numeric(12,2)
               from public.app_setting s
@@ -117,6 +143,8 @@ begin
            0.50)
     into v_tolerance;
 
+  -- Conteo por denominaciones: solo cajas. En bancos se ignora y se usa
+  -- el saldo contado enviado por el cliente.
   if p_denominations is not null and v_type = 'CASH_BOX' then
     if jsonb_typeof(p_denominations) <> 'array' then
       raise exception 'El conteo por denominaciones debe ser un arreglo';
@@ -171,15 +199,13 @@ begin
     opening_balance, income_total, expense_total, expected_balance,
     transfer_in_total, transfer_out_total,
     counted_balance, difference, difference_reason, difference_tolerance,
-    pen_usd_rate, notes, change_fund, counted_by, verified_by
+    pen_usd_rate, notes, change_fund
   ) values (
     p_cash_account_id, v_periodicity, v_period_start, p_period_end,
     v_opening, v_income, v_expense, v_expected,
     v_transfer_in, v_transfer_out,
     v_counted, v_difference, v_reason, v_tolerance,
-    v_rate, nullif(p_notes, ''), v_change_fund,
-    nullif(trim(coalesce(p_counted_by, '')), ''),
-    nullif(trim(coalesce(p_verified_by, '')), '')
+    v_rate, nullif(p_notes, ''), v_change_fund
   )
   returning id into v_id;
 
@@ -194,5 +220,5 @@ begin
 end;
 $$;
 
-revoke execute on function public.close_cash_account(uuid, date, numeric, text, jsonb, text, text, text) from public, anon;
-grant execute on function public.close_cash_account(uuid, date, numeric, text, jsonb, text, text, text) to authenticated, service_role;
+revoke execute on function public.close_cash_account(uuid, date, numeric, text, jsonb, text) from public, anon;
+grant execute on function public.close_cash_account(uuid, date, numeric, text, jsonb, text) to authenticated, service_role;

@@ -1,14 +1,3 @@
--- SPEC 57 — Integridad entre usuarios (parte 2: RPC de pagos)
---
--- create_payment_with_allocations conserva su firma, pero ahora:
---   * exige auth.uid() no nulo;
---   * valida que la cuenta, el metodo, la categoria y la entidad sean del owner;
---   * valida que cada comprobante asignado sea del owner;
---   * inserta payment y payment_allocation con owner_id explicito.
---
--- El trigger de la parte 1 sigue siendo la red de seguridad para cualquier
--- camino (incluido el insert directo).
-
 create or replace function public.create_payment_with_allocations(
   p_entity_id uuid,
   p_direction payment_direction,
@@ -41,31 +30,19 @@ begin
     raise exception 'Sesion no valida' using errcode = '42501';
   end if;
 
-  if not exists (
-       select 1 from public.cash_account a
-        where a.id = p_cash_account_id and a.owner_id = v_owner)
-  then
+  if not exists (select 1 from public.cash_account a where a.id = p_cash_account_id and a.owner_id = v_owner) then
     raise exception 'La cuenta de caja no existe' using errcode = '42501';
   end if;
 
-  if not exists (
-       select 1 from public.payment_method m
-        where m.id = p_method_id and m.owner_id = v_owner)
-  then
+  if not exists (select 1 from public.payment_method m where m.id = p_method_id and m.owner_id = v_owner) then
     raise exception 'El metodo de pago no existe' using errcode = '42501';
   end if;
 
-  if not exists (
-       select 1 from public.cash_receipt_category c
-        where c.id = p_category_id and c.owner_id = v_owner)
-  then
+  if not exists (select 1 from public.cash_receipt_category c where c.id = p_category_id and c.owner_id = v_owner) then
     raise exception 'La categoria no existe' using errcode = '42501';
   end if;
 
-  if p_entity_id is not null and not exists (
-       select 1 from public.entidad e
-        where e.id = p_entity_id and e.owner_id = v_owner)
-  then
+  if p_entity_id is not null and not exists (select 1 from public.entidad e where e.id = p_entity_id and e.owner_id = v_owner) then
     raise exception 'La entidad no existe' using errcode = '42501';
   end if;
 
@@ -91,8 +68,7 @@ begin
         raise exception 'El importe asignado debe ser mayor a 0';
       end if;
 
-      select c.total, c.owner_id
-        into v_total, v_comp_owner
+      select c.total, c.owner_id into v_total, v_comp_owner
         from public.comprobante c
        where c.id = v_comprobante_id
          for update;
@@ -102,8 +78,7 @@ begin
       end if;
 
       if v_comp_owner is distinct from v_owner then
-        raise exception 'El comprobante no pertenece al usuario'
-          using errcode = '42501';
+        raise exception 'El comprobante no pertenece al usuario' using errcode = '42501';
       end if;
 
       select coalesce(sum(a.amount), 0) into v_paid
@@ -113,15 +88,11 @@ begin
          and p.status <> 'ANULADO';
 
       if v_paid + v_alloc_amount > v_total then
-        raise exception
-          'La asignacion supera el saldo del comprobante (%)', v_comprobante_id;
+        raise exception 'La asignacion supera el saldo del comprobante (%)', v_comprobante_id;
       end if;
 
-      insert into public.payment_allocation (
-        owner_id, payment_id, comprobante_id, amount
-      ) values (
-        v_owner, v_payment_id, v_comprobante_id, v_alloc_amount
-      );
+      insert into public.payment_allocation (owner_id, payment_id, comprobante_id, amount)
+      values (v_owner, v_payment_id, v_comprobante_id, v_alloc_amount);
     end loop;
   end if;
 

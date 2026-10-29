@@ -116,6 +116,16 @@ Instalados con `uipro init --ai opencode` (CLI `ui-ux-pro-max-cli`). Aportan dat
 
 - `spec-verifier` — verifica los criterios de aceptación de una spec: revisa el código, contrasta las recomendaciones de Next.js con Context7, prueba las pantallas con Playwright y marca los checks del bloque "Acceptance criteria". Invocarlo para verificar/validar una spec.
 
+## Ramas y flujo de Git
+
+- Rama de integración: **`dev`**. Todo el trabajo nace de `dev`, nunca de `main`.
+- `main` está protegida en GitHub: PR obligatorio, sin push directo, sin force push y sin borrado.
+- Ramas de trabajo desde `dev`: `spec-NN-slug` (las crea `/spec-impl`), `feat/...`, `fix/...`, `chore/...`.
+- El PR de una implementación apunta siempre a `dev` (`gh pr create --base dev`).
+- El release a producción es un PR `dev → main`, y solo cuando el dueño lo decida.
+- Antes de `/spec-impl`: `git switch dev && git pull`, porque la rama se crea desde la rama actual.
+- Mapeo código ↔ base de datos: ramas de trabajo y `dev` → Supabase dev (`gestion-comercial-dev`); `main` → Supabase producción (`gestion-comercial`). Las migraciones viajan en la rama de la spec: se aplican a dev al integrarla y a producción solo en el merge `dev → main`.
+
 ## Flujo de trabajo (specs)
 
 - Los specs se guardan en `specs/` (se crea al primer uso).

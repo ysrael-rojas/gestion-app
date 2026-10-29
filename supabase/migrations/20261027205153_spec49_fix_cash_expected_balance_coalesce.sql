@@ -1,14 +1,3 @@
--- =========================================================================
--- Migración: spec49_fix_cash_expected_balance_coalesce (SPEC 49, corrección)
--- =========================================================================
--- La versión original restaba `sum(...) filter (INGRESO) - sum(...) filter
--- (EGRESO)` antes del coalesce. Si el período solo tenía movimientos de una
--- dirección, el filtro vacío devolvía NULL y anulaba toda la resta (esperado =
--- apertura), lo que hacía que el cierre de una caja chica mostrara una
--- diferencia falsa. Detectado con una prueba de integración.
--- El coalesce va por dirección.
--- =========================================================================
-
 create or replace function private.cash_expected_balance(
   p_cash_account_id uuid,
   p_as_of           date
