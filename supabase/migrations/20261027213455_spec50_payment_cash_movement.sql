@@ -1,19 +1,9 @@
--- =========================================================================
--- Migración: spec50_payment_cash_movement (SPEC 50, paso 1)
--- =========================================================================
--- 1) payment.is_cash_movement: marca los recibos que no se asignan a
---    comprobantes (movimiento de caja, cargo bancario, vale).
---    Se fija solo en el INSERT: payment_guard_history_mutation impide
---    actualizar otras columnas después.
--- 2) create_payment_with_allocations gana p_is_cash_movement (default false,
---    compatible con el wizard). Se elimina la firma vieja para no dejar una
---    sobrecarga ambigua al llamar con 10 argumentos.
--- 3) create_petty_cash_vale marca true el recibo que genera.
--- =========================================================================
-
+-- SPEC 50 · Paso 1: bandera de movimiento de caja en el recibo
 alter table public.payment
   add column is_cash_movement boolean not null default false;
 
+-- La RPC gana p_is_cash_movement (default false: el wizard actual no cambia).
+-- Se elimina la firma vieja para no dejar una sobrecarga ambigua al llamar con 10 args.
 drop function if exists public.create_payment_with_allocations(
   uuid, public.payment_direction, date, numeric, uuid, uuid, uuid, text, text, jsonb
 );

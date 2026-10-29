@@ -1,12 +1,3 @@
--- =========================================================================
--- Migración: spec49_cash_count_indexes_and_rls_initplan (SPEC 49, advisors)
--- =========================================================================
--- Advisors de Supabase tras crear cash_count:
--- 1) FK owner_id sin índice de cobertura.
--- 2) Las policies nuevas re-evaluaban auth.uid() por fila; se usa
---    (select auth.uid()) como recomienda el lint auth_rls_initplan.
--- =========================================================================
-
 create index cash_count_owner_id_idx on public.cash_count (owner_id);
 
 drop policy if exists cash_count_select on public.cash_count;

@@ -13,7 +13,7 @@ const target = join("lib", "supabase", "types.ts");
 const tmp = `${target}.tmp`;
 
 try {
-  const output = execSync("supabase gen types typescript --linked", {
+  const output = execSync("npx --yes supabase gen types typescript --linked", {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "inherit"],
   });

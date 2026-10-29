@@ -1,13 +1,4 @@
--- =========================================================================
--- Migración: spec49_cash_surprise_count (SPEC 49, paso 3)
--- =========================================================================
--- Arqueo sorpresivo: conteo que NO cierra período.
--- 1) cash_count + cash_count_denomination (denominaciones normalizadas).
--- 2) RLS de solo lectura; escribe la RPC SECURITY DEFINER.
--- 3) register_cash_count: valida fecha (no futura, no de período cerrado) y
---    calcula el esperado con private.cash_expected_balance.
--- =========================================================================
-
+-- SPEC 49 · Paso 3: arqueo sorpresivo (no cierra periodo)
 create table public.cash_count (
   id               uuid primary key default gen_random_uuid(),
   owner_id         uuid not null default auth.uid() references auth.users (id),

@@ -5,29 +5,25 @@
 -- 1) Enum reconciliation_item_kind con el signo del formato oficial.
 -- 2) bank_reconciliation (cabecera) + bank_reconciliation_item (partidas).
 -- 3) RLS de solo lectura para el owner; escribe la RPC SECURITY DEFINER.
---    (La hoja de trabajo se edita desde la UI, pero siempre a través de la
---    RPC atómica: nunca inserts/updates sueltos desde el cliente.)
 -- 4) save_bank_reconciliation: upsert de cabecera + reemplazo de partidas en
 --    una sola transacción. Valida dueño, tipo de cuenta y período.
 -- =========================================================================
 
--- 1) Clases de partida (el signo vive en la app; aquí solo la clase).
 do $$
 begin
   if not exists (
     select 1 from pg_type where typname = 'reconciliation_item_kind'
   ) then
     create type public.reconciliation_item_kind as enum (
-      'DEPOSITO_EN_TRANSITO',  -- (+) yo registré, el banco aún no lo abonó
-      'PAGO_NO_DEBITADO',      -- (−) yo pagué, el banco aún no lo debitó
-      'CARGO_NO_REGISTRADO',   -- (−) cargo del extracto que aún no registro
-      'ABONO_NO_REGISTRADO'    -- (+) abono del extracto que aún no registro
+      'DEPOSITO_EN_TRANSITO',
+      'PAGO_NO_DEBITADO',
+      'CARGO_NO_REGISTRADO',
+      'ABONO_NO_REGISTRADO'
     );
   end if;
 end
 $$;
 
--- 2) Cabecera por cuenta + rango.
 create table if not exists public.bank_reconciliation (
   id                uuid primary key default gen_random_uuid(),
   owner_id          uuid not null default auth.uid()
@@ -51,7 +47,6 @@ create table if not exists public.bank_reconciliation (
 create index if not exists bank_reconciliation_owner_idx
   on public.bank_reconciliation (owner_id);
 
--- 3) Partidas.
 create table if not exists public.bank_reconciliation_item (
   id                uuid primary key default gen_random_uuid(),
   reconciliation_id uuid not null
@@ -68,7 +63,6 @@ create table if not exists public.bank_reconciliation_item (
 create index if not exists bank_reconciliation_item_parent_idx
   on public.bank_reconciliation_item (reconciliation_id);
 
--- 4) RLS: lectura del owner; escritura solo por la RPC.
 alter table public.bank_reconciliation enable row level security;
 alter table public.bank_reconciliation_item enable row level security;
 
@@ -101,7 +95,6 @@ create trigger trg_bank_reconciliation_owner_id
   before insert on public.bank_reconciliation
   for each row execute function public.set_owner_id_on_insert();
 
--- 5) Guardado atómico (cabecera + partidas).
 create or replace function public.save_bank_reconciliation(
   p_reconciliation jsonb,
   p_items          jsonb default '[]'::jsonb
