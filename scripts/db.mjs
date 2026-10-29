@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 // Utilidades de base de datos para gestion-app (SPEC 60).
 //
-//   node scripts/db.mjs export [--all] [--url <URL>] [--env-file <ruta>]
+//   node scripts/db.mjs export [--all] [--check] [--url <URL>] [--env-file <ruta>]
 //   node scripts/db.mjs run -f <archivo.sql> [--url <URL>] [--env-file <ruta>]
 //   node scripts/db.mjs query -c "<sql>" [--url <URL>] [--env-file <ruta>]
 //
 // `export` lee el historial real de migraciones desde
 // supabase_migrations.schema_migrations (version, name, statements) y escribe en
 // supabase/migrations/ los archivos que falten. No escribe nada en la base.
+// Con `--check` no escribe archivos: informa la deriva entre el repo y la base y
+// sale con código 1 si no coinciden (lo usa el CI).
 //
 // `run` ejecuta un archivo .sql completo dentro de una transacción y aborta en
 // el primer error.
@@ -104,7 +106,7 @@ function statementsToSql(statements) {
   );
 }
 
-async function exportMigrations({ url, all }) {
+async function exportMigrations({ url, all, check }) {
   const local = localMigrationVersions();
 
   const result = await withClient(url, (client) =>
@@ -116,19 +118,27 @@ async function exportMigrations({ url, all }) {
   const rows = result.rows;
   const remoteVersions = new Set(rows.map((r) => r.version));
   const written = [];
+  const missing = [];
   const kept = [];
   const withoutSql = [];
 
-  if (!existsSync(MIGRATIONS_DIR)) mkdirSync(MIGRATIONS_DIR, { recursive: true });
+  if (!check && !existsSync(MIGRATIONS_DIR)) {
+    mkdirSync(MIGRATIONS_DIR, { recursive: true });
+  }
 
   for (const row of rows) {
     const sql = statementsToSql(row.statements);
     const fileName = `${row.version}_${row.name}.sql`;
     const target = join(MIGRATIONS_DIR, fileName);
+    const exists = existsSync(target);
+
+    if (!sql) withoutSql.push(row.version);
+    if (!exists) missing.push(fileName);
+
+    if (check) continue;
 
     if (!sql) {
-      withoutSql.push(row.version);
-      if (!existsSync(target)) {
+      if (!exists) {
         writeFileSync(
           target,
           `-- ${row.version} ${row.name}\n-- ATENCIÓN: la base no guardó el SQL de esta migración.\n-- Hay que recuperarlo a mano antes de confiar en un replay completo.\n`,
@@ -139,7 +149,7 @@ async function exportMigrations({ url, all }) {
       continue;
     }
 
-    if (existsSync(target) && !all) {
+    if (exists && !all) {
       kept.push(fileName);
       continue;
     }
@@ -153,14 +163,37 @@ async function exportMigrations({ url, all }) {
     .map(([, file]) => file)
     .sort();
 
-  const missingLocally = rows.filter((r) => !local.has(r.version)).length;
-
   console.log(`Origen: ${describeTarget(url)}`);
   console.log(`Versiones en la base: ${rows.length}`);
+  console.log(`Archivos en el repo:  ${local.size}`);
+
+  if (check) {
+    if (missing.length > 0) {
+      console.log(`\nFaltan en el repo (${missing.length}):`);
+      for (const file of missing) console.log(`  + ${file}`);
+    }
+    if (withoutSql.length > 0) {
+      console.log(`\nSin SQL en la base (${withoutSql.length}): ${withoutSql.join(", ")}`);
+    }
+    if (orphans.length > 0) {
+      console.log(`\nArchivos locales sin versión en la base (${orphans.length}):`);
+      for (const file of orphans) console.log(`  - ${file}`);
+    }
+
+    const drift = missing.length + orphans.length;
+    if (drift > 0) {
+      console.log(`\n✖ Deriva detectada: ${drift} archivo(s). El repo y la base no coinciden.`);
+      process.exitCode = 1;
+    } else {
+      console.log("\n✔ Sin deriva: el repo coincide con el historial de la base.");
+    }
+    return;
+  }
+
   console.log(`Archivos escritos:    ${written.length}`);
   for (const file of written) console.log(`  + ${file}`);
   console.log(`Archivos ya presentes: ${kept.length}`);
-  console.log(`Faltaban en el repo:   ${missingLocally}`);
+  console.log(`Faltaban en el repo:   ${missing.length}`);
 
   if (withoutSql.length > 0) {
     console.log(`\n⚠️  Sin SQL en la base (${withoutSql.length}): ${withoutSql.join(", ")}`);
@@ -221,6 +254,7 @@ function parseArgs(argv) {
   const args = {
     mode: argv[0],
     all: false,
+    check: false,
     url: undefined,
     file: undefined,
     sql: undefined,
@@ -229,6 +263,7 @@ function parseArgs(argv) {
   for (let i = 1; i < argv.length; i += 1) {
     const token = argv[i];
     if (token === "--all") args.all = true;
+    else if (token === "--check") args.check = true;
     else if (token === "--url") args.url = argv[++i];
     else if (token === "-f" || token === "--file") args.file = argv[++i];
     else if (token === "-c" || token === "--sql") args.sql = argv[++i];
@@ -244,7 +279,7 @@ async function main() {
 
   if (args.mode === "export") {
     const url = resolveUrl(env, args.url, "SUPABASE_DB_URL_PROD");
-    await exportMigrations({ url, all: args.all });
+    await exportMigrations({ url, all: args.all, check: args.check });
     return;
   }
 
@@ -261,7 +296,7 @@ async function main() {
   }
 
   console.error("Uso:");
-  console.error("  node scripts/db.mjs export [--all] [--url <URL>] [--env-file <ruta>]");
+  console.error("  node scripts/db.mjs export [--all] [--check] [--url <URL>] [--env-file <ruta>]");
   console.error("  node scripts/db.mjs run -f <archivo.sql> [--url <URL>] [--env-file <ruta>]");
   console.error('  node scripts/db.mjs query -c "<sql>" [--url <URL>] [--env-file <ruta>]');
   process.exitCode = 1;
