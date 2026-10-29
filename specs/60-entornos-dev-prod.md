@@ -1,6 +1,6 @@
 # SPEC 60 — Entornos dev y producción separados
 
-> **Status:** Draft
+> **Status:** Aprobado
 > **Depends on:** SPEC 56, SPEC 57, SPEC 58, SPEC 59
 > **Date:** 2026-10-29
 > **Objective:** Separar el entorno de desarrollo del de producción recuperando el historial real de migraciones desde la base, sin Docker, y dejar todas las herramientas locales apuntando a dev.
