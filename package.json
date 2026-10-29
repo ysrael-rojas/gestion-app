@@ -13,7 +13,9 @@
     "test:components": "vitest run tests/components",
     "test:e2e": "playwright test",
     "test:coverage": "vitest run --coverage",
-    "gen:types": "node scripts/gen-types.mjs"
+    "gen:types": "node scripts/gen-types.mjs",
+    "db:export": "node scripts/db.mjs export",
+    "db:run": "node scripts/db.mjs run"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -48,6 +50,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
     "jsdom": "^30.1.1",
+    "pg": "^8.23.1",
     "shadcn": "^4.21.2",
     "tailwindcss": "^4",
     "typescript": "^5",
