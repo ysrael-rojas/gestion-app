@@ -16,7 +16,8 @@
     "gen:types": "node scripts/gen-types.mjs",
     "db:export": "node scripts/db.mjs export",
     "db:run": "node scripts/db.mjs run",
-    "db:query": "node scripts/db.mjs query"
+    "db:query": "node scripts/db.mjs query",
+    "db:push": "npx --yes supabase db push --linked"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

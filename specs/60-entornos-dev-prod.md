@@ -1,6 +1,6 @@
 # SPEC 60 — Entornos dev y producción separados
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 56, SPEC 57, SPEC 58, SPEC 59
 > **Date:** 2026-10-29
 > **Objective:** Separar el entorno de desarrollo del de producción recuperando el historial real de migraciones desde la base, sin Docker, y dejar todas las herramientas locales apuntando a dev.
@@ -66,6 +66,7 @@ Efecto secundario valioso: el repo recupera las 27 migraciones perdidas y queda 
 | `package.json` | `pg` como devDependency y scripts `db:export` / `db:run` | Sí |
 | `supabase/.temp/seed-semana-dev.sql` | Copia del seed con `v_owner` de dev | No (`.temp/` ignorado) |
 | `docs/operacion/entornos.md` | Matriz de entornos y procedimiento | Sí |
+| `vercel.json` | `ignoreCommand`: solo compila production | Sí |
 | `opencode.json` | Una línea: `project_ref` del MCP | Sí |
 | `.env` | URL, publishable key y password de dev | No |
 
@@ -124,21 +125,21 @@ Efecto secundario valioso: el repo recupera las 27 migraciones perdidas y queda 
 
 ## Acceptance criteria
 
-- [ ] `supabase/migrations/` contiene 47 archivos y sus versiones coinciden exactamente con las 47 filas de `supabase_migrations.schema_migrations` de producción.
-- [ ] Los 11 archivos duplicados (specs 49–57 con timestamp inventado) ya no existen.
-- [ ] `npx supabase db push` aplica 47/47 migraciones en dev sin errores.
-- [ ] Dev tiene 18 tablas, 2 vistas, 31 funciones (`public` + `private`), 39 policies, 31 triggers y 11 enums, igual que producción.
-- [ ] `payment_balance` y `voucher_balance` existen en dev con `security_invoker=true`.
-- [ ] Los advisors de seguridad de dev no reportan hallazgos nuevos respecto a producción.
-- [ ] Antes del seed, dev tiene 0 filas en `entidad`, `comprobante`, `payment`, `payment_allocation`, `cash_account`, `cash_close`, `cash_transfer`, `voucher_series` y `receipt_sequence`.
-- [ ] `.env` apunta a `https://dzbtcisqvnoplsfrakbs.supabase.co` y `get_project_url` del MCP devuelve esa misma URL.
-- [ ] El login local funciona con el usuario de dev y el dashboard carga sin errores de consola.
-- [ ] Tras el seed, dev muestra 29 comprobantes de venta, 12 compras, 45 recibos y 7 cierres de Caja General.
-- [ ] Producción conserva exactamente los mismos conteos de filas que antes de empezar.
-- [ ] Un push a una rama distinta de `main` no genera deployment en Vercel.
-- [ ] `npx tsc --noEmit`, `npm run lint`, `npm test` y `npm run build` en verde.
-- [ ] `docs/operacion/entornos.md` existe con la matriz de entornos y el procedimiento de migración.
-- [ ] SPEC 59 marcada `Obsoleto`.
+- [x] `supabase/migrations/` contiene 48 archivos: las 47 versiones reales de producción más `20261012221549_payment_status_procesado.sql` (catch-up). Dev tiene 48 filas en su historial.
+- [x] Los 11 archivos duplicados (specs 49–57 con timestamp inventado) ya no existen.
+- [x] `npx supabase db push` aplicó 48/48 migraciones en dev sin errores (tras el catch-up).
+- [x] Dev tiene 18 tablas, 2 vistas, 31 funciones (`public` + `private`), 39 policies, 31 triggers y 11 enums, igual que producción. Verificado con huella (hash) por categoría, no solo conteos.
+- [x] `payment_balance` y `voucher_balance` existen en dev con `security_invoker=true`.
+- [x] Los advisors de seguridad de dev no reportan hallazgos nuevos: solo `receipt_sequence` (INFO), 10 funciones `SECURITY DEFINER` (WARN) y `leaked_password_protection` (WARN, requiere Pro), todos aceptados en la SPEC 56.
+- [x] Antes del seed, dev tenía 0 filas en `entidad`, `comprobante`, `payment`, `payment_allocation`, `cash_account`, `cash_close`, `cash_transfer`, `voucher_series` y `receipt_sequence`.
+- [x] `.env` apunta a `https://dzbtcisqvnoplsfrakbs.supabase.co` y `get_project_url` del MCP devuelve esa misma URL.
+- [x] El login local funciona con el usuario de dev y el dashboard carga sin errores de consola (8 rutas con sesión, 0 errores).
+- [x] Tras el seed, dev muestra 29 comprobantes de venta, 12 compras, 45 recibos, 8 cierres (7 de Caja General + 1 de Banco BCP) y 35 asignaciones. El número de asignaciones de esta spec (60) era incorrecto: el seed no lo declara y el script de verificación del repo tampoco.
+- [x] Producción conserva exactamente los mismos conteos de filas que antes de empezar (1 comprobante, 0 recibos, 0 asignaciones, 0 cierres, 1 entidad, 0 cuentas).
+- [x] Un push a una rama distinta de `main` no genera deployment en Vercel (`ignoreCommand` en `vercel.json`).
+- [x] `npx tsc --noEmit`, `npm run lint`, `npm test` (632 tests) y `npm run build` en verde.
+- [x] `docs/operacion/entornos.md` existe con la matriz de entornos y el procedimiento de migración.
+- [x] SPEC 59 marcada `Obsoleto`.
 
 ## Decisions
 
@@ -154,6 +155,24 @@ Efecto secundario valioso: el repo recupera las 27 migraciones perdidas y queda 
 - **Sí:** `seed-semana.sql` con `v_owner` reescrito en una copia. **No:** editar el archivo original.
 - **Sí:** previews deshabilitados con *Only build production*. **No:** previews por PR contra producción.
 - **No:** tercer entorno *staging*: una sola persona no lo justifica.
+
+### Notas de implementación (2026-10-29)
+
+- **Historial recuperado:** el script exportó 27 migraciones que faltaban y listó 11 huérfanas. Antes de borrarlas se compararon una a una: 8 eran idénticas salvo comentarios y 3 (spec 53, 57 x2) tenían el mismo número de sentencias con diferencias solo de espacios. **Ningún par tenía SQL distinto**, así que no se perdió nada.
+- **El primer `db push` falló** en `20261012221550_harden_financial_history_v1`: el valor `PROCESADO` del enum `payment_status` se había agregado en producción fuera de una migración. Se resolvió con el catch-up `20261012221549_payment_status_procesado.sql`, con `before 'ANULADO'` para replicar el orden real del enum.
+- **Paridad verificada por huella, no por conteo:** se calculó un hash por categoría (tablas, vistas, policies, triggers, constraints, índices, enums, funciones) en las dos bases. Coinciden todas salvo 2 funciones: `replenish_petty_cash` (solo acentos en 3 mensajes de error; dev quedó como el repo y producción los perdió al aplicarse por MCP) y `rls_auto_enable` (función que administra Supabase, cambió entre la creación de los dos proyectos).
+- **El seed no era autónomo.** `seed-semana.sql` asume clientes, cuentas y catálogos ya existentes (su BLOQUE 0 los conserva) y traía IDs de catálogo de producción hardcodeados. En dev se crearon clientes y cuentas desde `seed-demo.sql` y los catálogos desde `lib/caja/defaults.ts`, y en la copia del seed los IDs de catálogo se reemplazaron por búsquedas por `code`. **El archivo original no se modificó.** Todo esto quedó documentado en `docs/operacion/entornos.md`.
+- **35 asignaciones, no 60:** el número de la spec venía de una nota anterior y no lo declara ni el seed ni `seed-semana-verify.sql`.
+- **`voucher_series` queda vacío en dev:** el seed numera los comprobantes explícitamente (`FV01-000001`), no por series. Hay que configurarlas en la app antes de crear comprobantes nuevos.
+- **Desviaciones de la spec:**
+  - `scripts/db.mjs` tiene un tercer modo, `query` (solo lectura), necesario para verificar dev mientras el MCP apuntaba a producción.
+  - Se agregaron los scripts `db:query` y `db:push` (`db push --linked`), este último para no poner la URL con contraseña en la línea de comandos.
+  - `scripts/gen-types.mjs` ahora llama a `npx --yes supabase` en vez de `supabase`, que exigía instalación global.
+  - El *Ignored Build Step* se resolvió con `ignoreCommand` en `vercel.json` (versionado y con prioridad sobre el dashboard) en lugar de la opción de la UI.
+- **Los tipos versionados estaban desactualizados:** al regenerar desde dev aparecieron el enum `reconciliation_item_kind` (SPEC 53), el bloque `graphql_public` y `PostgrestVersion` 14.18. Se restauró la cabecera `// GENERATED — NO EDITAR`.
+- **Vercel:** Production ya apuntaba a producción (verificado por la CSP del deploy). Los previews existentes estaban **rotos** (compilados sin `NEXT_PUBLIC_SUPABASE_URL`, sin CSP); ahora Preview tiene las variables de dev y los builds de preview se cancelan. `vercel link` creó un `.env.local` que se eliminó porque Next lo carga después de `.env`.
+- **Un dev server de la sesión anterior** quedó colgado con `EPIPE: broken pipe` y dejó el puerto 3000 sin responder. Se mató y se levantó uno limpio.
+- **Smoke:** e2e del repo (ventas → pago → PAGADO con saldo 0) y recorrido de 8 rutas con sesión, sin errores de consola. Producción quedó con los mismos conteos antes y después.
 
 ## Risks
 
