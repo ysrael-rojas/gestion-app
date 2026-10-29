@@ -3,6 +3,7 @@
 //
 //   node scripts/db.mjs export [--all] [--url <URL>] [--env-file <ruta>]
 //   node scripts/db.mjs run -f <archivo.sql> [--url <URL>] [--env-file <ruta>]
+//   node scripts/db.mjs query -c "<sql>" [--url <URL>] [--env-file <ruta>]
 //
 // `export` lee el historial real de migraciones desde
 // supabase_migrations.schema_migrations (version, name, statements) y escribe en
@@ -10,6 +11,8 @@
 //
 // `run` ejecuta un archivo .sql completo dentro de una transacción y aborta en
 // el primer error.
+//
+// `query` ejecuta una consulta de solo lectura e imprime el resultado en JSON.
 //
 // Las credenciales se leen de .env (o del --env-file indicado) y nunca se
 // imprimen. URL por defecto: SUPABASE_DB_URL_PROD para export y
@@ -197,17 +200,38 @@ async function runFile({ url, file }) {
   console.log("OK: ejecutado y confirmado en una sola transacción.");
 }
 
+async function runQuery({ url, sql }) {
+  if (!sql) throw new Error("Falta -c \"<sql>\".");
+
+  const result = await withClient(url, (client) => client.query(sql));
+  const sets = Array.isArray(result) ? result : [result];
+
+  console.log(`Destino: ${describeTarget(url)}`);
+  for (const set of sets) {
+    if (!set.rows) continue;
+    console.log(JSON.stringify(set.rows, null, 2));
+  }
+}
+
 // ---------------------------------------------------------------------------
 // CLI
 // ---------------------------------------------------------------------------
 
 function parseArgs(argv) {
-  const args = { mode: argv[0], all: false, url: undefined, file: undefined, envFile: ".env" };
+  const args = {
+    mode: argv[0],
+    all: false,
+    url: undefined,
+    file: undefined,
+    sql: undefined,
+    envFile: ".env",
+  };
   for (let i = 1; i < argv.length; i += 1) {
     const token = argv[i];
     if (token === "--all") args.all = true;
     else if (token === "--url") args.url = argv[++i];
     else if (token === "-f" || token === "--file") args.file = argv[++i];
+    else if (token === "-c" || token === "--sql") args.sql = argv[++i];
     else if (token === "--env-file") args.envFile = argv[++i];
     else throw new Error(`Argumento desconocido: ${token}`);
   }
@@ -230,9 +254,16 @@ async function main() {
     return;
   }
 
+  if (args.mode === "query") {
+    const url = resolveUrl(env, args.url, "SUPABASE_DB_URL_DEV");
+    await runQuery({ url, sql: args.sql });
+    return;
+  }
+
   console.error("Uso:");
   console.error("  node scripts/db.mjs export [--all] [--url <URL>] [--env-file <ruta>]");
   console.error("  node scripts/db.mjs run -f <archivo.sql> [--url <URL>] [--env-file <ruta>]");
+  console.error('  node scripts/db.mjs query -c "<sql>" [--url <URL>] [--env-file <ruta>]');
   process.exitCode = 1;
 }
 
