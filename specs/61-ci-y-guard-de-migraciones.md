@@ -1,6 +1,6 @@
 # SPEC 61 — CI y guard de migraciones
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 58, SPEC 60
 > **Date:** 2026-10-29
 > **Objective:** Verificar cada PR con lint, tipos, tests y build, y bloquear el merge cuando las migraciones del repo no coincidan con la base de dev, sin depender de Docker.
@@ -65,15 +65,15 @@ El guard de migraciones es el corazón de esta spec: convierte "acordarse de com
 
 ## Acceptance criteria
 
-- [ ] `npm run db:export -- --check` contra dev, con el repo alineado, sale con código `0`.
-- [ ] Con un archivo de migración con versión inexistente, el mismo comando sale con código `1` y nombra el archivo.
-- [ ] `--check` no escribe ni modifica ningún archivo del repo.
-- [ ] El workflow corre en PRs contra `dev` y contra `main`.
-- [ ] El job `checks` ejecuta `npm ci`, lint, `tsc --noEmit`, `npm test` y `npm run build`, y pasa en verde en el PR de la spec.
-- [ ] El job `migraciones` usa el secret `SUPABASE_DB_URL_DEV` y falla si hay deriva.
-- [ ] `main` y `dev` exigen los dos checks para mergear, y un PR con deriva queda bloqueado.
-- [ ] Un run completo tarda menos de 10 minutos.
-- [ ] `docs/operacion/entornos.md` y `AGENTS.md` describen el CI y qué hacer ante un fallo.
+- [x] `npm run db:export -- --check` contra dev, con el repo alineado, sale con código `0` (48 archivos = 48 versiones).
+- [x] Con un archivo de migración con versión inexistente, el mismo comando sale con código `1` y nombra el archivo.
+- [x] `--check` no escribe ni modifica ningún archivo del repo (verificado con `git status` después de correrlo).
+- [x] El workflow corre en PRs contra `dev` (verificado con #74 y #75) y está configurado para `main` en el mismo trigger.
+- [x] El job `checks` ejecuta `npm ci`, lint, `next typegen` + `tsc --noEmit`, `npm test` y `npm run build`, y pasa en verde en el PR de la spec.
+- [x] El job `migraciones` usa el secret `SUPABASE_DB_URL_DEV` y falla si hay deriva.
+- [x] `main` y `dev` exigen los dos checks para mergear, y un PR con deriva queda bloqueado (PR #75: `migraciones` FAILURE, `mergeStateStatus` BLOCKED).
+- [x] Un run completo tarda menos de 10 minutos: **2m9s** (checks 2m6s, migraciones 16s).
+- [x] `docs/operacion/entornos.md` y `AGENTS.md` describen el CI y qué hacer ante un fallo.
 
 ## Decisions
 
@@ -85,6 +85,15 @@ El guard de migraciones es el corazón de esta spec: convierte "acordarse de com
 - **Sí:** `migraciones` como job aparte. **No:** meterlo en `checks`: necesita el secret y así el fallo se lee distinto (deriva ≠ código roto).
 - **No:** e2e en CI: necesita base con seed y credenciales reales; el costo de mantenimiento supera el valor hoy.
 - **No:** deploy desde CI: Vercel ya lo hace y duplicarlo genera dos fuentes de verdad.
+
+### Notas de implementación (2026-10-29)
+
+- **El primer run falló en `Tipos`.** `PageProps` y `LayoutProps` los genera Next en `.next/types`, y `.next/` y `next-env.d.ts` están en `.gitignore`: en un clon limpio `tsc` no los encuentra. Se resolvió con `npx next typegen` antes de `tsc --noEmit`. Conclusión incómoda y útil: **el repo no compilaba desde un clon limpio** y nadie lo sabía hasta que hubo CI.
+- **`dev` había desaparecido de GitHub.** El `gh pr create` falló con "Base ref must be a branch" y el API devolvía 404. El repo tiene `delete_branch_on_merge: false`, así que fue un borrado manual al limpiar después de un merge. Se restauró en `e1b9fd5` (merge del PR #72), que ya estaba dentro de `main` como segundo padre de `d8f32fc`.
+- **El secret se cargó dos veces.** La primera con un pipe de PowerShell: `gh secret set` no recorta el stdin y podía haber quedado un `\n` al final, que rompería la conexión sin decir por qué. La segunda con `--body`, que no lleva salto.
+- **El guard se probó de verdad** con el PR #75: una migración renombrada, `migraciones` en FAILURE con el nombre del archivo, `checks` en verde y `mergeStateStatus: BLOCKED`. PR cerrado sin mergear y rama borrada.
+- **`enforce_admins` quedó activo en `main` y `dev`.** Consecuencia: si el proyecto dev se pausa por inactividad, el job `migraciones` falla por conexión y no se puede mergear nada. El escape de emergencia (quitar y reponer el requisito de checks) está documentado en `docs/operacion/entornos.md`.
+- Tiempos del run completo: **2m9s** (checks 2m6s, migraciones 16s).
 
 ## Risks
 
