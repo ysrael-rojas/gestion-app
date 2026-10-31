@@ -90,6 +90,42 @@ Lo que este repo necesita y no es obvio:
    - hay que reescribir `v_owner` con el UUID del usuario del entorno;
    - se ejecuta **bloque por bloque**, cada uno en su propia transacción.
 
+## CI (GitHub Actions)
+
+`.github/workflows/ci.yml` corre en cada **PR contra `dev` o `main`** y tiene dos jobs:
+
+| Job | Qué hace | Duración típica |
+| --- | --- | --- |
+| `checks` | `npm ci`, lint, `next typegen` + `tsc --noEmit`, tests y build | ~2 min |
+| `migraciones` | `db:export --check` contra dev: compara el repo con `schema_migrations` | ~20 s |
+
+Los dos son **checks requeridos** en `main` y en `dev` (con `enforce_admins` activo, así que nadie los salta). Un PR en rojo no se puede mergear.
+
+`checks` usa variables de Supabase de relleno: solo compila, no se conecta. El único secret que se usa es `SUPABASE_DB_URL_DEV`, y solo en `migraciones`.
+
+`next typegen` no es opcional: `PageProps` y `LayoutProps` los genera Next en `.next/types`, y `.next/` y `next-env.d.ts` están ignorados, así que en un clon limpio `tsc` no los encuentra.
+
+### Si falla `migraciones`
+
+El mensaje nombra los archivos, así que se resuelve en un minuto:
+
+- **`Faltan en el repo`** → la migración se aplicó a dev pero no se commiteó. `npm run db:export` la escribe; commitear el archivo.
+- **`Archivos locales sin versión en la base`** → hay un archivo con una versión que no existe en el historial. Suele ser un duplicado con timestamp inventado: borrarlo.
+- **`Falta la URL de conexión` o error de conexión** → el secret no está o el proyecto dev está pausado (plan Free). Se reactiva en el panel y se relanza el job.
+
+### Escape de emergencia
+
+Si el CI queda bloqueado por algo ajeno al código (por ejemplo, dev pausado y no hay acceso al panel), se puede quitar temporalmente el requisito y volver a ponerlo:
+
+```powershell
+# quitar el requisito de checks
+gh api -X DELETE repos/ysrael-rojas/gestion-app/branches/dev/protection/required_status_checks
+
+# volver a ponerlo (checks y migraciones)
+gh api -X PUT repos/ysrael-rojas/gestion-app/branches/dev/protection/required_status_checks `
+  -f strict=false -f "contexts[]=checks" -f "contexts[]=migraciones"
+```
+
 ## Detalles que muerden
 
 - **`NEXT_PUBLIC_*` se incrusta en build.** Cambiarla en Vercel sin redeploy deja la CSP

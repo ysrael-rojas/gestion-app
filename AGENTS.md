@@ -124,6 +124,7 @@ Instalados con `uipro init --ai opencode` (CLI `ui-ux-pro-max-cli`). Aportan dat
 - El PR de una implementación apunta siempre a `dev` (`gh pr create --base dev`).
 - El release a producción es un PR `dev → main`, y solo cuando el dueño lo decida.
 - Antes de `/spec-impl`: `git switch dev && git pull`, porque la rama se crea desde la rama actual.
+- Todo PR a `dev` y a `main` exige los checks `checks` y `migraciones` (ver `docs/operacion/entornos.md`); no se puede mergear en rojo.
 - Mapeo código ↔ base de datos: ramas de trabajo y `dev` → Supabase dev (`gestion-comercial-dev`); `main` → Supabase producción (`gestion-comercial`). Las migraciones viajan en la rama de la spec: se aplican a dev al integrarla y a producción solo en el merge `dev → main`.
 
 ## Flujo de trabajo (specs)
